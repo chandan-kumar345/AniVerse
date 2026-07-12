@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-main: #0a090c;
-  --bg-surface: #141318;
-  --bg-surface-glass: rgba(20, 19, 24, 0.75);
-  --bg-surface-glass-hover: rgba(28, 27, 34, 0.9);
+  --bg-main: #08060b;
+  --bg-surface: #110e16;
+  --bg-surface-glass: rgba(17, 14, 22, 0.75);
+  --bg-surface-glass-hover: rgba(25, 21, 31, 0.9);
   
-  --color-primary: #5f32e6; /* Aniwave Violet */
-  --color-primary-hover: #4c22cc;
-  --color-accent: #fab005; /* Aniwave Gold/Yellow */
-  --color-accent-hover: #f19e00;
+  --color-primary: #8b5cf6; /* AniVerse Metallic Violet */
+  --color-primary-hover: #7c3aed;
+  --color-accent: #c084fc; /* AniVerse Lilac Accent */
+  --color-accent-hover: #a855f7;
   --color-teal: #06b6d4; /* Teal */
   
   --text-main: #f3f4f6;
@@ -17,9 +17,9 @@
   --text-dark: #6b7280;
   
   --border-color: rgba(255, 255, 255, 0.05);
-  --border-color-active: rgba(95, 50, 230, 0.4);
+  --border-color-active: rgba(139, 92, 246, 0.4);
   
-  --glow-shadow: 0 0 15px rgba(95, 50, 230, 0.4);
+  --glow-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   
   --font-display: 'Outfit', sans-serif;
@@ -137,7 +137,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .btn-accent:hover {
   background-color: var(--color-accent-hover);
-  box-shadow: 0 0 15px rgba(163, 230, 53, 0.4);
+  box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
   transform: translateY(-2px);
 }
 

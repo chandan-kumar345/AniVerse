@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, Tv, User, LogOut, Heart, History, ChevronDown } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Heart, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -87,10 +87,7 @@ export const Header: React.FC = () => {
         
         {/* LOGO */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
-          <Tv size={30} style={{ color: 'var(--color-primary)', filter: 'drop-shadow(0 0 8px var(--color-primary))' }} />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', letterSpacing: '0.5px' }}>
-            BANKAI<span style={{ color: 'var(--color-primary)' }}>TV</span>
-          </span>
+          <img src="/logo.png" alt="AniVerse" style={{ height: '42px', objectFit: 'contain' }} />
         </Link>
  
         {/* SEARCH BAR */}
@@ -258,10 +255,28 @@ export const Header: React.FC = () => {
           .desktop-links, .desktop-username { display: none !important; }
           .mobile-toggle { display: block !important; }
         }
+        .nav-link {
+          position: relative;
+          padding: 6px 0;
+        }
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          width: 0;
+          height: 2px;
+          background-color: var(--color-primary);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateX(-50%);
+        }
+        .nav-link:hover::after {
+          width: 100%;
+        }
         .nav-link:hover { color: var(--color-primary) !important; }
         .dropdown-item:hover { background: rgba(255,255,255,0.05); }
         .dropdown-item.logout:hover { background: rgba(239, 68, 68, 0.08); }
-        .search-form:focus-within { border-color: var(--color-primary) !important; box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); }
+        .search-form:focus-within { border-color: var(--color-primary) !important; box-shadow: var(--glow-shadow); }
         .suggestion-item:hover { background: rgba(255,255,255,0.04); }
       `}</style>
     </header>

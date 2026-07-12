@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Tv, Heart, Shield } from 'lucide-react';
+import { Heart, Shield } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,13 +10,10 @@ export const Footer: React.FC = () => {
         {/* About column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
-            <Tv size={28} style={{ color: 'var(--color-primary)' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px' }}>
-              BANKAI<span style={{ color: 'var(--color-primary)' }}>TV</span>
-            </span>
+            <img src="/logo.png" alt="AniVerse" style={{ height: '36px', objectFit: 'contain' }} />
           </Link>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6' }}>
-            Bankai TV is a premium anime streaming platform featuring high-definition playback, an interactive custom player, and a passionate social community.
+            AniVerse is a premium anime streaming platform featuring high-definition playback, an interactive custom player, and a passionate social community.
           </p>
           <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
             <a href="https://github.com" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', transition: 'var(--transition-fast)' }} className="social-icon">
@@ -56,7 +53,7 @@ export const Footer: React.FC = () => {
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '50px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', maxWidth: '1400px', margin: '50px auto 0', paddingRight: '20px', paddingLeft: '20px' }}>
         <p style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
-          &copy; {new Date().getFullYear()} Bankai TV. All rights reserved. Built for anime fans.
+          &copy; {new Date().getFullYear()} AniVerse. All rights reserved. Built for anime fans.
         </p>
         <p style={{ color: 'var(--text-dark)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           Made with <Heart size={12} style={{ color: 'var(--color-primary)' }} /> and <Shield size={12} style={{ color: 'var(--color-teal)' }} />

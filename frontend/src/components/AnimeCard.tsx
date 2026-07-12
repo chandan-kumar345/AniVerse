@@ -18,6 +18,7 @@ export interface AnimeData {
   releasedYear?: number | null;
   duration?: string | null;
   genres: string;
+  episodes?: { id?: string; episodeNumber: number; title?: string; videoUrl?: string }[];
 }
 
 interface AnimeCardProps {
@@ -54,6 +55,12 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
               <Star size={10} style={{ fill: 'var(--color-accent)' }} />
               {anime.score.toFixed(1)}
             </div>
+            {/* Episode Badge */}
+            {anime.episodes && anime.episodes.length > 0 && (
+              <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--color-primary)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, color: '#fff', border: '1px solid rgba(255,255,255,0.15)', boxShadow: 'var(--glow-shadow)' }}>
+                EP {anime.episodes[0].episodeNumber}
+              </div>
+            )}
             {/* Type Badge */}
             <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
               {anime.type}
@@ -68,8 +75,12 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
             >
               {anime.title}
             </h4>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {anime.releasedYear} • {anime.duration || '24 min'}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
+              <span>{anime.releasedYear} • {anime.duration || '24 min'}</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
+                <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
+              </div>
             </div>
           </div>
         </div>

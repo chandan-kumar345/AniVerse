@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Tv, Mail, User, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import { Mail, User, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Auth: React.FC = () => {
   const { login } = useAuth();
@@ -55,11 +55,8 @@ export const Auth: React.FC = () => {
     <div style={{ maxWidth: '480px', margin: '60px auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
       
       {/* BRANDING HEADER */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-        <Tv size={45} style={{ color: 'var(--color-primary)', filter: 'drop-shadow(0 0 10px var(--color-primary))' }} />
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800 }}>
-          BANKAI<span style={{ color: 'var(--color-primary)' }}>TV</span>
-        </h2>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+        <img src="/logo.png" alt="AniVerse" style={{ height: '55px', objectFit: 'contain' }} />
         <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center' }}>
           {isLoginTab ? 'Welcome back! Sign in to keep track of your watchlist.' : 'Create an account and connect with anime fans worldwide.'}
         </p>

@@ -22,6 +22,7 @@ export const Search: React.FC = () => {
   const typeParam = searchParams.get('type') || '';
   const statusParam = searchParams.get('status') || '';
   const yearParam = searchParams.get('year') || '';
+  const letterParam = searchParams.get('letter') || '';
   const pageParam = parseInt(searchParams.get('page') || '1');
 
   const [searchField, setSearchField] = useState(qParam);
@@ -40,16 +41,16 @@ export const Search: React.FC = () => {
     setSelectedStatus(statusParam);
     setSelectedYear(yearParam);
     setCurrentPage(pageParam);
-  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam]);
+  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam, letterParam]);
 
   useEffect(() => {
-    const qText = qParam ? `for "${qParam}"` : 'Catalog';
-    document.title = `Search Anime ${qText} Online Free in HD - Bankai TV`;
+    const qText = qParam ? `for "${qParam}"` : letterParam ? `starting with "${letterParam}"` : 'Catalog';
+    document.title = `Search Anime ${qText} Online Free in HD - AniVerse`;
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', `Browse our catalog ${qText}. Filter by genre, format, released year, and airing status. Stream anime online free on Bankai TV.`);
+      metaDescription.setAttribute('content', `Browse our catalog ${qText}. Filter by genre, format, released year, and airing status. Stream anime online free on AniVerse.`);
     }
-  }, [qParam]);
+  }, [qParam, letterParam]);
 
   // Load distinct genres list once
   useEffect(() => {
@@ -75,6 +76,7 @@ export const Search: React.FC = () => {
         if (typeParam) queryParams.append('type', typeParam);
         if (statusParam) queryParams.append('status', statusParam);
         if (yearParam) queryParams.append('year', yearParam);
+        if (letterParam) queryParams.append('letter', letterParam);
         queryParams.append('page', String(pageParam));
         queryParams.append('limit', '12');
 
@@ -89,7 +91,7 @@ export const Search: React.FC = () => {
     };
 
     fetchResults();
-  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam]);
+  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam, letterParam]);
 
   // Apply filters
   const applyFilters = (updatedPage?: number) => {
