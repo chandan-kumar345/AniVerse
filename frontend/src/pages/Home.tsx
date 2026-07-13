@@ -102,9 +102,14 @@ export const Home: React.FC = () => {
           liveUpdatesList = releasingMedia.map((media: any) => {
             const title = media.title.english || media.title.romaji || media.title.native;
             const cleanTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
-            // Find local match
+            // Find local match in any of our local anime arrays
             const localMatch = (trendingRes.data.trending || [])
               .concat(popularRes.data.popular || [])
+              .concat(topTenRes.data.topTen || [])
+              .concat(moviesRes.data.animeList || [])
+              .concat(newReleaseRes.data.animeList || [])
+              .concat(newAddedRes.data.animeList || [])
+              .concat(justCompletedRes.data.animeList || [])
               .find((local: any) => {
                 const localT = cleanTitle(local.title);
                 const romajiT = cleanTitle(media.title.romaji || '');
@@ -112,9 +117,20 @@ export const Home: React.FC = () => {
                 return localT === romajiT || localT === englishT;
               });
 
+            const slugify = (text: string) => {
+              return text
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+            };
+
             return {
               id: localMatch ? localMatch.id : `anilist-${media.id}`,
-              slug: localMatch ? localMatch.slug : `search?q=${encodeURIComponent(title)}`,
+              slug: localMatch ? localMatch.slug : slugify(title),
               title,
               englishTitle: media.title.english,
               description: media.description ? media.description.replace(/<[^>]*>/g, '') : 'No description available.',

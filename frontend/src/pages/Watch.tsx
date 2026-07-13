@@ -52,7 +52,7 @@ export const Watch: React.FC = () => {
   // Filters for left column episodes sidebar
   const [activeTranslationFilter, setActiveTranslationFilter] = useState<'sub_dub' | 'sub' | 'dub'>('sub_dub');
   const [episodeSearch, setEpisodeSearch] = useState('');
-  
+
   // Range selection for episode chunks of 100
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
 
@@ -73,7 +73,7 @@ export const Watch: React.FC = () => {
   // Translation availability state
   const [hasDub, setHasDub] = useState(true);
   const [seasons, setSeasons] = useState<{ seasonNumber: number; title: string; slug: string }[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
 
   // Calculate 100-chunk pagination ranges
@@ -183,7 +183,7 @@ export const Watch: React.FC = () => {
         const detailRes = await axiosInstance.get(`/api/anime/${slug}`);
         const animeData = detailRes.data.anime;
         setAnimeDetail(animeData);
-        
+
         let defaultTranslation: 'sub' | 'dub' = 'sub';
         if (animeData.hasSub === false && animeData.hasDub !== false && epHasDub) {
           defaultTranslation = 'dub';
@@ -256,7 +256,7 @@ export const Watch: React.FC = () => {
       idToUse = 269;
       epNumToUse = epNumToUse + 392;
     }
-    
+
     let url = '';
     if (activeServer === 'vidplay') {
       url = `https://animeplay.cfd/stream/mal/${idToUse}/${epNumToUse}/${activeTranslation}`;
@@ -321,12 +321,12 @@ export const Watch: React.FC = () => {
 
   return (
     <div className="app-container" style={{ padding: '16px 20px', color: '#fff', position: 'relative' }}>
-      
+
       {/* THEATER LIGHTS OFF DARK BLANKET */}
       {lightsOff && (
-        <div 
+        <div
           onClick={() => setLightsOff(false)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.92)', zIndex: 999, cursor: 'pointer', transition: 'all 0.3s ease' }} 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.92)', zIndex: 999, cursor: 'pointer', transition: 'all 0.3s ease' }}
         />
       )}
 
@@ -339,69 +339,73 @@ export const Watch: React.FC = () => {
         <span style={{ color: 'var(--color-primary)' }}>Episode {epNum}</span>
       </div>
 
-      {/* THEATER MAIN SCREEN BOX (3-COLUMN LAYOUT) */}
-      <div 
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isExpanded ? '1fr' : '320px 1fr 300px', 
-          gap: '20px', 
-          alignItems: 'start', 
+      {/* THEATER MAIN SCREEN BOX (2-COLUMN LAYOUT) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isExpanded ? '1fr' : '320px 1fr',
+          gap: '24px',
+          alignItems: 'stretch',
           marginBottom: '24px',
           position: 'relative',
           zIndex: lightsOff ? 1000 : 1
-        }} 
+        }}
         className="watch-theater-split"
       >
-        
-        {/* COLUMN 1: EPISODE SIDEBAR (LEFT) - COMPACT ROW GRID DISPLAY OF 6 */}
-        {!isExpanded && (
-          <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px 10px', display: 'flex', flexDirection: 'column', height: 'auto' }}>
-            
-            {/* Header filters placed on a single compact row */}
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', alignItems: 'center' }}>
-              <select 
-                value={activeTranslationFilter} 
-                onChange={(e) => setActiveTranslationFilter(e.target.value as any)}
-                style={{ flex: 1, minWidth: '70px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', borderRadius: '4px', padding: '6px', fontSize: '11px', outline: 'none', cursor: 'pointer' }}
-              >
-                <option value="sub_dub" style={{ background: '#110e16', color: '#fff' }}>Sub/Dub</option>
-                <option value="sub" style={{ background: '#110e16', color: '#fff' }}>Sub</option>
-                <option value="dub" style={{ background: '#110e16', color: '#fff' }}>Dub</option>
-              </select>
-              
-              {episodesList.length > 100 && (
-                <select 
-                  value={selectedRange ? `${selectedRange.start}-${selectedRange.end}` : ''}
-                  onChange={(e) => {
-                    const [start, end] = e.target.value.split('-').map(Number);
-                    setSelectedRange({ start, end });
-                  }}
-                  style={{ width: '80px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', borderRadius: '4px', padding: '6px', fontSize: '11px', outline: 'none', cursor: 'pointer' }}
-                >
-                  {ranges.map((r, idx) => (
-                    <option key={idx} value={`${r.start}-${r.end}`} style={{ background: '#110e16', color: '#fff' }}>{r.label}</option>
-                  ))}
-                </select>
-              )}
 
-              <input
-                type="text"
-                placeholder="Find..."
-                value={episodeSearch}
-                onChange={(e) => setEpisodeSearch(e.target.value)}
-                style={{ width: '70px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px', padding: '6px 8px', fontSize: '11px', color: '#fff', outline: 'none' }}
-              />
+        {/* COLUMN 1: SIDEBAR (LEFT) - EPISODES (STRETCHED TO MATCH ROW HEIGHT) */}
+        {!isExpanded && (
+          <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px 14px', display: 'flex', flexDirection: 'column', height: '70%', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800 }}>Episodes</h3>
+
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <select
+                  value={activeTranslationFilter}
+                  onChange={(e) => setActiveTranslationFilter(e.target.value as any)}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', borderRadius: '4px', padding: '5px', fontSize: '10px', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="sub_dub" style={{ background: '#110e16', color: '#fff' }}>Sub/Dub</option>
+                  <option value="sub" style={{ background: '#110e16', color: '#fff' }}>Sub</option>
+                  <option value="dub" style={{ background: '#110e16', color: '#fff' }}>Dub</option>
+                </select>
+
+                {episodesList.length > 100 && (
+                  <select
+                    value={selectedRange ? `${selectedRange.start}-${selectedRange.end}` : ''}
+                    onChange={(e) => {
+                      const [start, end] = e.target.value.split('-').map(Number);
+                      setSelectedRange({ start, end });
+                    }}
+                    style={{ width: '70px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', borderRadius: '4px', padding: '5px', fontSize: '10px', outline: 'none', cursor: 'pointer' }}
+                  >
+                    {ranges.map((r, idx) => (
+                      <option key={idx} value={`${r.start}-${r.end}`} style={{ background: '#110e16', color: '#fff' }}>{r.label}</option>
+                    ))}
+                  </select>
+                )}
+
+                <input
+                  type="text"
+                  placeholder="Find"
+                  value={episodeSearch}
+                  onChange={(e) => setEpisodeSearch(e.target.value)}
+                  style={{ width: '50px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px', padding: '5px', fontSize: '10px', color: '#fff', outline: 'none' }}
+                />
+              </div>
             </div>
 
-            {/* List of episodes: Always listed side-by-side in a compact 6-column grid display (shows all episodes on screen without scrollbars) */}
-            <div 
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(6, 1fr)', 
-                gap: '6px', 
+            {/* Episode buttons in a 6-column grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(6, 1fr)',
+                gap: '6px',
+                overflowY: 'auto',
                 paddingRight: '2px',
-                overflow: 'visible'
-              }} 
+                flex: 1
+              }}
+              className="no-scrollbar"
             >
               {filteredEpisodes.map((ep) => {
                 const isActive = ep.episodeNumber === parseInt(epNum || '1');
@@ -450,9 +454,9 @@ export const Watch: React.FC = () => {
           </div>
         )}
 
-        {/* COLUMN 2: VIDEO PLAYER + SETTINGS CONTROL PANEL (MIDDLE) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1 }}>
-          
+        {/* COLUMN 2: VIDEO PLAYER + SETTINGS CONTROL PANEL (RIGHT) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+
           {/* Top banner notice */}
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
             <Info size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
@@ -471,11 +475,11 @@ export const Watch: React.FC = () => {
 
           {/* Sub-player Control Settings Bar */}
           <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '10px 16px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-            
+
             {/* Playback helpers */}
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 600, color: '#bcc5cf' }}>
-              
-              <button 
+
+              <button
                 onClick={() => setIsExpanded(prev => !prev)}
                 style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700 }}
               >
@@ -492,24 +496,24 @@ export const Watch: React.FC = () => {
                 <span>Auto Next</span>
               </label>
 
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   cursor: 'pointer',
                   background: '#ffcc00',
                   color: '#000',
                   padding: '3px 8px',
                   borderRadius: '4px',
                   fontWeight: 700
-                }} 
+                }}
               >
                 <input type="checkbox" checked={autoSkip} onChange={(e) => setAutoSkip(e.target.checked)} style={{ accentColor: '#000', cursor: 'pointer' }} />
                 <span>Auto Skip</span>
               </label>
 
-              <button 
+              <button
                 onClick={() => setLightsOff(prev => !prev)}
                 style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700 }}
               >
@@ -519,18 +523,18 @@ export const Watch: React.FC = () => {
 
             {/* Skip arrows and report triggers */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#bcc5cf', fontWeight: 600 }}>
-              
+
               {/* Prev / Next */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
-                  onClick={handlePrevEpisode} 
+                <button
+                  onClick={handlePrevEpisode}
                   disabled={!hasPrev}
                   style={{ background: 'none', border: 'none', color: hasPrev ? '#fff' : 'rgba(255,255,255,0.25)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: 700, padding: 0 }}
                 >
                   ◀ Prev
                 </button>
-                <button 
-                  onClick={handleNextEpisode} 
+                <button
+                  onClick={handleNextEpisode}
                   disabled={!hasNext}
                   style={{ background: 'none', border: 'none', color: hasNext ? '#fff' : 'rgba(255,255,255,0.25)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '13px', fontWeight: 700, padding: 0 }}
                 >
@@ -544,7 +548,7 @@ export const Watch: React.FC = () => {
                 <AlertTriangle size={14} /> Report
               </button>
 
-              <button 
+              <button
                 onClick={toggleWatchlist}
                 style={{ background: 'none', border: 'none', color: '#bcc5cf', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, padding: 0 }}
               >
@@ -555,7 +559,7 @@ export const Watch: React.FC = () => {
 
           {/* Translation Toggles & Servers bar */}
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'stretch' }}>
-            
+
             {/* SUB servers group */}
             {animeDetail.hasSub !== false && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
@@ -563,14 +567,14 @@ export const Watch: React.FC = () => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   <button
                     onClick={() => { setActiveTranslation('sub'); setActiveServer('vidplay'); }}
-                    style={{ 
-                      background: (activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
-                      color: '#fff', 
-                      padding: '6px 14px', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer', 
-                      fontSize: '12px', 
+                    style={{
+                      background: (activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'),
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -582,17 +586,17 @@ export const Watch: React.FC = () => {
                   >
                     <Play size={10} style={{ fill: 'currentColor' }} /> Vidplay
                   </button>
-                  
+
                   <button
                     onClick={() => { setActiveTranslation('sub'); setActiveServer('mycloud'); }}
-                    style={{ 
-                      background: (activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
-                      color: '#fff', 
-                      padding: '6px 14px', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer', 
-                      fontSize: '12px', 
+                    style={{
+                      background: (activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'),
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -607,14 +611,14 @@ export const Watch: React.FC = () => {
 
                   <button
                     onClick={() => { setActiveTranslation('sub'); setActiveServer('filemoon'); }}
-                    style={{ 
-                      background: (activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
-                      color: '#fff', 
-                      padding: '6px 14px', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer', 
-                      fontSize: '12px', 
+                    style={{
+                      background: (activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'),
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -637,14 +641,14 @@ export const Watch: React.FC = () => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   <button
                     onClick={() => { setActiveTranslation('dub'); setActiveServer('vidplay'); }}
-                    style={{ 
-                      background: (activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
-                      color: '#fff', 
-                      padding: '6px 14px', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer', 
-                      fontSize: '12px', 
+                    style={{
+                      background: (activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'),
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -659,14 +663,14 @@ export const Watch: React.FC = () => {
 
                   <button
                     onClick={() => { setActiveTranslation('dub'); setActiveServer('filemoon'); }}
-                    style={{ 
-                      background: (activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
-                      color: '#fff', 
-                      padding: '6px 14px', 
-                      borderRadius: '4px', 
-                      cursor: 'pointer', 
-                      fontSize: '12px', 
+                    style={{
+                      background: (activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'),
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -682,63 +686,81 @@ export const Watch: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
 
-        {/* COLUMN 3: RELATED RECOMMENDATIONS SIDEBAR (RIGHT) - NOT SCROLLABLE SHOWS 10 */}
-        {!isExpanded && (
-          <div className="related-sidebar-container" style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800 }}>Related</h3>
-              <span style={{ fontSize: '11px', color: 'var(--text-dark)', cursor: 'pointer' }}>More ▾</span>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {relatedList.slice(0, 10).map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/anime/${item.slug}`}
-                  style={{ display: 'flex', gap: '10px', textDecoration: 'none', color: 'inherit', padding: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', transition: 'var(--transition-fast)' }}
-                  className="related-item-row"
-                >
-                  <img src={item.posterImage} alt={item.title} referrerPolicy="no-referrer" style={{ width: '42px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
-                    <h4 style={{ fontSize: '13px', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px', transition: 'var(--transition-fast)' }} className="related-title-text">
+          {/* RELATED RECOMMENDATIONS (HORIZONTAL BELOW PLAYER ON RIGHT COLUMN) */}
+          {!isExpanded && (
+            <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800 }}>Related Anime</h3>
+                <span style={{ fontSize: '11px', color: 'var(--text-dark)', cursor: 'pointer' }}>More ▾</span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '14px',
+                  overflowX: 'auto',
+                  paddingBottom: '6px'
+                }}
+                className="no-scrollbar"
+              >
+                {relatedList.slice(0, 10).map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/anime/${item.slug}`}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      width: '110px',
+                      flexShrink: 0
+                    }}
+                    className="related-item-card"
+                  >
+                    <div style={{ width: '110px', height: '155px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
+                      <img src={item.posterImage} alt={item.title} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'var(--transition-fast)' }} />
+                      <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.85)', padding: '2px 6px', borderRadius: '3px', fontSize: '10px', fontWeight: 700, color: 'var(--color-accent)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        ⭐ {item.score.toFixed(1)}
+                      </div>
+                    </div>
+                    <h4 style={{ fontSize: '12px', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.3', minHeight: '32px', transition: 'var(--transition-fast)' }} className="related-title-text">
                       {item.title}
                     </h4>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>⭐ {item.score.toFixed(1)} • {item.type} • {item.releasedYear}</div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* LOWER SECTION: FULL-WIDTH ANIME DETAILS & COMMENTS FEED (ELIMINATES EMPTY SPACES) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        
+
         {/* FULL-WIDTH DETAILS BLOCK CARD WITH 4K HD WIDESCREEN BANNER */}
-        <div 
-          style={{ 
-            background: '#110e16', 
-            border: '1px solid rgba(255,255,255,0.05)', 
-            borderRadius: '12px', 
-            padding: '24px', 
-            display: 'flex', 
-            gap: '24px', 
-            flexWrap: 'wrap' 
-          }} 
+        <div
+          style={{
+            background: '#110e16',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: '12px',
+            padding: '24px',
+            display: 'flex',
+            gap: '24px',
+            flexWrap: 'wrap'
+          }}
           className="details-mini-card"
         >
           {/* Left Sub-Panel: Poster and Quick Info list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '200px' }}>
-            <img 
-              src={animeDetail.posterImage} 
-              alt={animeName} 
-              referrerPolicy="no-referrer" 
-              style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
+            <img
+              src={animeDetail.posterImage}
+              alt={animeName}
+              referrerPolicy="no-referrer"
+              style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
             />
-            
+
             {/* Quick Stats layout inside sidebar */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '14px' }}>
               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -755,7 +777,7 @@ export const Watch: React.FC = () => {
 
           {/* Right Sub-Panel: widescreen banner and synopsis details */}
           <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            
+
             {/* 4K HD widescreen banner */}
             {animeDetail.bannerImage && (
               <div style={{ width: '100%', height: '150px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
@@ -770,7 +792,7 @@ export const Watch: React.FC = () => {
                   {animeName}
                 </Link>
               </h2>
-              
+
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '12px' }}>
                 {animeDetail.hasSub !== false && (
                   <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
@@ -852,16 +874,13 @@ export const Watch: React.FC = () => {
         .mini-card-title-link:hover { color: var(--color-primary) !important; }
         .season-switch-btn:hover { background: rgba(255,255,255,0.08) !important; border-color: var(--color-primary) !important; color: #fff !important; }
         
+        .related-item-card:hover .related-title-text { color: var(--color-primary) !important; }
+        .related-item-card:hover img { transform: scale(1.05); }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        @media (max-width: 1300px) {
-          .watch-theater-split { grid-template-columns: 280px 1fr 280px !important; }
-        }
-        @media (max-width: 1024px) {
-          .watch-theater-split { grid-template-columns: 260px 1fr 260px !important; gap: 12px !important; }
-        }
-        @media (max-width: 900px) {
+        @media (max-width: 992px) {
           .watch-theater-split { grid-template-columns: 1fr !important; }
           .details-mini-card { flex-direction: column !important; }
           .details-mini-card > div { width: 100% !important; }

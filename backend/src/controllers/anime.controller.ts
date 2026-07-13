@@ -3,6 +3,339 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
+async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+  
+  let anime = await prisma.anime.findUnique({
+    where: isUuid ? { id: idOrSlug } : { slug: idOrSlug },
+    include: {
+      episodes: {
+        orderBy: { episodeNumber: 'asc' },
+      },
+    },
+  });
+
+  if (anime) {
+    return anime;
+  }
+
+  // If not found and it's not a UUID, let's try to query AniList using the slug
+  if (isUuid) return null;
+
+  try {
+    const searchQuery = idOrSlug.replace(/-/g, ' ');
+    console.log(`Anime "${idOrSlug}" not found locally. Attempting to fetch from AniList via search query: "${searchQuery}"...`);
+
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query ($search: String) {
+            Media(search: $search, type: ANIME) {
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              description
+              bannerImage
+              coverImage {
+                large
+              }
+              averageScore
+              format
+              status
+              startDate {
+                year
+              }
+              genres
+              duration
+              studios(isMain: true) {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+        `,
+        variables: { search: searchQuery }
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`AniList search for "${searchQuery}" failed:`, response.statusText);
+      return null;
+    }
+
+    const resData = (await response.json()) as any;
+    const media = resData?.data?.Media;
+    if (!media) {
+      console.log(`AniList returned no media for search: "${searchQuery}"`);
+      return null;
+    }
+
+    const animeTitle = media.title.english || media.title.romaji || media.title.native;
+    const resolvedSlug = slugify(animeTitle);
+
+    // Double check if resolvedSlug exists in DB to prevent duplicates
+    let existingAnime = await prisma.anime.findUnique({
+      where: { slug: resolvedSlug },
+      include: { episodes: { orderBy: { episodeNumber: 'asc' } } }
+    });
+    if (existingAnime) {
+      return existingAnime;
+    }
+
+    const cleanedDescription = media.description ? media.description.replace(/<[^>]*>/g, '') : 'No description available.';
+    let status = 'Finished Airing';
+    if (media.status === 'RELEASING') {
+      status = 'Currently Airing';
+    } else if (media.status === 'NOT_YET_RELEASED') {
+      status = 'Not Yet Aired';
+    }
+
+    const score = media.averageScore ? media.averageScore / 10 : 7.5;
+    const type = media.format || 'TV';
+    const studio = media.studios?.nodes?.[0]?.name || 'Unknown';
+    const genres = media.genres ? media.genres.join(', ') : 'Action';
+    const releasedYear = media.startDate?.year || new Date().getFullYear();
+    const duration = media.duration ? `${media.duration} min` : '24 min';
+
+    console.log(`Dynamically importing anime "${animeTitle}" to database with slug "${resolvedSlug}"`);
+
+    // Create the anime
+    const newAnime = await prisma.anime.create({
+      data: {
+        malId: media.idMal,
+        slug: resolvedSlug,
+        title: animeTitle,
+        englishTitle: media.title.english || null,
+        description: cleanedDescription,
+        bannerImage: media.bannerImage || media.coverImage?.large,
+        posterImage: media.coverImage?.large,
+        rating: 'PG-13',
+        score,
+        type,
+        studio,
+        status,
+        releasedYear,
+        duration,
+        genres,
+        isTrending: false,
+        isPopular: false
+      }
+    });
+
+    // Determine how many episodes to seed
+    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12);
+    const sampleVideos = [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    ];
+
+    const episodeData = [];
+    for (let i = 1; i <= targetEpCount; i++) {
+      const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+      episodeData.push({
+        animeId: newAnime.id,
+        episodeNumber: i,
+        title: `Episode ${i}`,
+        videoUrl,
+        thumbnail: newAnime.bannerImage || newAnime.posterImage,
+        duration: '24 min'
+      });
+    }
+
+    await prisma.episode.createMany({
+      data: episodeData
+    });
+
+    // Return the newly created anime with episodes
+    const createdAnime = await prisma.anime.findUnique({
+      where: { id: newAnime.id },
+      include: {
+        episodes: {
+          orderBy: { episodeNumber: 'asc' },
+        },
+      },
+    });
+
+    return createdAnime;
+  } catch (err: any) {
+    console.error(`Failed to dynamically fetch/create anime with slug "${idOrSlug}":`, err);
+    return null;
+  }
+}
+
+async function searchAndImportFromAniList(searchQuery: string): Promise<any | null> {
+  try {
+    console.log(`No local results found for "${searchQuery}". Querying AniList for dynamic import...`);
+
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query ($search: String) {
+            Media(search: $search, type: ANIME) {
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              description
+              bannerImage
+              coverImage {
+                large
+              }
+              averageScore
+              format
+              status
+              startDate {
+                year
+              }
+              genres
+              duration
+              studios(isMain: true) {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+        `,
+        variables: { search: searchQuery }
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`AniList search for "${searchQuery}" failed:`, response.statusText);
+      return null;
+    }
+
+    const resData = (await response.json()) as any;
+    const media = resData?.data?.Media;
+    if (!media) {
+      console.log(`AniList returned no media for search: "${searchQuery}"`);
+      return null;
+    }
+
+    const animeTitle = media.title.english || media.title.romaji || media.title.native;
+    const resolvedSlug = slugify(animeTitle);
+
+    // Double check if resolvedSlug exists in DB to prevent duplicates
+    let existingAnime = await prisma.anime.findUnique({
+      where: { slug: resolvedSlug }
+    });
+    if (existingAnime) {
+      return existingAnime;
+    }
+
+    const cleanedDescription = media.description ? media.description.replace(/<[^>]*>/g, '') : 'No description available.';
+    let status = 'Finished Airing';
+    if (media.status === 'RELEASING') {
+      status = 'Currently Airing';
+    } else if (media.status === 'NOT_YET_RELEASED') {
+      status = 'Not Yet Aired';
+    }
+
+    const score = media.averageScore ? media.averageScore / 10 : 7.5;
+    const type = media.format || 'TV';
+    const studio = media.studios?.nodes?.[0]?.name || 'Unknown';
+    const genres = media.genres ? media.genres.join(', ') : 'Action';
+    const releasedYear = media.startDate?.year || new Date().getFullYear();
+    const duration = media.duration ? `${media.duration} min` : '24 min';
+
+    console.log(`Dynamically importing anime "${animeTitle}" to database with slug "${resolvedSlug}"`);
+
+    // Create the anime
+    const newAnime = await prisma.anime.create({
+      data: {
+        malId: media.idMal,
+        slug: resolvedSlug,
+        title: animeTitle,
+        englishTitle: media.title.english || null,
+        description: cleanedDescription,
+        bannerImage: media.bannerImage || media.coverImage?.large,
+        posterImage: media.coverImage?.large,
+        rating: 'PG-13',
+        score,
+        type,
+        studio,
+        status,
+        releasedYear,
+        duration,
+        genres,
+        isTrending: false,
+        isPopular: false
+      }
+    });
+
+    // Determine how many episodes to seed
+    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12);
+    const sampleVideos = [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    ];
+
+    const episodeData = [];
+    for (let i = 1; i <= targetEpCount; i++) {
+      const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+      episodeData.push({
+        animeId: newAnime.id,
+        episodeNumber: i,
+        title: `Episode ${i}`,
+        videoUrl,
+        thumbnail: newAnime.bannerImage || newAnime.posterImage,
+        duration: '24 min'
+      });
+    }
+
+    await prisma.episode.createMany({
+      data: episodeData
+    });
+
+    return newAnime;
+  } catch (err: any) {
+    console.error(`Failed to dynamically fetch/create anime with search query "${searchQuery}":`, err);
+    return null;
+  }
+}
+
 async function getAiredEpisodeCountFromAniList(malId: number): Promise<number | null> {
   try {
     const response = await fetch('https://graphql.anilist.co', {
@@ -151,7 +484,7 @@ export async function getAllAnime(req: Request, res: Response) {
       orderBy = { releasedYear: 'desc' };
     }
 
-    const [animeList, total] = await prisma.$transaction([
+    let [animeList, total] = await prisma.$transaction([
       prisma.anime.findMany({
         where,
         skip,
@@ -171,6 +504,45 @@ export async function getAllAnime(req: Request, res: Response) {
       }),
       prisma.anime.count({ where }),
     ]);
+
+    if (total === 0 && search && typeof search === 'string') {
+      const importedAnime = await searchAndImportFromAniList(search);
+      if (importedAnime) {
+        // Re-run the query so we fetch the newly imported anime
+        [animeList, total] = await prisma.$transaction([
+          prisma.anime.findMany({
+            where: {
+              OR: [
+                { title: { contains: search } },
+                { englishTitle: { contains: search } },
+              ],
+            },
+            skip,
+            take: limitNumber,
+            orderBy,
+            include: {
+              episodes: {
+                select: {
+                  episodeNumber: true,
+                },
+                orderBy: {
+                  episodeNumber: 'desc',
+                },
+                take: 1,
+              },
+            },
+          }),
+          prisma.anime.count({
+            where: {
+              OR: [
+                { title: { contains: search } },
+                { englishTitle: { contains: search } },
+              ],
+            },
+          }),
+        ]);
+      }
+    }
 
     return res.status(200).json({
       animeList,
@@ -233,14 +605,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
     const { id } = req.params;
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    const anime = await prisma.anime.findUnique({
-      where: isUuid ? { id } : { slug: id },
-      include: {
-        episodes: {
-          orderBy: { episodeNumber: 'asc' },
-        },
-      },
-    });
+    const anime = await findOrCreateAnimeBySlugOrId(id);
 
     if (!anime) {
       return res.status(404).json({ error: 'Anime not found' });
@@ -392,10 +757,7 @@ export async function getEpisodeDetail(req: Request, res: Response) {
     const episodeNumber = parseInt(epNum);
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    const anime = await prisma.anime.findUnique({
-      where: isUuid ? { id } : { slug: id },
-      select: { id: true, title: true, status: true, posterImage: true, bannerImage: true, createdAt: true, updatedAt: true, malId: true },
-    });
+    const anime = await findOrCreateAnimeBySlugOrId(id);
 
     if (!anime) {
       return res.status(404).json({ error: 'Anime not found' });

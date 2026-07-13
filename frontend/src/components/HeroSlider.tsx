@@ -9,6 +9,33 @@ interface HeroSliderProps {
   animeList: AnimeData[];
 }
 
+// ============================================================================
+// MANUAL SLIDER OVERRIDES
+// ============================================================================
+// You can manually set custom high-quality images and crop/position alignments 
+// for specific anime here.
+// Key: Use the anime's slug (e.g. "solo-leveling", "one-piece", etc.)
+// ============================================================================
+
+const MANUAL_BANNER_OVERRIDES: Record<string, string> = {
+  "one-piece": "https://i.pinimg.com/1200x/61/ae/19/61ae197acc5c8964d74530d348594d35.jpg",
+  // Examples:
+  "Bleach: Thousand-Year Blood War": "https://i.pinimg.com/736x/f7/c3/1a/f7c31a2870e425053d488e5cc4f21220.jpg",
+};
+
+const MANUAL_POSITION_OVERRIDES: Record<string, string> = {
+  "one-piece": "center 50%", // Pushes up the vertical cover image to show Luffy's face and straw hat properly
+  // Examples:
+  "Bleach: Thousand-Year Blood War": "right 15%",
+};
+
+const MANUAL_STYLE_OVERRIDES: Record<string, React.CSSProperties> = {
+  "Bleach: Thousand-Year Blood War": {
+    objectFit: "contain",
+    backgroundColor: "transparent",
+  },
+};
+
 export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -17,8 +44,21 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
   const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Reorder list to ensure One Piece is the 1st anime shown if it exists in the list
+  const onePieceIndex = animeList.findIndex(
+    (anime) =>
+      anime.slug.toLowerCase().includes('one-piece') ||
+      anime.title.toLowerCase().includes('one piece')
+  );
+
+  let orderedAnimeList = [...animeList];
+  if (onePieceIndex > -1) {
+    const [onePiece] = orderedAnimeList.splice(onePieceIndex, 1);
+    orderedAnimeList.unshift(onePiece);
+  }
+
   // Active items limit to top 10
-  const activeItems = animeList.slice(0, 10);
+  const activeItems = orderedAnimeList.slice(0, 10);
 
   useEffect(() => {
     if (activeItems.length === 0) return;
@@ -125,8 +165,23 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
       {activeItems.map((anime, index) => {
         const isActive = index === activeIndex;
         const genresList = anime.genres.split(',').map((g) => g.trim());
-        const hasBanner = !!anime.bannerImage;
-        const hdImage = getHDImageUrl(anime.bannerImage || anime.posterImage);
+
+        // Check if this anime is One Piece (fuzzy search for safety)
+        const isOnePiece = anime.slug.toLowerCase().includes('one-piece') || anime.title.toLowerCase().includes('one piece');
+
+        const customBanner = MANUAL_BANNER_OVERRIDES[anime.slug] || MANUAL_BANNER_OVERRIDES[anime.title] || (isOnePiece
+          ? "https://i.pinimg.com/1200x/61/ae/19/61ae197acc5c8964d74530d348594d35.jpg"
+          : undefined);
+
+        const hasBanner = !!anime.bannerImage || isOnePiece || !!customBanner;
+
+        const hdImage = customBanner || getHDImageUrl(anime.bannerImage || anime.posterImage);
+
+        const customPosition = MANUAL_POSITION_OVERRIDES[anime.slug] || MANUAL_POSITION_OVERRIDES[anime.title] || (isOnePiece
+          ? "center 10%"
+          : "center 20%");
+
+        const customStyle = MANUAL_STYLE_OVERRIDES[anime.slug] || MANUAL_STYLE_OVERRIDES[anime.title] || {};
 
         return (
           <div
@@ -136,12 +191,40 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             {/* BACKGROUND BACKDROP */}
             {hasBanner ? (
               <>
-                <div className="hero-backdrop-banner">
+                <div className="hero-backdrop-banner" style={{ overflow: 'hidden' }}>
+                  {/* Blurred background copy for side blur effect (visible when objectFit is 'contain') */}
+                  {customStyle.objectFit === 'contain' && (
+                    <img
+                      src={hdImage}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: customPosition,
+                        filter: 'blur(20px) brightness(0.4)',
+                        transform: 'scale(1.1)',
+                        zIndex: 1
+                      }}
+                    />
+                  )}
                   <img
                     src={hdImage}
                     alt={anime.title}
                     referrerPolicy="no-referrer"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }}
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: customPosition,
+                      zIndex: 2,
+                      ...customStyle
+                    }}
                   />
                 </div>
                 <div className="hero-overlay-main" />
@@ -228,7 +311,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                 }}
               >
                 <Star size={16} style={{ fill: 'var(--color-primary)' }} />
-                #1 Spotlight
+                #{index + 1} Spotlight
               </div>
 
               {/* Title */}
