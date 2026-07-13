@@ -18,6 +18,8 @@ export interface AnimeData {
   releasedYear?: number | null;
   duration?: string | null;
   genres: string;
+  hasSub?: boolean | null;
+  hasDub?: boolean | null;
   episodes?: { id?: string; episodeNumber: number; title?: string; videoUrl?: string }[];
   nextAiringEpisode?: {
     airingAt: number;
@@ -198,8 +200,12 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
               <span>{anime.releasedYear} • {anime.duration || '24 min'}</span>
               <div style={{ display: 'flex', gap: '4px' }}>
-                <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
-                <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
+                {anime.hasSub !== false && (
+                  <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
+                )}
+                {anime.hasDub !== false && (
+                  <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
+                )}
               </div>
             </div>
             {showCountdown && countdown && (

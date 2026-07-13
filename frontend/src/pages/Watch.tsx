@@ -32,6 +32,8 @@ interface AnimeDetailData {
   releasedYear?: number | null;
   duration?: string | null;
   genres: string;
+  hasSub?: boolean | null;
+  hasDub?: boolean | null;
 }
 
 export const Watch: React.FC = () => {
@@ -176,13 +178,17 @@ export const Watch: React.FC = () => {
         setHasNext(epRes.data.hasNext);
         const epHasDub = epRes.data.hasDub ?? true;
         setHasDub(epHasDub);
-        if (!epHasDub && activeTranslation === 'dub') {
-          setActiveTranslation('sub');
-        }
 
         // Fetch anime details and related list (franchise content)
         const detailRes = await axiosInstance.get(`/api/anime/${slug}`);
-        setAnimeDetail(detailRes.data.anime);
+        const animeData = detailRes.data.anime;
+        setAnimeDetail(animeData);
+        
+        let defaultTranslation: 'sub' | 'dub' = 'sub';
+        if (animeData.hasSub === false && animeData.hasDub !== false && epHasDub) {
+          defaultTranslation = 'dub';
+        }
+        setActiveTranslation(defaultTranslation);
         setEpisodesList(detailRes.data.anime.episodes || []);
         setRelatedList(detailRes.data.related || []);
         setSeasons(detailRes.data.seasons || []);
@@ -548,110 +554,133 @@ export const Watch: React.FC = () => {
           </div>
 
           {/* Translation Toggles & Servers bar */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'stretch' }}>
             
-            {/* Toggle Sub/Dub */}
-            <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', padding: '2px' }}>
-              <button
-                onClick={() => setActiveTranslation('sub')}
-                style={{
-                  background: activeTranslation === 'sub' ? 'var(--color-primary)' : 'none',
-                  border: 'none',
-                  color: '#fff',
-                  padding: '4px 10px',
-                  borderRadius: '3px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                SUB
-              </button>
-              {hasDub && (
-                <button
-                  onClick={() => setActiveTranslation('dub')}
-                  style={{
-                    background: activeTranslation === 'dub' ? 'var(--color-primary)' : 'none',
-                    border: 'none',
-                    color: '#fff',
-                    padding: '4px 10px',
-                    borderRadius: '3px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  DUB
-                </button>
-              )}
-            </div>
+            {/* SUB servers group */}
+            {animeDetail.hasSub !== false && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 800, minWidth: '40px', letterSpacing: '0.5px' }}>SUB:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <button
+                    onClick={() => { setActiveTranslation('sub'); setActiveServer('vidplay'); }}
+                    style={{ 
+                      background: (activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
+                      color: '#fff', 
+                      padding: '6px 14px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: (activeTranslation === 'sub' && activeServer === 'vidplay') ? 'var(--glow-shadow)' : 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="server-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} /> Vidplay
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveTranslation('sub'); setActiveServer('mycloud'); }}
+                    style={{ 
+                      background: (activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
+                      color: '#fff', 
+                      padding: '6px 14px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: (activeTranslation === 'sub' && activeServer === 'mycloud') ? 'var(--glow-shadow)' : 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="server-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} /> BYFMS
+                  </button>
 
-            {/* Servers lists */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={() => { setActiveTranslation('sub'); setActiveServer('filemoon'); }}
+                    style={{ 
+                      background: (activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
+                      border: '1px solid ' + ((activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
+                      color: '#fff', 
+                      padding: '6px 14px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: (activeTranslation === 'sub' && activeServer === 'filemoon') ? 'var(--glow-shadow)' : 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="server-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} /> DGHG
+                  </button>
+                </div>
+              </div>
+            )}
 
-              <button
-                onClick={() => setActiveServer('vidplay')}
-                style={{ 
-                  background: activeServer === 'vidplay' ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.06)', 
-                  color: '#fff', 
-                  padding: '6px 14px', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer', 
-                  fontSize: '12px', 
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: activeServer === 'vidplay' ? 'var(--glow-shadow)' : 'none'
-                }}
-                className="server-badge"
-              >
-                <Play size={10} style={{ fill: 'currentColor' }} /> Vidplay
-              </button>
-              
-              <button
-                onClick={() => setActiveServer('mycloud')}
-                style={{ 
-                  background: activeServer === 'mycloud' ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.06)', 
-                  color: '#fff', 
-                  padding: '6px 14px', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer', 
-                  fontSize: '12px', 
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: activeServer === 'mycloud' ? 'var(--glow-shadow)' : 'none'
-                }}
-                className="server-badge"
-              >
-                <Play size={10} style={{ fill: 'currentColor' }} /> BYFMS
-              </button>
+            {/* DUB servers group */}
+            {animeDetail.hasDub !== false && hasDub && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 800, minWidth: '40px', letterSpacing: '0.5px' }}>DUB:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <button
+                    onClick={() => { setActiveTranslation('dub'); setActiveServer('vidplay'); }}
+                    style={{ 
+                      background: (activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
+                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
+                      color: '#fff', 
+                      padding: '6px 14px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: (activeTranslation === 'dub' && activeServer === 'vidplay') ? 'var(--glow-shadow)' : 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="server-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} /> Vidplay
+                  </button>
 
-              <button
-                onClick={() => setActiveServer('filemoon')}
-                style={{ 
-                  background: activeServer === 'filemoon' ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.06)', 
-                  color: '#fff', 
-                  padding: '6px 14px', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer', 
-                  fontSize: '12px', 
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: activeServer === 'filemoon' ? 'var(--glow-shadow)' : 'none'
-                }}
-                className="server-badge"
-              >
-                <Play size={10} style={{ fill: 'currentColor' }} /> DGHG
-              </button>
-            </div>
+                  <button
+                    onClick={() => { setActiveTranslation('dub'); setActiveServer('filemoon'); }}
+                    style={{ 
+                      background: (activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
+                      border: '1px solid ' + ((activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'), 
+                      color: '#fff', 
+                      padding: '6px 14px', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer', 
+                      fontSize: '12px', 
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: (activeTranslation === 'dub' && activeServer === 'filemoon') ? 'var(--glow-shadow)' : 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="server-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} /> DGHG
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -743,8 +772,12 @@ export const Watch: React.FC = () => {
               </h2>
               
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
-                <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
+                {animeDetail.hasSub !== false && (
+                  <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
+                )}
+                {animeDetail.hasDub !== false && (
+                  <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '2px 6px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
+                )}
                 <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: '6px' }}>• Released: {animeDetail.releasedYear || 'Unknown'} • Rating: {animeDetail.score ? `⭐ ${animeDetail.score.toFixed(1)}` : 'N/A'}</span>
               </div>
 

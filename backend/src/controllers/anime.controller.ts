@@ -294,6 +294,19 @@ export async function getAnimeDetail(req: Request, res: Response) {
       });
       episodesWithDub.sort((a, b) => a.episodeNumber - b.episodeNumber);
       (anime as any).episodes = episodesWithDub;
+    } else {
+      const isAiring = anime.status === 'Currently Airing';
+      const episodesWithDub = anime.episodes.map(ep => {
+        let epHasDub = true;
+        if (isAiring && ep.episodeNumber >= targetEpCount - 1) {
+          epHasDub = false;
+        }
+        return {
+          ...ep,
+          hasDub: epHasDub
+        };
+      });
+      (anime as any).episodes = episodesWithDub;
     }
 
     // Get related anime (franchise movies/specials first, then genre fallback)

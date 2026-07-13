@@ -53,6 +53,8 @@ const animeData = [
     isTrending: true,
     isPopular: true,
     epCount: 8,
+    hasSub: true,
+    hasDub: false,
   },
   {
     malId: 51009,
@@ -110,6 +112,8 @@ const animeData = [
     isTrending: true,
     isPopular: true,
     epCount: 12,
+    hasSub: false,
+    hasDub: true,
   },
   {
     malId: 52991,

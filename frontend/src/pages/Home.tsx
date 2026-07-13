@@ -126,6 +126,8 @@ export const Home: React.FC = () => {
               genres: media.genres ? media.genres.join(', ') : 'Anime',
               studio: media.studios?.nodes[0]?.name || 'Unknown',
               nextAiringEpisode: media.nextAiringEpisode,
+              hasSub: localMatch ? localMatch.hasSub : true,
+              hasDub: localMatch ? localMatch.hasDub : false,
             };
           });
         } catch (aniListErr) {

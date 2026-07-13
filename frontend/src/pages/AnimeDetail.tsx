@@ -178,6 +178,16 @@ export const AnimeDetail: React.FC = () => {
                   <Users size={12} /> {episodeCount} EP{episodeCount > 1 ? 'S' : ''}
                 </span>
               )}
+              {anime.hasSub !== false && (
+                <span style={{ background: 'rgba(139, 92, 246, 0.15)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '4px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                  SUB
+                </span>
+              )}
+              {anime.hasDub !== false && (
+                <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '4px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                  DUB
+                </span>
+              )}
             </div>
 
             {/* Genres */}

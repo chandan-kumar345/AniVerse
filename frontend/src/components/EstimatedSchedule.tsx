@@ -239,6 +239,7 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
         <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', overflowX: 'auto', gap: '10px' }} className="no-scrollbar">
           {days.map((day) => {
             const isActive = day.offset === selectedDayOffset;
+            const isToday = day.offset === 0;
             return (
               <button
                 key={day.offset}
@@ -261,7 +262,10 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 className={`sched-day-tab ${isActive ? 'active' : ''}`}
               >
                 <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px' }}>{day.month} {day.dayNum}</span>
-                <span style={{ fontSize: '18px', fontWeight: isActive ? 800 : 600, letterSpacing: '0.5px' }}>{day.dayName}</span>
+                <span style={{ fontSize: '18px', fontWeight: isActive ? 800 : 600, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {day.dayName}
+                  {isToday && <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-primary)', background: 'rgba(139, 92, 246, 0.15)', padding: '2px 4px', borderRadius: '3px', marginLeft: '2px' }}>TODAY</span>}
+                </span>
               </button>
             );
           })}
@@ -295,6 +299,9 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
             const detailUrl = isMockSearch ? `/${item.anime.slug}` : `/anime/${item.anime.slug}`;
             const watchUrl = isMockSearch ? `/${item.anime.slug}` : `/watch/${item.anime.slug}/episode/${item.episodeNumber}`;
             
+            const isAired = item.airingAt <= Math.floor(Date.now() / 1000);
+            const countdownText = getCountdownString(item.airingAt);
+            
             return (
               <div 
                 key={index} 
@@ -315,22 +322,32 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 </div>
 
                 {/* Anime Title Link */}
-                <Link 
-                  to={detailUrl} 
-                  style={{ flex: 1, textDecoration: 'none', color: '#fff', fontSize: '14px', fontWeight: 600, paddingRight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', textAlign: 'left', transition: 'var(--transition-fast)' }}
-                  className="schedule-title-link"
-                >
-                  {item.anime.title}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', paddingRight: '20px' }}>
+                  <Link 
+                    to={detailUrl} 
+                    style={{ textDecoration: 'none', color: '#fff', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', textAlign: 'left', transition: 'var(--transition-fast)' }}
+                    className="schedule-title-link"
+                  >
+                    {item.anime.title}
+                  </Link>
+                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    {item.anime.hasSub !== false && (
+                      <span style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '9px', fontWeight: 700 }}>SUB</span>
+                    )}
+                    {item.anime.hasDub !== false && (
+                      <span style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '3px', padding: '1px 4px', fontSize: '9px', fontWeight: 700 }}>DUB</span>
+                    )}
+                  </div>
                   {!localMatchExists(item.anime) && (
-                    <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '1px 4px', marginLeft: '6px', color: 'var(--text-dark)', fontWeight: 500 }}>Live Chart</span>
+                    <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '1px 4px', color: 'var(--text-dark)', fontWeight: 500, flexShrink: 0 }}>Live Chart</span>
                   )}
-                </Link>
+                </div>
 
                 {/* Episode Badge & Countdown Container */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span className="live-ping-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                    <span>{getCountdownString(item.airingAt)}</span>
+                  <span style={{ fontSize: '12px', color: isAired ? '#10b981' : '#a78bfa', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="live-ping-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: isAired ? '#10b981' : '#a78bfa', display: 'inline-block' }} />
+                    <span>{isAired ? 'Released' : `Airing in ${countdownText}`}</span>
                   </span>
                   <Link
                     to={watchUrl}

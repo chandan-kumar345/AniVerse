@@ -41,6 +41,8 @@ model Anime {
   genres         String   // Comma-separated (e.g. "Action, Fantasy, Adventure")
   isTrending     Boolean  @default(false)
   isPopular      Boolean  @default(false)
+  hasSub         Boolean  @default(true)
+  hasDub         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

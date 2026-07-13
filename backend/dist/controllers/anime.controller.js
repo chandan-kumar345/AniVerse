@@ -295,6 +295,20 @@ async function getAnimeDetail(req, res) {
             episodesWithDub.sort((a, b) => a.episodeNumber - b.episodeNumber);
             anime.episodes = episodesWithDub;
         }
+        else {
+            const isAiring = anime.status === 'Currently Airing';
+            const episodesWithDub = anime.episodes.map(ep => {
+                let epHasDub = true;
+                if (isAiring && ep.episodeNumber >= targetEpCount - 1) {
+                    epHasDub = false;
+                }
+                return {
+                    ...ep,
+                    hasDub: epHasDub
+                };
+            });
+            anime.episodes = episodesWithDub;
+        }
         // Get related anime (franchise movies/specials first, then genre fallback)
         let franchiseKeyword = anime.title.split(':')[0].split(' ')[0].trim();
         if (anime.title.includes('One Piece'))
