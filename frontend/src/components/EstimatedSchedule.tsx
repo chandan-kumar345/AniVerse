@@ -11,11 +11,14 @@ interface ScheduleItem {
   time: string;
   anime: AnimeData;
   episodeNumber: number;
+  airingAt: number;
 }
 
 export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDayOffset, setSelectedDayOffset] = useState(0); // Offset in days from today (-3 to +3)
+  const [aniListSchedule, setAniListSchedule] = useState<any[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(true);
 
   // Update clock every second
   useEffect(() => {
@@ -23,6 +26,69 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch AniList schedule for the current 7-day range
+  useEffect(() => {
+    const fetchAniListSchedule = async () => {
+      try {
+        setLoadingSchedule(true);
+        // Get range for past 3 days and next 3 days
+        const start = new Date();
+        start.setDate(start.getDate() - 3);
+        start.setHours(0, 0, 0, 0);
+        const weekStart = Math.floor(start.getTime() / 1000);
+
+        const end = new Date();
+        end.setDate(end.getDate() + 3);
+        end.setHours(23, 59, 59, 999);
+        const weekEnd = Math.floor(end.getTime() / 1000);
+
+        const response = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            query: `
+              query ($weekStart: Int, $weekEnd: Int) {
+                Page(page: 1, perPage: 150) {
+                  airingSchedules(airingAt_greater: $weekStart, airingAt_less: $weekEnd, sort: TIME) {
+                    id
+                    airingAt
+                    episode
+                    media {
+                      title {
+                        romaji
+                        english
+                        native
+                      }
+                      coverImage {
+                        large
+                      }
+                      type
+                      format
+                    }
+                  }
+                }
+              }
+            `,
+            variables: { weekStart, weekEnd }
+          })
+        });
+
+        const resJson = await response.json();
+        const schedules = resJson.data?.Page?.airingSchedules || [];
+        setAniListSchedule(schedules);
+      } catch (err) {
+        console.error('Error fetching airing schedules from AniList:', err);
+      } finally {
+        setLoadingSchedule(false);
+      }
+    };
+
+    fetchAniListSchedule();
   }, []);
 
   // Format current live time
@@ -58,38 +124,81 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
 
   const days = getDaysArray();
 
-  // Generate schedule items for the active day based on animeList
+  // Get schedules grouped for the active day in IST/Local timezone
   const getScheduleForDay = (offset: number): ScheduleItem[] => {
-    if (animeList.length === 0) return [];
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + offset);
+    const targetDateStr = targetDate.toDateString(); // IST/local date representation
 
-    // Seeded times list
-    const releaseTimes = ['09:30 AM', '11:00 AM', '01:00 PM', '02:30 PM', '06:00 PM', '07:30 PM', '09:00 PM', '10:30 PM'];
+    // Filter schedules that fall on this local day
+    const schedulesForDay = aniListSchedule.filter((item) => {
+      const airingDate = new Date(item.airingAt * 1000);
+      return airingDate.toDateString() === targetDateStr;
+    });
 
-    // Map each offset to a stable selection of anime using standard modulo indexes
-    // This makes sure the schedule is different for MON vs SUN, but remains stable when clicking
-    const scheduleItems: ScheduleItem[] = [];
-    const countPerDay = 5;
+    const scheduleItems: ScheduleItem[] = schedulesForDay.map((item) => {
+      const airingDate = new Date(item.airingAt * 1000);
+      const timeStr = airingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    for (let i = 0; i < countPerDay; i++) {
-      // Pick anime based on day offset and item index
-      const itemIndex = Math.abs((offset + 10) * 3 + i) % animeList.length;
-      const anime = animeList[itemIndex];
+      // Clean title helper
+      const cleanTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Determine mock episode number (either latest episode or a stable mock)
-      const maxEp = anime.episodes && anime.episodes.length > 0 ? anime.episodes[0].episodeNumber : 12;
-      const epNum = anime.status === 'Currently Airing' ? maxEp + 1 : Math.floor(Math.random() * maxEp) + 1;
-
-      scheduleItems.push({
-        time: releaseTimes[i % releaseTimes.length],
-        anime,
-        episodeNumber: epNum,
+      // Try matching in local db
+      const localMatch = animeList.find((local) => {
+        const localT = cleanTitle(local.title);
+        const romajiT = cleanTitle(item.media.title.romaji || '');
+        const englishT = cleanTitle(item.media.title.english || '');
+        return localT === romajiT || localT === englishT;
       });
-    }
+
+      const anime: AnimeData = localMatch || {
+        id: `anilist-${item.id}`,
+        slug: `search?q=${encodeURIComponent(item.media.title.english || item.media.title.romaji)}`,
+        title: item.media.title.english || item.media.title.romaji || item.media.title.native,
+        englishTitle: item.media.title.english,
+        description: 'Airing show synced live from AniList.',
+        posterImage: item.media.coverImage.large,
+        score: 7.8,
+        type: item.media.format || item.media.type || 'TV',
+        status: 'Currently Airing',
+        releasedYear: airingDate.getFullYear(),
+        genres: 'Currently Airing',
+      };
+
+      return {
+        time: timeStr,
+        anime,
+        episodeNumber: item.episode,
+        airingAt: item.airingAt,
+      };
+    });
+
+    // Sort chronologically by airing timestamp
+    scheduleItems.sort((a, b) => a.airingAt - b.airingAt);
 
     return scheduleItems;
   };
 
   const currentSchedule = getScheduleForDay(selectedDayOffset);
+
+  const getCountdownString = (airingAt: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    const diff = airingAt - now;
+    if (diff <= 0) return 'Released';
+
+    const days = Math.floor(diff / (24 * 3600));
+    const hours = Math.floor((diff / 3600) % 24);
+    const minutes = Math.floor((diff / 60) % 60);
+    const seconds = diff % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+    parts.push(`${seconds}s`);
+
+    return parts.join(' ');
+  };
 
   const handlePrevDay = () => {
     if (selectedDayOffset > -3) {
@@ -170,63 +279,93 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
       </div>
 
       {/* SCHEDULE LIST ROWS */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {currentSchedule.map((item, index) => (
-          <div 
-            key={index} 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              padding: '14px 16px', 
-              borderRadius: '8px', 
-              background: 'transparent', 
-              transition: 'var(--transition-fast)' 
-            }} 
-            className="schedule-row"
-          >
-            {/* Time Slot */}
-            <div style={{ width: '100px', fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)' }} className="schedule-time">
-              {item.time}
-            </div>
+      {loadingSchedule ? (
+        <div style={{ padding: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
+          <div className="spinner" style={{ border: '3px solid rgba(255,255,255,0.05)', borderTop: '3px solid var(--color-primary)', borderRadius: '50%', width: '24px', height: '24px', animation: 'spin 1s linear infinite' }} />
+          <span>Synchronizing live schedule from AniList...</span>
+        </div>
+      ) : currentSchedule.length === 0 ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-dark)' }}>
+          No airing episodes scheduled for this day.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {currentSchedule.map((item, index) => {
+            const isMockSearch = item.anime.slug.startsWith('search?q=');
+            const detailUrl = isMockSearch ? `/${item.anime.slug}` : `/anime/${item.anime.slug}`;
+            const watchUrl = isMockSearch ? `/${item.anime.slug}` : `/watch/${item.anime.slug}/episode/${item.episodeNumber}`;
+            
+            return (
+              <div 
+                key={index} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  padding: '14px 16px', 
+                  borderRadius: '8px', 
+                  background: 'transparent', 
+                  transition: 'var(--transition-fast)' 
+                }} 
+                className="schedule-row"
+              >
+                {/* Time Slot */}
+                <div style={{ width: '100px', fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)' }} className="schedule-time">
+                  {item.time}
+                </div>
 
-            {/* Anime Title Link */}
-            <Link 
-              to={`/anime/${item.anime.slug}`} 
-              style={{ flex: 1, textDecoration: 'none', color: '#fff', fontSize: '14px', fontWeight: 600, paddingRight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', textAlign: 'left', transition: 'var(--transition-fast)' }}
-              className="schedule-title-link"
-            >
-              {item.anime.title}
-            </Link>
+                {/* Anime Title Link */}
+                <Link 
+                  to={detailUrl} 
+                  style={{ flex: 1, textDecoration: 'none', color: '#fff', fontSize: '14px', fontWeight: 600, paddingRight: '20px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', textAlign: 'left', transition: 'var(--transition-fast)' }}
+                  className="schedule-title-link"
+                >
+                  {item.anime.title}
+                  {!localMatchExists(item.anime) && (
+                    <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px', padding: '1px 4px', marginLeft: '6px', color: 'var(--text-dark)', fontWeight: 500 }}>Live Chart</span>
+                  )}
+                </Link>
 
-            {/* Episode Badge Button */}
-            <Link
-              to={`/watch/${item.anime.id}/episode/${item.episodeNumber}`}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                background: 'rgba(255,255,255,0.03)', 
-                border: '1px solid rgba(255,255,255,0.05)', 
-                borderRadius: '20px', 
-                padding: '6px 14px', 
-                fontSize: '12px', 
-                fontWeight: 600, 
-                color: 'var(--text-muted)', 
-                textDecoration: 'none',
-                transition: 'var(--transition-fast)'
-              }}
-              className="schedule-episode-badge"
-            >
-              <Play size={10} style={{ fill: 'currentColor' }} />
-              Episode {item.episodeNumber}
-            </Link>
+                {/* Episode Badge & Countdown Container */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className="live-ping-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                    <span>{getCountdownString(item.airingAt)}</span>
+                  </span>
+                  <Link
+                    to={watchUrl}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      background: 'rgba(255,255,255,0.03)', 
+                      border: '1px solid rgba(255,255,255,0.05)', 
+                      borderRadius: '20px', 
+                      padding: '6px 14px', 
+                      fontSize: '12px', 
+                      fontWeight: 600, 
+                      color: 'var(--text-muted)', 
+                      textDecoration: 'none',
+                      transition: 'var(--transition-fast)'
+                    }}
+                    className="schedule-episode-badge"
+                  >
+                    <Play size={10} style={{ fill: 'currentColor' }} />
+                    Episode {item.episodeNumber}
+                  </Link>
+                </div>
 
-          </div>
-        ))}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         .sched-arrow-btn:hover { color: var(--color-primary) !important; transform: scale(1.15); }
         .sched-day-tab:hover { color: #fff !important; }
         
@@ -242,3 +381,8 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
     </div>
   );
 };
+
+// Helper function to check if anime is a local DB match
+function localMatchExists(anime: AnimeData): boolean {
+  return !anime.id.startsWith('anilist-');
+}

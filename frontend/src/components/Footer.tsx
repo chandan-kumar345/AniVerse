@@ -5,7 +5,7 @@ import { Heart, Shield } from 'lucide-react';
 export const Footer: React.FC = () => {
   return (
     <footer style={{ background: '#07070a', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '60px 20px 30px', marginTop: '60px' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
+      <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
         
         {/* About column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -51,7 +51,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '50px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', maxWidth: '1400px', margin: '50px auto 0', paddingRight: '20px', paddingLeft: '20px' }}>
+      <div className="app-container" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '50px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
         <p style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
           &copy; {new Date().getFullYear()} AniVerse. All rights reserved. Built for anime fans.
         </p>

@@ -104,7 +104,7 @@ export const Profile: React.FC = () => {
 
   if (authLoading || loading) {
     return (
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div className="app-container" style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
         <div style={{ height: '220px', width: '100%', borderRadius: '12px' }} className="shimmer" />
         <div style={{ height: '400px', width: '100%', borderRadius: '12px' }} className="shimmer" />
       </div>
@@ -114,7 +114,7 @@ export const Profile: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px', color: '#fff' }}>
+    <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
       
       {/* USER HERO PROFILE CARD */}
       <div className="glass-panel profile-hero" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', padding: '30px', alignItems: 'center', marginBottom: '40px' }}>

@@ -3,6 +3,98 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function getAiredEpisodeCountFromAniList(malId: number): Promise<number | null> {
+  try {
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query ($malId: Int) {
+            Media(idMal: $malId, type: ANIME) {
+              status
+              episodes
+              nextAiringEpisode {
+                episode
+                airingAt
+              }
+            }
+          }
+        `,
+        variables: { malId }
+      })
+    });
+    
+    if (!response.ok) return null;
+    const resJson = (await response.json()) as any;
+    const media = resJson.data?.Media;
+    if (!media) return null;
+
+    if (media.nextAiringEpisode) {
+      const now = Math.floor(Date.now() / 1000);
+      if (now >= media.nextAiringEpisode.airingAt) {
+        return media.nextAiringEpisode.episode;
+      }
+      return media.nextAiringEpisode.episode - 1;
+    }
+
+    if (media.status === 'FINISHED') {
+      return media.episodes || null;
+    }
+
+    return null;
+  } catch (err) {
+    console.error('Error fetching aired episode count from AniList:', err);
+    return null;
+  }
+}
+
+async function getDynamicEpisodeCount(title: string, malId: number | null, dbCount: number): Promise<number> {
+  const titleLower = title.toLowerCase();
+  
+  // 1. Fetch exact aired count from AniList if malId exists
+  if (malId) {
+    const aniListCount = await getAiredEpisodeCountFromAniList(malId);
+    if (aniListCount !== null) {
+      return aniListCount;
+    }
+  }
+
+  // 2. Mathematical fallbacks if AniList fails or malId is not set
+  if (titleLower.includes('one piece') || malId === 21) {
+    const startDate = new Date('2024-07-14');
+    const startEp = 1112;
+    const now = new Date();
+    const msDiff = now.getTime() - startDate.getTime();
+    if (msDiff > 0) {
+      const weeksPassed = Math.floor(msDiff / (7 * 24 * 60 * 60 * 1000));
+      return startEp + weeksPassed;
+    }
+    return startEp;
+  }
+
+  // Fallbacks for completed shows
+  if (malId === 1735 || titleLower === 'naruto shippuden') return 500;
+  if (malId === 20 || titleLower === 'naruto') return 220;
+  if (titleLower.includes('boruto')) return 293;
+  if (malId === 269 || (titleLower === 'bleach' && !titleLower.includes('thousand'))) return 366;
+  if (malId === 11061 || titleLower.includes('hunter x hunter')) return 148;
+  if (titleLower.includes('fullmetal alchemist')) return 64;
+  if (titleLower.includes('death note')) return 37;
+  if (titleLower.includes('code geass')) return 25;
+  if (titleLower.includes('my hero academia') && !titleLower.includes('season')) return 25;
+  if (titleLower.includes('demon slayer') && titleLower.includes('entertainment')) return 11;
+  if (titleLower.includes('demon slayer') && titleLower.includes('swordsmith')) return 11;
+  if (titleLower.includes('demon slayer') && !titleLower.includes('mugen') && !titleLower.includes('hashira')) return 26;
+  if (titleLower.includes('jujutsu kaisen') && !titleLower.includes('0')) return 24;
+  if (titleLower.includes('classroom of the elite') && !titleLower.includes('season')) return 12;
+
+  return Math.max(dbCount, 12);
+}
+
 export async function getAllAnime(req: Request, res: Response) {
   try {
     const { search, genre, type, status, year, limit, page, letter, sort } = req.query;
@@ -25,7 +117,7 @@ export async function getAllAnime(req: Request, res: Response) {
     }
 
     if (type) {
-      where.type = type as string;
+      where.type = (type as string).toUpperCase();
     }
 
     if (status) {
@@ -126,7 +218,7 @@ export async function getPopularAnime(_req: Request, res: Response) {
 export async function getTopTenAnime(_req: Request, res: Response) {
   try {
     const topTen = await prisma.anime.findMany({
-      take: 10,
+      take: 30,
       orderBy: { score: 'desc' },
     });
     return res.status(200).json({ topTen });
@@ -155,39 +247,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
     }
 
     // Determine dynamic real-world episode count limit
-    let targetEpCount = anime.episodes.length;
-    const titleLower = anime.title.toLowerCase();
-    if (anime.malId === 21 || titleLower.includes('one piece')) {
-      targetEpCount = 1168;
-    } else if (anime.malId === 1735 || titleLower === 'naruto shippuden') {
-      targetEpCount = 500;
-    } else if (anime.malId === 20 || titleLower === 'naruto') {
-      targetEpCount = 220;
-    } else if (titleLower.includes('boruto')) {
-      targetEpCount = 293;
-    } else if (anime.malId === 269 || (titleLower === 'bleach' && !titleLower.includes('thousand'))) {
-      targetEpCount = 366;
-    } else if (anime.malId === 11061 || titleLower.includes('hunter x hunter')) {
-      targetEpCount = 148;
-    } else if (titleLower.includes('fullmetal alchemist')) {
-      targetEpCount = 64;
-    } else if (titleLower.includes('death note')) {
-      targetEpCount = 37;
-    } else if (titleLower.includes('code geass')) {
-      targetEpCount = 25;
-    } else if (titleLower.includes('my hero academia') && !titleLower.includes('season')) {
-      targetEpCount = 25;
-    } else if (titleLower.includes('demon slayer') && titleLower.includes('entertainment')) {
-      targetEpCount = 11;
-    } else if (titleLower.includes('demon slayer') && titleLower.includes('swordsmith')) {
-      targetEpCount = 11;
-    } else if (titleLower.includes('demon slayer') && !titleLower.includes('mugen') && !titleLower.includes('hashira')) {
-      targetEpCount = 26;
-    } else if (titleLower.includes('jujutsu kaisen') && !titleLower.includes('0')) {
-      targetEpCount = 24;
-    } else if (titleLower.includes('classroom of the elite') && !titleLower.includes('season')) {
-      targetEpCount = 12;
-    }
+    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length);
 
     if (anime.episodes.length < targetEpCount) {
       const sampleVideos = [
@@ -285,9 +345,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
           OR: [
             { title: { contains: seasonSearchKey } },
             { englishTitle: { contains: seasonSearchKey } }
-          ],
-          // Exclude movies from seasons list
-          NOT: { type: 'MOVIE' }
+          ]
         },
         select: { id: true, title: true, slug: true, releasedYear: true, type: true }
       });
@@ -301,7 +359,8 @@ export async function getAnimeDetail(req: Request, res: Response) {
           return {
             seasonNumber: seasonNum,
             title: sibling.title,
-            slug: sibling.slug
+            slug: sibling.slug,
+            type: sibling.type
           };
         });
       }
@@ -339,39 +398,7 @@ export async function getEpisodeDetail(req: Request, res: Response) {
     });
 
     // Determine dynamic real-world episode count limit
-    let targetEpCount = 12; // default fallback limit
-    const titleLower = anime.title.toLowerCase();
-    if (anime.malId === 21 || titleLower.includes('one piece')) {
-      targetEpCount = 1168;
-    } else if (anime.malId === 1735 || titleLower === 'naruto shippuden') {
-      targetEpCount = 500;
-    } else if (anime.malId === 20 || titleLower === 'naruto') {
-      targetEpCount = 220;
-    } else if (titleLower.includes('boruto')) {
-      targetEpCount = 293;
-    } else if (anime.malId === 269 || (titleLower === 'bleach' && !titleLower.includes('thousand'))) {
-      targetEpCount = 366;
-    } else if (anime.malId === 11061 || titleLower.includes('hunter x hunter')) {
-      targetEpCount = 148;
-    } else if (titleLower.includes('fullmetal alchemist')) {
-      targetEpCount = 64;
-    } else if (titleLower.includes('death note')) {
-      targetEpCount = 37;
-    } else if (titleLower.includes('code geass')) {
-      targetEpCount = 25;
-    } else if (titleLower.includes('my hero academia') && !titleLower.includes('season')) {
-      targetEpCount = 25;
-    } else if (titleLower.includes('demon slayer') && titleLower.includes('entertainment')) {
-      targetEpCount = 11;
-    } else if (titleLower.includes('demon slayer') && titleLower.includes('swordsmith')) {
-      targetEpCount = 11;
-    } else if (titleLower.includes('demon slayer') && !titleLower.includes('mugen') && !titleLower.includes('hashira')) {
-      targetEpCount = 26;
-    } else if (titleLower.includes('jujutsu kaisen') && !titleLower.includes('0')) {
-      targetEpCount = 24;
-    } else if (titleLower.includes('classroom of the elite') && !titleLower.includes('season')) {
-      targetEpCount = 12;
-    }
+    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, 12);
 
     if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount) {
       const sampleVideos = [

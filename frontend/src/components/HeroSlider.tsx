@@ -17,8 +17,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
   const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Active items limit to top 5
-  const activeItems = animeList.slice(0, 5);
+  // Active items limit to top 10
+  const activeItems = animeList.slice(0, 10);
 
   useEffect(() => {
     if (activeItems.length === 0) return;

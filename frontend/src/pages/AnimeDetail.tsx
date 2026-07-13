@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import type { AnimeData } from '../components/AnimeCard';
-import { Play, Plus, Check, Star, Calendar, Clock, Film, Tv, Users } from 'lucide-react';
+import { Play, Plus, Check, Star, Calendar, Film, Tv, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const AnimeDetail: React.FC = () => {
@@ -83,7 +83,7 @@ export const AnimeDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div className="app-container" style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
         <div style={{ height: '420px', width: '100%', borderRadius: '12px' }} className="shimmer" />
         <div style={{ display: 'flex', gap: '30px' }}>
           <div style={{ width: '240px', height: '360px', borderRadius: '12px' }} className="shimmer" />
@@ -127,7 +127,7 @@ export const AnimeDetail: React.FC = () => {
       </div>
 
       {/* OVERLAP CONTAINER */}
-      <div style={{ maxWidth: '1200px', margin: '-200px auto 0', padding: '0 24px', position: 'relative', zIndex: 10 }}>
+      <div className="app-container" style={{ margin: '-200px auto 0', padding: '0 24px', position: 'relative', zIndex: 10 }}>
         
         {/* UPPER ANIME HEADER INFO */}
         <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '32px', alignItems: 'end' }} className="detail-upper-block">
@@ -254,9 +254,9 @@ export const AnimeDetail: React.FC = () => {
         {/* SEASONS SWITCHER (if multiple seasons exist) */}
         {seasons.length > 1 && (
           <div style={{ marginTop: '28px', background: 'rgba(17, 14, 22, 0.8)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px 20px' }}>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seasons</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seasons & Movies</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {seasons.map((s) => (
+              {seasons.map((s: any) => (
                 <Link
                   key={s.slug}
                   to={`/anime/${s.slug}`}
@@ -275,7 +275,7 @@ export const AnimeDetail: React.FC = () => {
                   }}
                   className="season-btn"
                 >
-                  S{s.seasonNumber}: {s.title.length > 30 ? s.title.substring(0, 30) + '...' : s.title}
+                  {s.type === 'MOVIE' ? '🎬 Movie: ' : `S${s.seasonNumber}: `}{s.title.length > 30 ? s.title.substring(0, 30) + '...' : s.title}
                 </Link>
               ))}
             </div>

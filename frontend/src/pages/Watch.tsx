@@ -65,7 +65,7 @@ export const Watch: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Aniwave Server States
-  const [activeServer, setActiveServer] = useState<'local' | 'vidplay' | 'mycloud' | 'filemoon'>('local');
+  const [activeServer, setActiveServer] = useState<'vidplay' | 'mycloud' | 'filemoon'>('vidplay');
   const [activeTranslation, setActiveTranslation] = useState<'sub' | 'dub'>('sub');
 
   // Translation availability state
@@ -207,14 +207,14 @@ export const Watch: React.FC = () => {
   const handleNextEpisode = () => {
     if (hasNext && slug && epNum) {
       navigate(`/watch/${slug}/episode/${parseInt(epNum) + 1}`);
-      setActiveServer('local'); // Reset to default server on ep change
+      setActiveServer('vidplay'); // Reset to default server on ep change
     }
   };
 
   const handlePrevEpisode = () => {
     if (hasPrev && slug && epNum) {
       navigate(`/watch/${slug}/episode/${parseInt(epNum) - 1}`);
-      setActiveServer('local'); // Reset to default server on ep change
+      setActiveServer('vidplay'); // Reset to default server on ep change
     }
   };
 
@@ -297,7 +297,7 @@ export const Watch: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div className="app-container" style={{ padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
         <div style={{ height: '550px', width: '100%', borderRadius: '12px' }} className="shimmer" />
         <div style={{ height: '100px', width: '100%', borderRadius: '12px' }} className="shimmer" />
       </div>
@@ -314,7 +314,7 @@ export const Watch: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1500px', margin: '0 auto', padding: '16px 20px', color: '#fff', position: 'relative' }}>
+    <div className="app-container" style={{ padding: '16px 20px', color: '#fff', position: 'relative' }}>
       
       {/* THEATER LIGHTS OFF DARK BLANKET */}
       {lightsOff && (
@@ -455,22 +455,12 @@ export const Watch: React.FC = () => {
 
           {/* Video Player / Iframe Container */}
           <div style={{ width: '100%', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', aspectRatio: '16/9', boxShadow: 'var(--glass-shadow)' }}>
-            {activeServer === 'local' ? (
-              <video
-                src={episode?.videoUrl}
-                controls
-                autoPlay={autoPlay}
-                style={{ width: '100%', height: '100%', objectFit: 'contain', outline: 'none' }}
-                className="local-video-player"
-              />
-            ) : (
-              <iframe
-                src={getEmbedUrl()}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                allowFullScreen
-                title={`${activeServer} Player`}
-              />
-            )}
+            <iframe
+              src={getEmbedUrl()}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              allowFullScreen
+              title={`${activeServer} Player`}
+            />
           </div>
 
           {/* Sub-player Control Settings Bar */}
@@ -598,26 +588,6 @@ export const Watch: React.FC = () => {
 
             {/* Servers lists */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => setActiveServer('local')}
-                style={{ 
-                  background: activeServer === 'local' ? 'var(--color-primary)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.06)', 
-                  color: '#fff', 
-                  padding: '6px 14px', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer', 
-                  fontSize: '12px', 
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: activeServer === 'local' ? 'var(--glow-shadow)' : 'none'
-                }}
-                className="server-badge"
-              >
-                <Play size={10} style={{ fill: 'currentColor' }} /> AniVerse (Local)
-              </button>
 
               <button
                 onClick={() => setActiveServer('vidplay')}
@@ -781,9 +751,9 @@ export const Watch: React.FC = () => {
               {/* Seasons Switcher Section */}
               {seasons.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seasons:</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seasons & Movies:</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '2px' }}>
-                    {seasons.map((s) => {
+                    {seasons.map((s: any) => {
                       const isActive = s.slug === animeDetail.slug;
                       return (
                         <button
@@ -803,7 +773,7 @@ export const Watch: React.FC = () => {
                           }}
                           className={isActive ? '' : 'season-switch-btn'}
                         >
-                          {s.title}
+                          {s.type === 'MOVIE' ? `🎬 Movie: ${s.title}` : `Season ${s.seasonNumber}: ${s.title}`}
                         </button>
                       );
                     })}

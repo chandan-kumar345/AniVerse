@@ -12,15 +12,20 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
   if (animeList.length === 0) return null;
 
   // Let's slightly reshuffle list for different tabs to simulate active changes
+  // Pick different subsets for different tabs from the expanded pool
   const getSortedList = () => {
-    const list = [...animeList].slice(0, 10);
+    let list = [...animeList];
     if (activeTab === 'week') {
-      return list.sort((a, b) => b.title.length - a.title.length);
+      // Sort by title length as a mock variable change for week tab
+      list.sort((a, b) => b.title.length - a.title.length);
+    } else if (activeTab === 'month') {
+      // Reshuffle using title localeCompare for month tab variation
+      list.sort((a, b) => a.title.localeCompare(b.title));
+    } else {
+      // Default day sorting by score descending
+      list.sort((a, b) => b.score - a.score);
     }
-    if (activeTab === 'month') {
-      return list.sort((a, b) => a.score - b.score);
-    }
-    return list; // day (sorted by score desc)
+    return list.slice(0, 10);
   };
 
   const currentList = getSortedList();

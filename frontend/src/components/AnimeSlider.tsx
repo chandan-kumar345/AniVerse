@@ -6,9 +6,10 @@ import type { AnimeData } from './AnimeCard';
 interface AnimeSliderProps {
   title: string;
   animeList: AnimeData[];
+  showCountdown?: boolean;
 }
 
-export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList }) => {
+export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList, showCountdown = true }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = () => {
@@ -54,7 +55,7 @@ export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList }) =>
       >
         {animeList.map((anime) => (
           <div key={anime.id} style={{ flex: '0 0 calc(20% - 16px)' }} className="slider-card-wrap">
-            <AnimeCard anime={anime} />
+            <AnimeCard anime={anime} showCountdown={showCountdown} />
           </div>
         ))}
       </div>

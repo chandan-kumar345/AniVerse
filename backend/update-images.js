@@ -70,7 +70,7 @@ async function main() {
             console.log(`  Could not find images for ${anime.title} on AniList.`);
         }
         // Rate limit safeguard
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 2000));
     }
 
     console.log('Update complete!');

@@ -133,7 +133,7 @@ export const Search: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px 20px', color: '#fff' }}>
+    <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
       
       {/* HEADER TITLE */}
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, marginBottom: '24px', borderLeft: '4px solid var(--color-primary)', paddingLeft: '12px' }}>
