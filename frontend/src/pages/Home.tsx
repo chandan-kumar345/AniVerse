@@ -21,9 +21,11 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchHomeData = async () => {
+    const fetchHomeData = async (showShimmer = false) => {
       try {
-        setLoading(true);
+        if (showShimmer) {
+          setLoading(true);
+        }
         const [
           trendingRes,
           popularRes,
@@ -149,14 +151,16 @@ export const Home: React.FC = () => {
       } catch (err) {
         console.error('Error fetching home page data:', err);
       } finally {
-        setLoading(false);
+        if (showShimmer) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchHomeData();
+    fetchHomeData(true);
 
     // Auto-update home data every 60 seconds
-    const interval = setInterval(fetchHomeData, 60000);
+    const interval = setInterval(() => fetchHomeData(false), 60000);
     return () => clearInterval(interval);
   }, []);
 

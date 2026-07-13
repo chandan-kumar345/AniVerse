@@ -54,7 +54,7 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
             query: `
               query ($weekStart: Int, $weekEnd: Int) {
                 Page(page: 1, perPage: 150) {
-                  airingSchedules(airingAt_greater: $weekStart, airingAt_less: $weekEnd, sort: TIME) {
+                  airingSchedules(airingAt_greater: $weekStart, airingAt_lesser: $weekEnd, sort: TIME) {
                     id
                     airingAt
                     episode

@@ -40,17 +40,27 @@ async function fetchAniListImage(title) {
         return null;
     }
 }
+const SEARCH_OVERRIDES = {
+    "Frieren: Beyond Journey's End": "Frieren",
+    "Attack on Titan: The Final Season": "Attack on Titan Final Season"
+};
+
 async function main() {
     const animeList = await prisma.anime.findMany();
     console.log(`Found ${animeList.length} anime in database to update.`);
 
     for (const anime of animeList) {
         console.log(`Processing: ${anime.title}...`);
-        let media = await fetchAniListImage(anime.title);
+        
+        let searchTerm = SEARCH_OVERRIDES[anime.title] || anime.title;
+        let media = await fetchAniListImage(searchTerm);
 
-        if (!media && anime.englishTitle) {
+        if ((!media || !media.bannerImage) && anime.englishTitle) {
             console.log(`  Trying English title: ${anime.englishTitle}...`);
-            media = await fetchAniListImage(anime.englishTitle);
+            const engMedia = await fetchAniListImage(anime.englishTitle);
+            if (engMedia && engMedia.bannerImage) {
+                media = engMedia;
+            }
         }
 
         if (media) {
