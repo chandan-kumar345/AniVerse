@@ -58,8 +58,8 @@ export const Home: React.FC = () => {
             body: JSON.stringify({
               query: `
                 query {
-                  Page(page: 1, perPage: 35) {
-                    media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
+                  Page(page: 1, perPage: 50) {
+                    media(status_in: [RELEASING, NOT_YET_RELEASED], type: ANIME, sort: POPULARITY_DESC) {
                       id
                       title {
                         romaji
@@ -98,8 +98,20 @@ export const Home: React.FC = () => {
 
           const aniListJson = await aniListResponse.json();
           const releasingMedia = aniListJson.data?.Page?.media || [];
+          
+          const now = Math.floor(Date.now() / 1000);
+          const filteredMedia = releasingMedia.filter((media: any) => {
+            if (media.status === 'RELEASING') return true;
+            if (media.status === 'NOT_YET_RELEASED') {
+              if (media.nextAiringEpisode) {
+                const diff = media.nextAiringEpisode.airingAt - now;
+                return diff > 0 && diff <= 7 * 24 * 60 * 60;
+              }
+            }
+            return false;
+          });
 
-          liveUpdatesList = releasingMedia.map((media: any) => {
+          liveUpdatesList = filteredMedia.map((media: any) => {
             const title = media.title.english || media.title.romaji || media.title.native;
             const cleanTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
             // Find local match in any of our local anime arrays
@@ -138,7 +150,7 @@ export const Home: React.FC = () => {
               bannerImage: media.bannerImage || media.coverImage.extraLarge,
               score: media.averageScore ? media.averageScore / 10 : 7.5,
               type: media.format || 'TV',
-              status: 'Currently Airing',
+              status: media.status === 'RELEASING' ? 'Currently Airing' : 'Airing Soon',
               releasedYear: media.startDate?.year || 2026,
               duration: media.duration ? `${media.duration} min` : '24 min',
               genres: media.genres ? media.genres.join(', ') : 'Anime',

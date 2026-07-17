@@ -14,6 +14,87 @@ function slugify(text: string) {
     .replace(/-+$/, '');
 }
 
+async function autoHealMalId(animeId: string, title: string): Promise<number | null> {
+  try {
+    console.log(`[Auto-Heal] malId is null for "${title}". Attempting to fetch from AniList...`);
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query ($search: String) {
+            Media(search: $search, type: ANIME) {
+              idMal
+            }
+          }
+        `,
+        variables: { search: title }
+      })
+    });
+
+    if (!response.ok) return null;
+    const resData = await response.json() as any;
+    const idMal = resData?.data?.Media?.idMal;
+    if (idMal) {
+      console.log(`[Auto-Heal] Resolved malId ${idMal} for "${title}". Updating database...`);
+      await prisma.anime.update({
+        where: { id: animeId },
+        data: { malId: idMal }
+      });
+      return idMal;
+    }
+    return null;
+  } catch (err) {
+    console.error(`[Auto-Heal] Failed to resolve malId for "${title}":`, err);
+    return null;
+  }
+}
+
+async function fetchSeasonsFromAniList(searchKey: string): Promise<any[]> {
+  try {
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query ($search: String) {
+            Page(page: 1, perPage: 15) {
+              media(search: $search, type: ANIME) {
+                idMal
+                title {
+                  romaji
+                  english
+                  native
+                }
+                format
+                status
+                startDate {
+                  year
+                }
+              }
+            }
+          }
+        `,
+        variables: { search: searchKey }
+      })
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json() as any;
+    const mediaList = data?.data?.Page?.media || [];
+    return mediaList;
+  } catch (err) {
+    console.error('Error fetching seasons from AniList:', err);
+    return [];
+  }
+}
+
 async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
   
@@ -27,6 +108,13 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
   });
 
   if (anime) {
+    // AUTO-HEAL: If malId is null, fetch and save it on-demand!
+    if (!anime.malId) {
+      const idMal = await autoHealMalId(anime.id, anime.title);
+      if (idMal) {
+        anime.malId = idMal;
+      }
+    }
     return anime;
   }
 
@@ -374,6 +462,10 @@ async function getAiredEpisodeCountFromAniList(malId: number): Promise<number | 
       return media.nextAiringEpisode.episode - 1;
     }
 
+    if (media.episodes) {
+      return media.episodes;
+    }
+
     if (media.status === 'FINISHED') {
       return media.episodes || null;
     }
@@ -603,7 +695,6 @@ export async function getTopTenAnime(_req: Request, res: Response) {
 export async function getAnimeDetail(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const anime = await findOrCreateAnimeBySlugOrId(id);
 
@@ -627,7 +718,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
       ];
       
-      const existingEpNums = new Set(anime.episodes.map(e => e.episodeNumber));
+      const existingEpNums = new Set(anime.episodes.map((e: any) => e.episodeNumber));
       const newEpisodes = [...anime.episodes];
       
       for (let i = 1; i <= targetEpCount; i++) {
@@ -661,7 +752,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
       (anime as any).episodes = episodesWithDub;
     } else {
       const isAiring = anime.status === 'Currently Airing';
-      const episodesWithDub = anime.episodes.map(ep => {
+      const episodesWithDub = anime.episodes.map((ep: any) => {
         let epHasDub = true;
         if (isAiring && ep.episodeNumber >= targetEpCount - 1) {
           epHasDub = false;
@@ -693,11 +784,11 @@ export async function getAnimeDetail(req: Request, res: Response) {
     });
 
     if (related.length < 8) {
-      const genresList = anime.genres.split(',').map((g) => g.trim());
-      const genreConditions = genresList.map((genre) => ({
+      const genresList = anime.genres.split(',').map((g: string) => g.trim());
+      const genreConditions = genresList.map((genre: string) => ({
         genres: { contains: genre },
       }));
-      const existingIds = new Set(related.map((r) => r.id));
+      const existingIds = new Set(related.map((r: any) => r.id));
 
       const genreRelated = await prisma.anime.findMany({
         where: {
@@ -718,20 +809,68 @@ export async function getAnimeDetail(req: Request, res: Response) {
     if (anime.title.includes('Boruto')) seasonSearchKey = 'Boruto';
 
     if (seasonSearchKey && seasonSearchKey.length > 2) {
-      const siblings = await prisma.anime.findMany({
+      // 1. Fetch seasons from local database
+      const localSiblings = await prisma.anime.findMany({
         where: {
           OR: [
             { title: { contains: seasonSearchKey } },
             { englishTitle: { contains: seasonSearchKey } }
           ]
         },
-        select: { id: true, title: true, slug: true, releasedYear: true, type: true }
+        select: { id: true, title: true, slug: true, releasedYear: true, type: true, malId: true }
       });
 
-      if (siblings.length > 1) {
+      // 2. Fetch seasons from AniList to include any not imported yet
+      const externalMedia = await fetchSeasonsFromAniList(seasonSearchKey);
+      
+      // Combine them, avoiding duplicates by MAL ID or Slug
+      const seasonsMap = new Map<string, any>();
+
+      // Load local siblings first
+      for (const sib of localSiblings) {
+        seasonsMap.set(sib.slug, {
+          title: sib.title,
+          slug: sib.slug,
+          releasedYear: sib.releasedYear,
+          type: sib.type,
+          malId: sib.malId
+        });
+      }
+
+      // Add external siblings if they contain the search key and are not duplicates
+      const searchKeyLower = seasonSearchKey.toLowerCase();
+      for (const ext of externalMedia) {
+        const titleText = ext.title.english || ext.title.romaji || ext.title.native || '';
+        const titleTextLower = titleText.toLowerCase();
+
+        // Ensure title matches our franchise keyword
+        if (titleTextLower.includes(searchKeyLower)) {
+          const generatedSlug = slugify(titleText);
+          
+          // Check if already in map by generated slug or malId
+          const alreadyExists = Array.from(seasonsMap.values()).some((s: any) => 
+            s.slug === generatedSlug || (s.malId && ext.idMal && s.malId === ext.idMal)
+          );
+
+          if (!alreadyExists) {
+            seasonsMap.set(generatedSlug, {
+              title: titleText,
+              slug: generatedSlug,
+              releasedYear: ext.startDate?.year || new Date().getFullYear(),
+              type: ext.format || 'TV',
+              malId: ext.idMal
+            });
+          }
+        }
+      }
+
+      // Convert to array
+      const combinedSiblings = Array.from(seasonsMap.values());
+
+      if (combinedSiblings.length > 0) {
         // Sort chronologically by release year
-        siblings.sort((a, b) => (a.releasedYear || 0) - (b.releasedYear || 0));
-        seasons = siblings.map((sibling, index) => {
+        combinedSiblings.sort((a, b) => (a.releasedYear || 0) - (b.releasedYear || 0));
+        seasons = combinedSiblings.map((sibling, index) => {
           const seasonMatch = sibling.title.match(/Season\s+(\d+)/i);
           const seasonNum = seasonMatch ? parseInt(seasonMatch[1]) : (index + 1);
           return {
@@ -755,7 +894,6 @@ export async function getEpisodeDetail(req: Request, res: Response) {
   try {
     const { id, epNum } = req.params;
     const episodeNumber = parseInt(epNum);
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const anime = await findOrCreateAnimeBySlugOrId(id);
 
@@ -875,6 +1013,55 @@ export async function getAllGenres(_req: Request, res: Response) {
     return res.status(200).json({ genres: Array.from(genresSet).sort() });
   } catch (error: any) {
     console.error('Error fetching genres list:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+export async function getEpisodeSources(req: Request, res: Response) {
+  try {
+    const { id, epNum } = req.params;
+    const { server, lang } = req.query;
+
+    const episodeNumber = parseInt(epNum);
+    const anime = await findOrCreateAnimeBySlugOrId(id);
+    if (!anime) {
+      return res.status(404).json({ error: 'Anime not found' });
+    }
+
+    let malId = anime.malId || 21; // Fallback to One Piece
+    let epNumToUse = episodeNumber;
+
+    // Bleach TYBW offsets
+    if (malId === 45576) {
+      malId = 269;
+      epNumToUse = episodeNumber + 366;
+    } else if (malId === 53998) {
+      malId = 269;
+      epNumToUse = episodeNumber + 379;
+    } else if (malId === 56206) {
+      malId = 269;
+      epNumToUse = episodeNumber + 392;
+    }
+
+    let embedUrl = '';
+    const activeServer = server || 'vidplay';
+    const activeTranslation = lang || 'sub';
+
+    if (activeServer === 'vidplay') {
+      embedUrl = `https://vidsrc.to/embed/anime/${malId}/${epNumToUse}`;
+    } else if (activeServer === 'mycloud') {
+      embedUrl = `https://embed.su/embed/anime/${malId}/${epNumToUse}`;
+    } else if (activeServer === 'filemoon') {
+      embedUrl = `https://vidlink.pro/embed/anime/${malId}/${epNumToUse}`;
+    }
+
+    return res.status(200).json({
+      embedUrl,
+      server: activeServer,
+      lang: activeTranslation
+    });
+  } catch (error: any) {
+    console.error('Error fetching episode sources:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

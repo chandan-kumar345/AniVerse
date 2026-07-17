@@ -75,6 +75,7 @@ export const Watch: React.FC = () => {
   const [seasons, setSeasons] = useState<{ seasonNumber: number; title: string; slug: string }[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [embedUrl, setEmbedUrl] = useState('');
 
   // Calculate 100-chunk pagination ranges
   const ranges = React.useMemo(() => {
@@ -210,6 +211,38 @@ export const Watch: React.FC = () => {
     fetchWatchData();
   }, [slug, epNum]);
 
+  // Load streaming iframe source link dynamically from the backend scraping API
+  useEffect(() => {
+    const fetchEpisodeSource = async () => {
+      if (!slug || !epNum) return;
+      try {
+        const response = await axiosInstance.get(`/api/anime/${slug}/episodes/${epNum}/sources`, {
+          params: {
+            server: activeServer,
+            lang: activeTranslation
+          }
+        });
+        
+        let url = response.data.embedUrl || '';
+        
+        // Append playback settings locally for the resolved url
+        if (url) {
+          const params: string[] = [];
+          if (autoPlay) params.push('autoplay=1');
+          if (autoSkip) params.push('autoskip=1');
+          if (params.length > 0) {
+            url += (url.includes('?') ? '&' : '?') + params.join('&');
+          }
+        }
+        setEmbedUrl(url);
+      } catch (err) {
+        console.error('Error fetching episode dynamic source:', err);
+      }
+    };
+
+    fetchEpisodeSource();
+  }, [slug, epNum, activeServer, activeTranslation, autoPlay, autoSkip]);
+
   const handleNextEpisode = () => {
     if (hasNext && slug && epNum) {
       navigate(`/watch/${slug}/episode/${parseInt(epNum) + 1}`);
@@ -237,48 +270,6 @@ export const Watch: React.FC = () => {
     } catch (err) {
       navigate('/auth'); // Redirect to login if unauthorized
     }
-  };
-
-  const getEmbedUrl = () => {
-    if (!animeDetail || !epNum) return '';
-    let idToUse = animeDetail.malId || 21; // Fallback to One Piece
-    let epNumToUse = parseInt(epNum);
-
-    // Bleach: Thousand-Year Blood War MAL ID mapping fix
-    // Scrapers index Bleach TYBW under original Bleach (MAL 269) as continuing episodes (367+).
-    if (idToUse === 45576) {
-      idToUse = 269;
-      epNumToUse = epNumToUse + 366;
-    } else if (idToUse === 53998) {
-      idToUse = 269;
-      epNumToUse = epNumToUse + 379;
-    } else if (idToUse === 56206) {
-      idToUse = 269;
-      epNumToUse = epNumToUse + 392;
-    }
-
-    let url = '';
-    if (activeServer === 'vidplay') {
-      url = `https://animeplay.cfd/stream/mal/${idToUse}/${epNumToUse}/${activeTranslation}`;
-    } else if (activeServer === 'mycloud') {
-      url = `https://embed.su/embed/anime/${idToUse}/${epNumToUse}`;
-    } else if (activeServer === 'filemoon') {
-      url = `https://animeplay.cfd/stream/mal/${idToUse}/${epNumToUse}/${activeTranslation}`;
-    }
-
-    if (url) {
-      const params: string[] = [];
-      if (autoPlay) {
-        params.push('autoplay=1');
-      }
-      if (autoSkip) {
-        params.push('autoskip=1');
-      }
-      if (params.length > 0) {
-        url += (url.includes('?') ? '&' : '?') + params.join('&');
-      }
-    }
-    return url;
   };
 
   // Filter episodes based on user search query & selected range (only if total count > 100)
@@ -400,10 +391,12 @@ export const Watch: React.FC = () => {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(6, 1fr)',
+                gridAutoRows: '34px',
                 gap: '6px',
                 overflowY: 'auto',
                 paddingRight: '2px',
-                flex: 1
+                flex: 1,
+                alignContent: 'start'
               }}
               className="no-scrollbar"
             >
@@ -465,12 +458,19 @@ export const Watch: React.FC = () => {
 
           {/* Video Player / Iframe Container */}
           <div style={{ width: '100%', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', aspectRatio: '16/9', boxShadow: 'var(--glass-shadow)' }}>
-            <iframe
-              src={getEmbedUrl()}
-              style={{ width: '100%', height: '100%', border: 'none' }}
-              allowFullScreen
-              title={`${activeServer} Player`}
-            />
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                allowFullScreen
+                title={`${activeServer} Player`}
+                sandbox={activeServer === 'mycloud' ? "allow-scripts allow-same-origin allow-forms allow-presentation" : undefined}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', color: '#bcc5cf', fontSize: '14px', background: '#09080d' }}>
+                Loading stream sources...
+              </div>
+            )}
           </div>
 
           {/* Sub-player Control Settings Bar */}

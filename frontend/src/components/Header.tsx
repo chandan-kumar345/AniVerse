@@ -234,7 +234,7 @@ export const Header: React.FC = () => {
             </button>
           </form>
 
-          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Home</Link>
+           <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Home</Link>
           <Link to="/search" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Catalog</Link>
           {isAuthenticated && (
             <>
