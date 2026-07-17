@@ -4,7 +4,7 @@ import { Heart, Shield } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ background: '#07070a', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '60px 20px 30px', marginTop: '60px' }}>
+    <footer style={{ background: '#07070a', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '60px 20px 30px', marginTop: '60px', position: 'relative' }}>
       <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
         
         {/* About column */}
@@ -51,7 +51,18 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="app-container" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '50px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
+      {/* Giant AniVerse Horizontal Logo */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px', width: '100%', overflow: 'hidden' }}>
+        <div className="giant-logo-container">
+          {['A', 'n', 'i', 'V', 'e', 'r', 's', 'e'].map((char, index) => (
+            <span key={index} className="giant-logo-letter">
+              {char}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="app-container" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '30px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
         <p style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
           &copy; {new Date().getFullYear()} AniVerse. All rights reserved. Built for anime fans.
         </p>
@@ -64,6 +75,45 @@ export const Footer: React.FC = () => {
         .footer-link:hover { color: var(--color-primary) !important; padding-left: 4px; }
         .social-icon:hover { color: var(--color-primary) !important; transform: scale(1.15); }
         .footer-link { display: inline-block; transition: var(--transition-fast); }
+
+        .giant-logo-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1.5vw;
+          user-select: none;
+          width: 100%;
+          flex-wrap: nowrap;
+          padding: 50px 0 30px;
+          overflow: hidden;
+        }
+
+        .giant-logo-letter {
+          font-family: var(--font-display);
+          font-size: clamp(4rem, 15vw, 15rem);
+          font-weight: 900;
+          color: #ffffff;
+          cursor: pointer;
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease, text-shadow 0.3s ease;
+          display: inline-block;
+          letter-spacing: -0.04em;
+          line-height: 0.85;
+          transform: scale(1.15, 1.05); /* Stretch width by 1.15 and height by 1.05 */
+          transform-origin: center;
+        }
+
+        .giant-logo-letter:hover {
+          color: var(--color-accent);
+          transform: scale(1.4, 1.3); /* Zoom in on hover, no vertical popup */
+          text-shadow: 0 0 35px var(--color-accent), 0 0 70px var(--color-primary);
+        }
+
+        @media (max-width: 768px) {
+          .giant-logo-container {
+            gap: 1vw;
+            padding: 30px 0 15px;
+          }
+        }
       `}</style>
     </footer>
   );
