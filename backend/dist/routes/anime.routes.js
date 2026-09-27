@@ -10,5 +10,6 @@ router.get('/top-ten', anime_controller_1.getTopTenAnime);
 router.get('/search/suggest', anime_controller_1.getAutocompleteSuggestions);
 router.get('/genres', anime_controller_1.getAllGenres);
 router.get('/:id', anime_controller_1.getAnimeDetail);
+router.get('/:id/episodes/:epNum/sources', anime_controller_1.getEpisodeSources);
 router.get('/:id/episodes/:epNum', anime_controller_1.getEpisodeDetail);
 exports.default = router;

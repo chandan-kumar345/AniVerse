@@ -134,29 +134,31 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
       body: JSON.stringify({
         query: `
           query ($search: String) {
-            Media(search: $search, type: ANIME) {
-              idMal
-              title {
-                romaji
-                english
-                native
-              }
-              description
-              bannerImage
-              coverImage {
-                large
-              }
-              averageScore
-              format
-              status
-              startDate {
-                year
-              }
-              genres
-              duration
-              studios(isMain: true) {
-                nodes {
-                  name
+            Page(page: 1, perPage: 1) {
+              media(search: $search, type: ANIME, sort: [POPULARITY_DESC]) {
+                idMal
+                title {
+                  romaji
+                  english
+                  native
+                }
+                description
+                bannerImage
+                coverImage {
+                  large
+                }
+                averageScore
+                format
+                status
+                startDate {
+                  year
+                }
+                genres
+                duration
+                studios(isMain: true) {
+                  nodes {
+                    name
+                  }
                 }
               }
             }
@@ -172,18 +174,24 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
     }
 
     const resData = (await response.json()) as any;
-    const media = resData?.data?.Media;
+    const media = resData?.data?.Page?.media?.[0] || resData?.data?.Media;
     if (!media) {
       console.log(`AniList returned no media for search: "${searchQuery}"`);
       return null;
     }
 
     const animeTitle = media.title.english || media.title.romaji || media.title.native;
-    const resolvedSlug = slugify(animeTitle);
+    const resolvedSlug = idOrSlug || slugify(animeTitle);
 
-    // Double check if resolvedSlug exists in DB to prevent duplicates
-    let existingAnime = await prisma.anime.findUnique({
-      where: { slug: resolvedSlug },
+    // Double check if resolvedSlug or malId exists in DB to prevent duplicates
+    let existingAnime = await prisma.anime.findFirst({
+      where: {
+        OR: [
+          { slug: resolvedSlug },
+          { slug: slugify(animeTitle) },
+          ...(media.idMal ? [{ malId: media.idMal }] : [])
+        ]
+      },
       include: { episodes: { orderBy: { episodeNumber: 'asc' } } }
     });
     if (existingAnime) {
@@ -231,7 +239,7 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
     });
 
     // Determine how many episodes to seed
-    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12);
+    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
     const sampleVideos = [
       'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
       'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -291,29 +299,31 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
       body: JSON.stringify({
         query: `
           query ($search: String) {
-            Media(search: $search, type: ANIME) {
-              idMal
-              title {
-                romaji
-                english
-                native
-              }
-              description
-              bannerImage
-              coverImage {
-                large
-              }
-              averageScore
-              format
-              status
-              startDate {
-                year
-              }
-              genres
-              duration
-              studios(isMain: true) {
-                nodes {
-                  name
+            Page(page: 1, perPage: 1) {
+              media(search: $search, type: ANIME, sort: [POPULARITY_DESC]) {
+                idMal
+                title {
+                  romaji
+                  english
+                  native
+                }
+                description
+                bannerImage
+                coverImage {
+                  large
+                }
+                averageScore
+                format
+                status
+                startDate {
+                  year
+                }
+                genres
+                duration
+                studios(isMain: true) {
+                  nodes {
+                    name
+                  }
                 }
               }
             }
@@ -329,7 +339,7 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
     }
 
     const resData = (await response.json()) as any;
-    const media = resData?.data?.Media;
+    const media = resData?.data?.Page?.media?.[0] || resData?.data?.Media;
     if (!media) {
       console.log(`AniList returned no media for search: "${searchQuery}"`);
       return null;
@@ -338,9 +348,14 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
     const animeTitle = media.title.english || media.title.romaji || media.title.native;
     const resolvedSlug = slugify(animeTitle);
 
-    // Double check if resolvedSlug exists in DB to prevent duplicates
-    let existingAnime = await prisma.anime.findUnique({
-      where: { slug: resolvedSlug }
+    // Double check if resolvedSlug or malId exists in DB to prevent duplicates
+    let existingAnime = await prisma.anime.findFirst({
+      where: {
+        OR: [
+          { slug: resolvedSlug },
+          ...(media.idMal ? [{ malId: media.idMal }] : [])
+        ]
+      }
     });
     if (existingAnime) {
       return existingAnime;
@@ -387,7 +402,7 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
     });
 
     // Determine how many episodes to seed
-    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12);
+    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
     const sampleVideos = [
       'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
       'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -477,8 +492,14 @@ async function getAiredEpisodeCountFromAniList(malId: number): Promise<number | 
   }
 }
 
-async function getDynamicEpisodeCount(title: string, malId: number | null, dbCount: number): Promise<number> {
+async function getDynamicEpisodeCount(title: string, malId: number | null, dbCount: number, type?: string): Promise<number> {
+  if (type && (type.toUpperCase() === 'MOVIE' || type.toUpperCase() === 'SPECIAL')) {
+    return 1;
+  }
   const titleLower = title.toLowerCase();
+  if (titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban')) {
+    return 1;
+  }
   
   // 1. Fetch exact aired count from AniList if malId exists
   if (malId) {
@@ -703,7 +724,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
     }
 
     // Determine dynamic real-world episode count limit
-    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length);
+    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length, anime.type);
 
     if (anime.episodes.length < targetEpCount) {
       const sampleVideos = [
@@ -911,7 +932,7 @@ export async function getEpisodeDetail(req: Request, res: Response) {
     });
 
     // Determine dynamic real-world episode count limit
-    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, 12);
+    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, 12, anime.type);
 
     if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount) {
       const sampleVideos = [
@@ -1028,6 +1049,13 @@ export async function getEpisodeSources(req: Request, res: Response) {
       return res.status(404).json({ error: 'Anime not found' });
     }
 
+    const title = anime.title || '';
+    const slug = anime.slug || '';
+    const activeServer = (server as string)?.toLowerCase() || 'vidplay';
+    const activeTranslation = (lang as string)?.toLowerCase() || 'sub';
+    const isHindi = activeTranslation === 'hindi' || activeServer === 'raretoon';
+    const isDub = activeTranslation === 'dub';
+
     let malId = anime.malId || 21; // Fallback to One Piece
     let epNumToUse = episodeNumber;
 
@@ -1043,22 +1071,400 @@ export async function getEpisodeSources(req: Request, res: Response) {
       epNumToUse = episodeNumber + 392;
     }
 
+    // ==========================================
+    // 1. MOVIE TMDB MAPPINGS & DETECTION
+    // ==========================================
+    const MAL_TO_MOVIE_TMDB: Record<number, number> = {
+      48561: 810693, // Jujutsu Kaisen 0
+      40456: 635302, // Demon Slayer: Mugen Train (Movie)
+      50410: 900667, // One Piece Film: Red
+      38234: 568012, // One Piece: Stampede
+      31490: 384792, // One Piece Film: Gold
+      12859: 148386, // One Piece Film: Z
+      4155: 24420,   // One Piece: Strong World
+      36946: 503314, // Dragon Ball Super: Broly
+      48903: 610150, // Dragon Ball Super: Super Hero
+      14837: 126963, // Dragon Ball Z: Battle of Gods
+      25389: 303857, // Dragon Ball Z: Resurrection 'F'
+      32281: 372058, // Your Name. (Kimi no Na wa.)
+      50594: 916224, // Suzume
+      38826: 568160, // Weathering with You (Tenki no Ko)
+      28851: 378064, // A Silent Voice (Koe no Katachi)
+      199: 129,      // Spirited Away
+      431: 4935,     // Howl's Moving Castle
+      164: 128,      // Princess Mononoke
+      523: 8392,     // My Neighbor Totoro
+      16870: 317442, // The Last: Naruto the Movie
+      28755: 347201, // Boruto: Naruto the Movie
+      13667: 149871, // Road to Ninja: Naruto the Movie
+      48849: 812225, // Black Clover: Sword of the Wizard King
+      31765: 417859, // Sword Art Online: Ordinal Scale
+      42916: 762975, // SAO Progressive - Aria of a Starless Night
+      50273: 956101, // SAO Progressive - Scherzo of Deep Night
+      33674: 428078, // No Game No Life: Zero
+      36098: 504253, // I Want to Eat Your Pancreas
+      41429: 664574, // A Whisker Away
+      49884: 508883, // The Boy and the Heron
+      47: 149,       // Akira
+      43: 9323,      // Ghost in the Shell
+      102: 10494,    // Perfect Blue
+      25537: 399404, // Fate/stay night: Heaven's Feel I. presage flower
+      33049: 514593, // Fate/stay night: Heaven's Feel II. lost butterfly
+      33050: 514594, // Fate/stay night: Heaven's Feel III. spring song
+      2759: 18491,   // Evangelion: 1.0 You Are (Not) Alone
+      3784: 18492,   // Evangelion: 2.0 You Can (Not) Advance
+      3785: 43764,   // Evangelion: 3.0 You Can (Not) Redo
+      3786: 283566,  // Evangelion: 3.0+1.0 Thrice Upon a Time
+      36896: 505262, // My Hero Academia: Two Heroes
+      39565: 592350, // My Hero Academia: Heroes Rising
+      44200: 768744, // My Hero Academia: World Heroes' Mission
+      55798: 1159311,// My Hero Academia: You're Next
+      52742: 1012201,// Haikyu!! The Dumpster Battle
+      53887: 1062807,// Spy x Family Code: White
+      57555: 1219685,// Chainsaw Man - The Movie: Reze Arc
+      54865: 1134433,// Blue Lock: Episode Nagi
+      38329: 572154, // Rascal Does Not Dream of a Dreaming Girl
+      578: 12477,    // Grave of the Fireflies
+      1689: 38142,   // 5 Centimeters per Second
+      16782: 198370, // The Garden of Words
+      1987: 4977,    // Paprika
+      5681: 26519,   // Summer Wars
+      12355: 110420, // Wolf Children
+      2236: 14069,   // The Girl Who Leapt Through Time
+      58272: 1244857 // Look Back
+    };
+
+    const MOVIE_SLUG_TMDB_MAP: Record<string, number> = {
+      'jujutsu-kaisen-0': 810693,
+      'demon-slayer-kimetsu-no-yaiba-the-movie-mugen-train': 635302,
+      'demon-slayer-mugen-train-movie': 635302,
+      'kimetsu-no-yaiba-movie-mugen-ressha-hen': 635302,
+      'one-piece-film-red': 900667,
+      'one-piece-stampede': 568012,
+      'one-piece-film-gold': 384792,
+      'one-piece-film-z': 148386,
+      'one-piece-strong-world': 24420,
+      'dragon-ball-super-broly': 503314,
+      'dragon-ball-super-super-hero': 610150,
+      'dragon-ball-z-battle-of-gods': 126963,
+      'dragon-ball-z-resurrection-f': 303857,
+      'your-name': 372058,
+      'kimi-no-na-wa': 372058,
+      'suzume': 916224,
+      'suzume-no-tojimari': 916224,
+      'weathering-with-you': 568160,
+      'tenki-no-ko': 568160,
+      'a-silent-voice': 378064,
+      'koe-no-katachi': 378064,
+      'spirited-away': 129,
+      'sen-to-chihiro-no-kamikakushi': 129,
+      'howls-moving-castle': 4935,
+      'princess-mononoke': 128,
+      'my-neighbor-totoro': 8392,
+      'the-last-naruto-the-movie': 317442,
+      'boruto-naruto-the-movie': 347201,
+      'road-to-ninja-naruto-the-movie': 149871,
+      'black-clover-sword-of-the-wizard-king': 812225,
+      'sword-art-online-the-movie-ordinal-scale': 417859,
+      'sword-art-online-progressive-aria-of-a-starless-night': 762975,
+      'sword-art-online-progressive-scherzo-of-deep-night': 956101,
+      'no-game-no-life-zero': 428078,
+      'i-want-to-eat-your-pancreas': 504253,
+      'a-whisker-away': 664574,
+      'the-boy-and-the-heron': 508883,
+      'akira': 149,
+      'ghost-in-the-shell': 9323,
+      'perfect-blue': 10494,
+      'my-hero-academia-two-heroes': 505262,
+      'my-hero-academia-heroes-rising': 592350,
+      'my-hero-academia-world-heroes-mission': 768744,
+      'my-hero-academia-youre-next': 1159311,
+      'haikyu-the-dumpster-battle': 1012201,
+      'spy-x-family-code-white': 1062807,
+      'blue-lock-episode-nagi': 1134433,
+      'rascal-does-not-dream-of-a-dreaming-girl': 572154,
+      'grave-of-the-fireflies': 12477,
+      '5-centimeters-per-second': 38142,
+      'the-garden-of-words': 198370,
+      'look-back': 1244857
+    };
+
+    const isExplicitMovieType = anime.type?.toUpperCase() === 'MOVIE';
+    const isMovieByMal = Boolean(anime.malId && MAL_TO_MOVIE_TMDB[anime.malId]);
+    const isMovieBySlug = Boolean(MOVIE_SLUG_TMDB_MAP[slug] || Object.keys(MOVIE_SLUG_TMDB_MAP).find(k => slug.includes(k)));
+    const isMovieByTitle = /\b(movie|film|gekijouban)\b/i.test(title) || /\b(movie|film)\b/i.test(slug);
+    const isMovie = Boolean(isExplicitMovieType || isMovieByMal || isMovieBySlug || isMovieByTitle);
+
     let embedUrl = '';
-    const activeServer = server || 'vidplay';
-    const activeTranslation = lang || 'sub';
+
+    if (isMovie) {
+      let movieTmdbId = 810693; // default JJK 0
+      if (anime.malId && MAL_TO_MOVIE_TMDB[anime.malId]) {
+        movieTmdbId = MAL_TO_MOVIE_TMDB[anime.malId];
+      } else if (MOVIE_SLUG_TMDB_MAP[slug]) {
+        movieTmdbId = MOVIE_SLUG_TMDB_MAP[slug];
+      } else {
+        const found = Object.entries(MOVIE_SLUG_TMDB_MAP).find(([k]) => slug.includes(k));
+        if (found) {
+          movieTmdbId = found[1];
+        } else if (anime.malId) {
+          movieTmdbId = anime.malId;
+        }
+      }
+
+      if (activeServer === 'vidplay') {
+        embedUrl = `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}${isHindi ? '&ds_lang=hi&audio=hi&dub=1' : isDub ? '&dub=1&audio=en&ds_lang=en' : ''}`;
+      } else if (activeServer === 'datsav') {
+        embedUrl = `https://vidsrc.pm/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
+      } else if (activeServer === 'byfms' || activeServer === 'mycloud') {
+        embedUrl = `https://2embed.cc/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi' : isDub ? '?dub=1&audio=en&lang=en' : ''}`;
+      } else if (activeServer === 'raretoon') {
+        embedUrl = `https://multiembed.mov/?video_id=${movieTmdbId}&tmdb=1&lang=hi`;
+      } else {
+        // dghg / autoembed / default
+        embedUrl = `https://player.autoembed.cc/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
+      }
+
+      return res.status(200).json({
+        embedUrl,
+        server: activeServer,
+        lang: activeTranslation,
+        isMovie: true
+      });
+    }
+
+    // ==========================================
+    // 2. TV SERIES TMDB MAPPINGS & DETECTION
+    // ==========================================
+    let seasonNumber = 1;
+    const seasonMatch = title.match(/Season\s+(\d+)/i) || slug.match(/season-(\d+)/i);
+    const ndSeasonMatch = title.match(/(\d+)(st|nd|rd|th)\s+Season/i) || slug.match(/(\d+)(st|nd|rd|th)-season/i);
+    const partMatch = title.match(/Part\s+(\d+)/i) || slug.match(/part-(\d+)/i);
+    const romanMatch = title.match(/\s+(II|III|IV|V|VI)\b/i) || slug.match(/-(ii|iii|iv|v|vi)$/i);
+
+    if (seasonMatch) {
+      seasonNumber = parseInt(seasonMatch[1], 10);
+    } else if (ndSeasonMatch) {
+      seasonNumber = parseInt(ndSeasonMatch[1], 10);
+    } else if (partMatch) {
+      seasonNumber = parseInt(partMatch[1], 10);
+    } else if (/final\s*season/i.test(title) || /final-season/i.test(slug)) {
+      seasonNumber = 4; // Attack on Titan Final Season
+    } else if (/entertainment\s*district/i.test(title) || /entertainment-district/i.test(slug)) {
+      seasonNumber = 2; // Demon Slayer S2
+    } else if (/swordsmith\s*village/i.test(title) || /swordsmith-village/i.test(slug)) {
+      seasonNumber = 3; // Demon Slayer S3
+    } else if (/hashira\s*training/i.test(title) || /hashira-training/i.test(slug)) {
+      seasonNumber = 4; // Demon Slayer S4
+    } else if (/mugen\s*train/i.test(title) || /mugen-train/i.test(slug)) {
+      seasonNumber = 2;
+    } else if (romanMatch) {
+      const val = (romanMatch[1] || '').toUpperCase();
+      if (val === 'II') seasonNumber = 2;
+      else if (val === 'III') seasonNumber = 3;
+      else if (val === 'IV') seasonNumber = 4;
+      else if (val === 'V') seasonNumber = 5;
+      else if (val === 'VI') seasonNumber = 6;
+    }
+
+    const FRANCHISE_TMDB_MAP: Record<string, number> = {
+      'one-piece': 37854,
+      'naruto': 46260,
+      'naruto-shippuden': 31910,
+      'boruto': 70881,
+      'boruto-naruto-next-generations': 70881,
+      'bleach': 30984,
+      'bleach-thousand-year-blood-war': 30984,
+      'shingeki-no-kyojin': 1429,
+      'attack-on-titan': 1429,
+      'jujutsu-kaisen': 95479,
+      'kimetsu-no-yaiba': 85937,
+      'demon-slayer': 85937,
+      'demon-slayer-kimetsu-no-yaiba': 85937,
+      'my-hero-academia': 65930,
+      'boku-no-hero-academia': 65930,
+      'solo-leveling': 209867,
+      'death-note': 13916,
+      'hunter-x-hunter': 46298,
+      'hunter-x-hunter-2011': 46298,
+      'fullmetal-alchemist-brotherhood': 31911,
+      'fullmetal-alchemist': 31911,
+      'black-clover': 73223,
+      'dragon-ball-z': 12971,
+      'dragon-ball-super': 62710,
+      'dragon-ball': 12696,
+      'chainsaw-man': 114410,
+      'tokyo-ghoul': 61374,
+      'spy-x-family': 120089,
+      'vinland-saga': 89364,
+      'code-geass': 34391,
+      'code-geass-hangyaku-no-lelouch': 34391,
+      'cowboy-bebop': 30991,
+      'steinsgate': 39351,
+      'sword-art-online': 45782,
+      'classroom-of-the-elite': 72636,
+      'youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e': 72636,
+      'frieren-beyond-journeys-end': 209867,
+      'sousou-no-frieren': 209867,
+      'mushoku-tensei-jobless-reincarnation': 99516,
+      'mushoku-tensei': 99516,
+      'the-100-girlfriends-who-really-really-really-really-really-love-you': 223594,
+      'the-100-girlfriends': 223594,
+      'kaiju-8': 207396,
+      'kaiju-no-8': 207396,
+      'mob-psycho-100': 67075,
+      'one-punch-man': 63926,
+      'dr-stone': 86031,
+      'kaguya-sama-love-is-war': 83431,
+      're-zero-starting-life-in-another-world': 65942,
+      're-zero': 65942,
+      'the-eminence-in-shadow': 125867,
+      'haikyuu': 60863,
+      'fairy-tail': 46261,
+      'blue-lock': 135898,
+      'hells-paradise': 157059,
+      'oshi-no-ko': 203737,
+      'overlord': 64196,
+      'that-time-i-got-reincarnated-as-a-slime': 81537,
+      'dandadan': 240411,
+      'tower-of-god': 98978,
+      'wind-breaker': 222666,
+      'shangri-la-frontier': 205424,
+      'konosuba': 65947
+    };
+
+    const MAL_TO_SEASON_INFO: Record<number, { tmdbId: number; seasonNumber: number }> = {
+      // Jujutsu Kaisen
+      40748: { tmdbId: 95479, seasonNumber: 1 },
+      51009: { tmdbId: 95479, seasonNumber: 2 },
+      // Attack on Titan
+      16498: { tmdbId: 1429, seasonNumber: 1 },
+      25777: { tmdbId: 1429, seasonNumber: 2 },
+      35760: { tmdbId: 1429, seasonNumber: 3 },
+      38524: { tmdbId: 1429, seasonNumber: 3 },
+      40028: { tmdbId: 1429, seasonNumber: 4 },
+      48583: { tmdbId: 1429, seasonNumber: 4 },
+      // Demon Slayer
+      38000: { tmdbId: 85937, seasonNumber: 1 },
+      47778: { tmdbId: 85937, seasonNumber: 2 },
+      49776: { tmdbId: 85937, seasonNumber: 2 },
+      51019: { tmdbId: 85937, seasonNumber: 3 },
+      55701: { tmdbId: 85937, seasonNumber: 4 },
+      // My Hero Academia
+      31964: { tmdbId: 65930, seasonNumber: 1 },
+      35247: { tmdbId: 65930, seasonNumber: 2 },
+      36456: { tmdbId: 65930, seasonNumber: 3 },
+      38408: { tmdbId: 65930, seasonNumber: 4 },
+      41587: { tmdbId: 65930, seasonNumber: 5 },
+      49918: { tmdbId: 65930, seasonNumber: 6 },
+      55894: { tmdbId: 65930, seasonNumber: 7 },
+      // Classroom of the Elite
+      35507: { tmdbId: 72636, seasonNumber: 1 },
+      51096: { tmdbId: 72636, seasonNumber: 2 },
+      51097: { tmdbId: 72636, seasonNumber: 3 },
+      // Vinland Saga
+      37521: { tmdbId: 89364, seasonNumber: 1 },
+      49387: { tmdbId: 89364, seasonNumber: 2 },
+      // Mob Psycho 100
+      32182: { tmdbId: 67075, seasonNumber: 1 },
+      37510: { tmdbId: 67075, seasonNumber: 2 },
+      50172: { tmdbId: 67075, seasonNumber: 3 },
+      // One Punch Man
+      30276: { tmdbId: 63926, seasonNumber: 1 },
+      34134: { tmdbId: 63926, seasonNumber: 2 },
+      // Dr. STONE
+      38691: { tmdbId: 86031, seasonNumber: 1 },
+      40852: { tmdbId: 86031, seasonNumber: 2 },
+      48549: { tmdbId: 86031, seasonNumber: 3 },
+      55358: { tmdbId: 86031, seasonNumber: 3 },
+      // Kaguya-sama
+      37999: { tmdbId: 83431, seasonNumber: 1 },
+      40591: { tmdbId: 83431, seasonNumber: 2 },
+      43608: { tmdbId: 83431, seasonNumber: 3 },
+      // Re:ZERO
+      31240: { tmdbId: 65942, seasonNumber: 1 },
+      39587: { tmdbId: 65942, seasonNumber: 2 },
+      42203: { tmdbId: 65942, seasonNumber: 2 },
+      54857: { tmdbId: 65942, seasonNumber: 3 },
+      // Mushoku Tensei
+      39535: { tmdbId: 99516, seasonNumber: 1 },
+      45570: { tmdbId: 99516, seasonNumber: 1 },
+      51179: { tmdbId: 99516, seasonNumber: 2 },
+      55888: { tmdbId: 99516, seasonNumber: 2 },
+      59193: { tmdbId: 99516, seasonNumber: 3 },
+      // Solo Leveling
+      52299: { tmdbId: 209867, seasonNumber: 1 },
+      58567: { tmdbId: 209867, seasonNumber: 2 },
+      // Spy x Family
+      50265: { tmdbId: 120089, seasonNumber: 1 },
+      53887: { tmdbId: 120089, seasonNumber: 2 },
+      // Oshi no Ko
+      52034: { tmdbId: 203737, seasonNumber: 1 },
+      55791: { tmdbId: 203737, seasonNumber: 2 },
+      // Blue Lock
+      49596: { tmdbId: 135898, seasonNumber: 1 },
+      54865: { tmdbId: 135898, seasonNumber: 2 },
+      // That Time I Got Reincarnated as a Slime
+      37430: { tmdbId: 81537, seasonNumber: 1 },
+      39551: { tmdbId: 81537, seasonNumber: 2 },
+      53580: { tmdbId: 81537, seasonNumber: 3 },
+      // KonoSuba
+      30831: { tmdbId: 65947, seasonNumber: 1 },
+      32937: { tmdbId: 65947, seasonNumber: 2 },
+      49458: { tmdbId: 65947, seasonNumber: 3 },
+      // Tower of God
+      40221: { tmdbId: 98978, seasonNumber: 1 },
+      52635: { tmdbId: 98978, seasonNumber: 2 },
+      // Shangri-La Frontier
+      52347: { tmdbId: 205424, seasonNumber: 1 },
+      58594: { tmdbId: 205424, seasonNumber: 2 },
+      // Dandadan
+      57334: { tmdbId: 240411, seasonNumber: 1 }
+    };
+
+    let tmdbId = 37854; // Default One Piece
+
+    if (anime.malId && MAL_TO_SEASON_INFO[anime.malId]) {
+      tmdbId = MAL_TO_SEASON_INFO[anime.malId].tmdbId;
+      seasonNumber = MAL_TO_SEASON_INFO[anime.malId].seasonNumber;
+    } else {
+      let cleanSlug = slug
+        .replace(/-(season-\d+|the-final-season|final-season|\d+(st|nd|rd|th)-season|part-\d+|ii|iii|iv|v|vi)$/i, '')
+        .replace(/-(tv|entertainment-district-arc|swordsmith-village-arc|hashira-training-arc|mugen-train-arc)$/i, '')
+        .trim();
+
+      if (FRANCHISE_TMDB_MAP[slug]) {
+        tmdbId = FRANCHISE_TMDB_MAP[slug];
+      } else if (FRANCHISE_TMDB_MAP[cleanSlug]) {
+        tmdbId = FRANCHISE_TMDB_MAP[cleanSlug];
+      } else {
+        for (const [key, id] of Object.entries(FRANCHISE_TMDB_MAP)) {
+          if (slug.includes(key) || cleanSlug.includes(key)) {
+            tmdbId = id;
+            break;
+          }
+        }
+      }
+    }
 
     if (activeServer === 'vidplay') {
-      embedUrl = `https://vidsrc.to/embed/anime/${malId}/${epNumToUse}`;
-    } else if (activeServer === 'mycloud') {
-      embedUrl = `https://embed.su/embed/anime/${malId}/${epNumToUse}`;
-    } else if (activeServer === 'filemoon') {
-      embedUrl = `https://vidlink.pro/embed/anime/${malId}/${epNumToUse}`;
+      embedUrl = `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}${isHindi ? '&ds_lang=hi&audio=hi&dub=1' : isDub ? '&dub=1&audio=en&ds_lang=en' : ''}`;
+    } else if (activeServer === 'datsav') {
+      embedUrl = `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
+    } else if (activeServer === 'byfms' || activeServer === 'mycloud') {
+      embedUrl = `https://2embed.cc/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi' : isDub ? '?dub=1&audio=en&lang=en' : ''}`;
+    } else if (activeServer === 'raretoon') {
+      embedUrl = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${seasonNumber}&e=${epNumToUse}&lang=hi`;
+    } else {
+      // dghg / autoembed / default
+      embedUrl = `https://player.autoembed.cc/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
     }
 
     return res.status(200).json({
       embedUrl,
       server: activeServer,
-      lang: activeTranslation
+      lang: activeTranslation,
+      isMovie: false
     });
   } catch (error: any) {
     console.error('Error fetching episode sources:', error);
