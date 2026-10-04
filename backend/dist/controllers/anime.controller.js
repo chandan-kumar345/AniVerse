@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.HINDI_KEYWORD_REGEX = exports.HINDI_DUBBED_MAL_IDS = void 0;
+exports.checkIfAnimeHasHindi = checkIfAnimeHasHindi;
 exports.getAllAnime = getAllAnime;
 exports.getTrendingAnime = getTrendingAnime;
 exports.getPopularAnime = getPopularAnime;
@@ -11,6 +13,40 @@ exports.getAllGenres = getAllGenres;
 exports.getEpisodeSources = getEpisodeSources;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
+exports.HINDI_DUBBED_MAL_IDS = new Set([
+    51009, 40748, 48561, // JJK S2, S1, Movie 0
+    38000, 47778, 49776, 51019, 55701, 40456, // Demon Slayer
+    52299, 58567, // Solo Leveling S1, S2
+    44511, // Chainsaw Man
+    31964, 35247, 36456, 38408, 41587, 49918, 55894, // MHA
+    12971, 62710, 36946, 48903, 14837, 25389, // Dragon Ball
+    20, 1735, 34566, // Naruto
+    21, 50410, // One Piece
+    1535, // Death Note
+    54492, 59489, // Kaiju No. 8
+    50265, 53887, // Spy x Family
+    49596, 54865, // Blue Lock
+    34572, // Black Clover
+    30984, 45576, 53998, 56206, // Bleach
+    50594, 38826, 32281, // Suzume, Weathering With You, Your Name
+    57334, // Dandadan
+    54900, // Wind Breaker
+    38691, 40852, 48549, 55358, // Dr. Stone
+    37430, 39551, 53580, // Slime
+    52742, // Haikyu!!
+]);
+exports.HINDI_KEYWORD_REGEX = /\b(jujutsu|demon slayer|kimetsu|solo leveling|chainsaw man|my hero academia|boku no hero|dragon ball|naruto|boruto|one piece|death note|kaiju|spy x family|blue lock|black clover|bleach|suzume|weathering with you|your name|dandadan|dan da dan|wind breaker|dr\.?\s*stone|slime)\b/i;
+function checkIfAnimeHasHindi(anime) {
+    if (!anime)
+        return false;
+    if (anime.malId && exports.HINDI_DUBBED_MAL_IDS.has(anime.malId))
+        return true;
+    if (anime.title && exports.HINDI_KEYWORD_REGEX.test(anime.title))
+        return true;
+    if (anime.slug && exports.HINDI_KEYWORD_REGEX.test(anime.slug))
+        return true;
+    return false;
+}
 function slugify(text) {
     return text
         .toString()
@@ -864,7 +900,17 @@ async function getAnimeDetail(req, res) {
                 });
             }
         }
-        return res.status(200).json({ anime, related, seasons });
+        const hasHindi = checkIfAnimeHasHindi(anime);
+        return res.status(200).json({
+            anime: {
+                ...anime,
+                hasHindi,
+                hasDub: anime.hasDub !== false,
+                hasSub: anime.hasSub !== false
+            },
+            related,
+            seasons
+        });
     }
     catch (error) {
         console.error('Error fetching anime detail:', error);
@@ -919,13 +965,9 @@ async function getEpisodeDetail(req, res) {
         }
         const hasNext = episodeNumber < targetEpCount;
         const hasPrev = episodeNumber > 1;
-        // Check translation support: currently airing anime latest releases are not dubbed yet.
-        // They will receive their dubbed releases in the future.
-        const isAiring = anime.status === 'Currently Airing';
-        let hasDub = true;
-        if (isAiring && episodeNumber >= targetEpCount - 1) {
-            hasDub = false;
-        }
+        const hasDub = anime.hasDub !== false;
+        const hasSub = anime.hasSub !== false;
+        const hasHindi = checkIfAnimeHasHindi(anime);
         return res.status(200).json({
             episode,
             animeName: anime.title,
@@ -933,7 +975,9 @@ async function getEpisodeDetail(req, res) {
             hasPrev,
             hasNext,
             totalEpisodes: targetEpCount,
-            hasDub
+            hasDub,
+            hasSub,
+            hasHindi
         });
     }
     catch (error) {
@@ -991,7 +1035,7 @@ async function getEpisodeSources(req, res) {
     try {
         const { id, epNum } = req.params;
         const { server, lang } = req.query;
-        const episodeNumber = parseInt(epNum);
+        const episodeNumber = parseInt(epNum, 10) || 1;
         const anime = await findOrCreateAnimeBySlugOrId(id);
         if (!anime) {
             return res.status(404).json({ error: 'Anime not found' });
@@ -1002,20 +1046,10 @@ async function getEpisodeSources(req, res) {
         const activeTranslation = lang?.toLowerCase() || 'sub';
         const isHindi = activeTranslation === 'hindi' || activeServer === 'raretoon';
         const isDub = activeTranslation === 'dub';
-        let malId = anime.malId || 21; // Fallback to One Piece
-        let epNumToUse = episodeNumber;
-        // Bleach TYBW offsets
-        if (malId === 45576) {
-            malId = 269;
-            epNumToUse = episodeNumber + 366;
-        }
-        else if (malId === 53998) {
-            malId = 269;
-            epNumToUse = episodeNumber + 379;
-        }
-        else if (malId === 56206) {
-            malId = 269;
-            epNumToUse = episodeNumber + 392;
+        // Auto-heal MAL ID if not present
+        let animeMalId = anime.malId;
+        if (!animeMalId) {
+            animeMalId = await autoHealMalId(anime.id, anime.title);
         }
         // ==========================================
         // 1. MOVIE TMDB MAPPINGS & DETECTION
@@ -1133,16 +1167,17 @@ async function getEpisodeSources(req, res) {
             'the-garden-of-words': 198370,
             'look-back': 1244857
         };
-        const isExplicitMovieType = anime.type?.toUpperCase() === 'MOVIE';
-        const isMovieByMal = Boolean(anime.malId && MAL_TO_MOVIE_TMDB[anime.malId]);
+        const isExplicitMovieType = anime.type?.toUpperCase() === 'MOVIE' || anime.type?.toUpperCase() === 'SPECIAL';
+        const isMovieByMal = Boolean(animeMalId && MAL_TO_MOVIE_TMDB[animeMalId]);
         const isMovieBySlug = Boolean(MOVIE_SLUG_TMDB_MAP[slug] || Object.keys(MOVIE_SLUG_TMDB_MAP).find(k => slug.includes(k)));
         const isMovieByTitle = /\b(movie|film|gekijouban)\b/i.test(title) || /\b(movie|film)\b/i.test(slug);
         const isMovie = Boolean(isExplicitMovieType || isMovieByMal || isMovieBySlug || isMovieByTitle);
-        let embedUrl = '';
+        // Build all server sources for the active audio translation
+        let serverSources = [];
         if (isMovie) {
             let movieTmdbId = 810693; // default JJK 0
-            if (anime.malId && MAL_TO_MOVIE_TMDB[anime.malId]) {
-                movieTmdbId = MAL_TO_MOVIE_TMDB[anime.malId];
+            if (animeMalId && MAL_TO_MOVIE_TMDB[animeMalId]) {
+                movieTmdbId = MAL_TO_MOVIE_TMDB[animeMalId];
             }
             else if (MOVIE_SLUG_TMDB_MAP[slug]) {
                 movieTmdbId = MOVIE_SLUG_TMDB_MAP[slug];
@@ -1152,37 +1187,58 @@ async function getEpisodeSources(req, res) {
                 if (found) {
                     movieTmdbId = found[1];
                 }
-                else if (anime.malId) {
-                    movieTmdbId = anime.malId;
+                else if (animeMalId) {
+                    movieTmdbId = animeMalId;
                 }
             }
-            if (activeServer === 'vidplay') {
-                embedUrl = `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}${isHindi ? '&ds_lang=hi&audio=hi&dub=1' : isDub ? '&dub=1&audio=en&ds_lang=en' : ''}`;
+            if (isHindi) {
+                serverSources = [
+                    { id: 'vidplay', name: 'Vidplay', embedUrl: `https://vidlink.pro/movie/${movieTmdbId}?multiLang=true` },
+                    { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` },
+                    { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` },
+                    { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` },
+                    { id: 'dghg', name: 'DGHG', embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` }
+                ];
             }
-            else if (activeServer === 'datsav') {
-                embedUrl = `https://vidsrc.pm/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
-            }
-            else if (activeServer === 'byfms' || activeServer === 'mycloud') {
-                embedUrl = `https://2embed.cc/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi' : isDub ? '?dub=1&audio=en&lang=en' : ''}`;
-            }
-            else if (activeServer === 'raretoon') {
-                embedUrl = `https://multiembed.mov/?video_id=${movieTmdbId}&tmdb=1&lang=hi`;
+            else if (isDub) {
+                const vidplayDub = animeMalId
+                    ? `https://vidlink.pro/anime/${animeMalId}/1/dub`
+                    : `https://vidlink.pro/movie/${movieTmdbId}?multiLang=true`;
+                serverSources = [
+                    { id: 'vidplay', name: 'Vidplay', embedUrl: vidplayDub },
+                    { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}?dub=1` },
+                    { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` },
+                    { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/movie/${movieTmdbId}?dub=1` },
+                    { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` }
+                ];
             }
             else {
-                // dghg / autoembed / default
-                embedUrl = `https://player.autoembed.cc/embed/movie/${movieTmdbId}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
+                const vidplaySub = animeMalId
+                    ? `https://vidlink.pro/anime/${animeMalId}/1/sub`
+                    : `https://vidlink.pro/movie/${movieTmdbId}`;
+                serverSources = [
+                    { id: 'vidplay', name: 'Vidplay', embedUrl: vidplaySub },
+                    { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}` },
+                    { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}` },
+                    { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/movie/${movieTmdbId}` },
+                    { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}` }
+                ];
             }
+            const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
             return res.status(200).json({
-                embedUrl,
-                server: activeServer,
+                embedUrl: currentServerObj.embedUrl,
+                server: currentServerObj.id,
                 lang: activeTranslation,
-                isMovie: true
+                isMovie: true,
+                hasHindi: checkIfAnimeHasHindi(anime),
+                servers: serverSources
             });
         }
         // ==========================================
         // 2. TV SERIES TMDB MAPPINGS & DETECTION
         // ==========================================
         let seasonNumber = 1;
+        let epNumToUse = episodeNumber;
         const seasonMatch = title.match(/Season\s+(\d+)/i) || slug.match(/season-(\d+)/i);
         const ndSeasonMatch = title.match(/(\d+)(st|nd|rd|th)\s+Season/i) || slug.match(/(\d+)(st|nd|rd|th)-season/i);
         const partMatch = title.match(/Part\s+(\d+)/i) || slug.match(/part-(\d+)/i);
@@ -1240,7 +1296,7 @@ async function getEpisodeSources(req, res) {
             'demon-slayer-kimetsu-no-yaiba': 85937,
             'my-hero-academia': 65930,
             'boku-no-hero-academia': 65930,
-            'solo-leveling': 209867,
+            'solo-leveling': 125526,
             'death-note': 13916,
             'hunter-x-hunter': 46298,
             'hunter-x-hunter-2011': 46298,
@@ -1314,6 +1370,31 @@ async function getEpisodeSources(req, res) {
             41587: { tmdbId: 65930, seasonNumber: 5 },
             49918: { tmdbId: 65930, seasonNumber: 6 },
             55894: { tmdbId: 65930, seasonNumber: 7 },
+            // Bleach TYBW
+            45576: { tmdbId: 30984, seasonNumber: 17 },
+            53998: { tmdbId: 30984, seasonNumber: 17 },
+            56206: { tmdbId: 30984, seasonNumber: 17 },
+            // Naruto / Naruto Shippuden / Boruto
+            20: { tmdbId: 46260, seasonNumber: 1 },
+            1735: { tmdbId: 31910, seasonNumber: 1 },
+            34566: { tmdbId: 70881, seasonNumber: 1 },
+            // One Piece
+            21: { tmdbId: 37854, seasonNumber: 1 },
+            // Chainsaw Man
+            44511: { tmdbId: 114410, seasonNumber: 1 },
+            // Cyberpunk Edgerunners
+            42310: { tmdbId: 105248, seasonNumber: 1 },
+            // Frieren
+            52991: { tmdbId: 209867, seasonNumber: 1 },
+            // Death Note
+            1535: { tmdbId: 13916, seasonNumber: 1 },
+            // Fullmetal Alchemist: Brotherhood
+            5114: { tmdbId: 31911, seasonNumber: 1 },
+            // Hunter x Hunter 2011
+            11061: { tmdbId: 46298, seasonNumber: 1 },
+            // One Punch Man
+            30276: { tmdbId: 63926, seasonNumber: 1 },
+            34134: { tmdbId: 63926, seasonNumber: 2 },
             // Classroom of the Elite
             35507: { tmdbId: 72636, seasonNumber: 1 },
             51096: { tmdbId: 72636, seasonNumber: 2 },
@@ -1325,9 +1406,6 @@ async function getEpisodeSources(req, res) {
             32182: { tmdbId: 67075, seasonNumber: 1 },
             37510: { tmdbId: 67075, seasonNumber: 2 },
             50172: { tmdbId: 67075, seasonNumber: 3 },
-            // One Punch Man
-            30276: { tmdbId: 63926, seasonNumber: 1 },
-            34134: { tmdbId: 63926, seasonNumber: 2 },
             // Dr. STONE
             38691: { tmdbId: 86031, seasonNumber: 1 },
             40852: { tmdbId: 86031, seasonNumber: 2 },
@@ -1349,8 +1427,8 @@ async function getEpisodeSources(req, res) {
             55888: { tmdbId: 99516, seasonNumber: 2 },
             59193: { tmdbId: 99516, seasonNumber: 3 },
             // Solo Leveling
-            52299: { tmdbId: 209867, seasonNumber: 1 },
-            58567: { tmdbId: 209867, seasonNumber: 2 },
+            52299: { tmdbId: 125526, seasonNumber: 1 },
+            58567: { tmdbId: 125526, seasonNumber: 2 },
             // Spy x Family
             50265: { tmdbId: 120089, seasonNumber: 1 },
             53887: { tmdbId: 120089, seasonNumber: 2 },
@@ -1375,12 +1453,41 @@ async function getEpisodeSources(req, res) {
             52347: { tmdbId: 205424, seasonNumber: 1 },
             58594: { tmdbId: 205424, seasonNumber: 2 },
             // Dandadan
-            57334: { tmdbId: 240411, seasonNumber: 1 }
+            57334: { tmdbId: 240411, seasonNumber: 1 },
+            // Kaiju No. 8
+            59489: { tmdbId: 207396, seasonNumber: 1 },
+            54492: { tmdbId: 207396, seasonNumber: 1 },
+            // Black Clover
+            34572: { tmdbId: 73223, seasonNumber: 1 },
+            // Haikyuu!!
+            20583: { tmdbId: 60863, seasonNumber: 1 },
+            28891: { tmdbId: 60863, seasonNumber: 2 },
+            32935: { tmdbId: 60863, seasonNumber: 3 },
+            38883: { tmdbId: 60863, seasonNumber: 4 },
+            // Fairy Tail
+            6702: { tmdbId: 46261, seasonNumber: 1 },
+            // Tokyo Ghoul
+            22319: { tmdbId: 61374, seasonNumber: 1 },
+            // Cowboy Bebop
+            1: { tmdbId: 30991, seasonNumber: 1 },
+            // Steins;Gate
+            9253: { tmdbId: 39351, seasonNumber: 1 },
+            // Code Geass
+            1575: { tmdbId: 34391, seasonNumber: 1 },
+            2904: { tmdbId: 34391, seasonNumber: 2 },
+            // Sword Art Online
+            11757: { tmdbId: 45782, seasonNumber: 1 },
+            21881: { tmdbId: 45782, seasonNumber: 2 },
+            36474: { tmdbId: 45782, seasonNumber: 3 },
+            // Hell's Paradise
+            46569: { tmdbId: 157059, seasonNumber: 1 },
+            // Wind Breaker
+            54900: { tmdbId: 222666, seasonNumber: 1 }
         };
         let tmdbId = 37854; // Default One Piece
-        if (anime.malId && MAL_TO_SEASON_INFO[anime.malId]) {
-            tmdbId = MAL_TO_SEASON_INFO[anime.malId].tmdbId;
-            seasonNumber = MAL_TO_SEASON_INFO[anime.malId].seasonNumber;
+        if (animeMalId && MAL_TO_SEASON_INFO[animeMalId]) {
+            tmdbId = MAL_TO_SEASON_INFO[animeMalId].tmdbId;
+            seasonNumber = MAL_TO_SEASON_INFO[animeMalId].seasonNumber;
         }
         else {
             let cleanSlug = slug
@@ -1402,27 +1509,49 @@ async function getEpisodeSources(req, res) {
                 }
             }
         }
-        if (activeServer === 'vidplay') {
-            embedUrl = `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}${isHindi ? '&ds_lang=hi&audio=hi&dub=1' : isDub ? '&dub=1&audio=en&ds_lang=en' : ''}`;
+        if (isHindi) {
+            serverSources = [
+                { id: 'vidplay', name: 'Vidplay', embedUrl: `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?multiLang=true` },
+                { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` },
+                { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` },
+                { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` },
+                { id: 'dghg', name: 'DGHG', embedUrl: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` }
+            ];
         }
-        else if (activeServer === 'datsav') {
-            embedUrl = `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
-        }
-        else if (activeServer === 'byfms' || activeServer === 'mycloud') {
-            embedUrl = `https://2embed.cc/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi' : isDub ? '?dub=1&audio=en&lang=en' : ''}`;
-        }
-        else if (activeServer === 'raretoon') {
-            embedUrl = `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${seasonNumber}&e=${epNumToUse}&lang=hi`;
+        else if (isDub) {
+            // DUB (English Dubbed) - Each server provides real English DUB source
+            const vidplayDub = animeMalId
+                ? `https://vidlink.pro/anime/${animeMalId}/${episodeNumber}/dub`
+                : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?multiLang=true`;
+            serverSources = [
+                { id: 'vidplay', name: 'Vidplay', embedUrl: vidplayDub },
+                { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` },
+                { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` },
+                { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/tv/${tmdbId}?s=${seasonNumber}&e=${epNumToUse}&dub=1` },
+                { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` }
+            ];
         }
         else {
-            // dghg / autoembed / default
-            embedUrl = `https://player.autoembed.cc/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}${isHindi ? '?lang=hi&audio=hi&dub=1' : isDub ? '?dub=1&lang=en&audio=en' : ''}`;
+            // SUB (Japanese Audio + English/CC Subtitles)
+            const vidplaySub = animeMalId
+                ? `https://vidlink.pro/anime/${animeMalId}/${episodeNumber}/sub`
+                : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}`;
+            serverSources = [
+                { id: 'vidplay', name: 'Vidplay', embedUrl: vidplaySub },
+                { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` },
+                { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` },
+                { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/tv/${tmdbId}?s=${seasonNumber}&e=${epNumToUse}` },
+                { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` }
+            ];
         }
+        const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
         return res.status(200).json({
-            embedUrl,
-            server: activeServer,
+            embedUrl: currentServerObj.embedUrl,
+            server: currentServerObj.id,
             lang: activeTranslation,
-            isMovie: false
+            isMovie: false,
+            hasHindi: checkIfAnimeHasHindi(anime),
+            servers: serverSources
         });
     }
     catch (error) {
