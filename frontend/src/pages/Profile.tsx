@@ -238,6 +238,10 @@ export const Profile: React.FC = () => {
                   src={item.anime.posterImage}
                   alt={item.anime.title}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                  }}
                   style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px' }}
                 />
 

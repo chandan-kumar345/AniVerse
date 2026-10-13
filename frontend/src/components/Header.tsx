@@ -119,7 +119,16 @@ export const Header: React.FC = () => {
                   style={{ display: 'flex', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'var(--transition-fast)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
                   className="suggestion-item"
                 >
-                  <img src={item.posterImage} alt={item.title} referrerPolicy="no-referrer" style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} />
+                  <img
+                    src={item.posterImage}
+                    alt={item.title}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                    }}
+                    style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }}
+                  />
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                       {item.title}

@@ -78,6 +78,10 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
                 src={anime.posterImage}
                 alt={anime.title}
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                }}
                 style={{ width: '45px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}
               />
 

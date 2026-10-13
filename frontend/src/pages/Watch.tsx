@@ -79,19 +79,35 @@ export const Watch: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [embedUrl, setEmbedUrl] = useState('');
 
-  // Silent internal fallback server switcher
+  // Silent internal fallback server switcher (prioritizes working audio stream per mode)
   const switchToNextServer = () => {
-    const list = [
-      { id: 'vidplay', name: 'Vidplay' },
-      { id: 'datsav', name: 'DatSaV' },
-      { id: 'byfms', name: 'BYFMS' },
-      { id: 'dghg', name: 'DGHG' },
-      ...(activeTranslation === 'hindi' || hasHindi ? [{ id: 'raretoon', name: 'RareToon' }] : [])
-    ] as { id: 'datsav' | 'vidplay' | 'byfms' | 'dghg' | 'raretoon'; name: string }[];
+    const list = activeTranslation === 'hindi'
+      ? [
+          { id: 'raretoon', name: 'RareToon' },
+          { id: 'byfms', name: 'BYFMS' },
+          { id: 'datsav', name: 'DatSaV' },
+          { id: 'dghg', name: 'DGHG' },
+          { id: 'vidplay', name: 'Vidplay' }
+        ]
+      : activeTranslation === 'dub'
+      ? [
+          { id: 'datsav', name: 'DatSaV' },
+          { id: 'vidplay', name: 'Vidplay' },
+          { id: 'byfms', name: 'BYFMS' },
+          { id: 'raretoon', name: 'RareToon' },
+          { id: 'dghg', name: 'DGHG' }
+        ]
+      : [
+          { id: 'vidplay', name: 'Vidplay' },
+          { id: 'datsav', name: 'DatSaV' },
+          { id: 'byfms', name: 'BYFMS' },
+          { id: 'dghg', name: 'DGHG' },
+          { id: 'raretoon', name: 'RareToon' }
+        ];
 
     const currentIndex = list.findIndex(s => s.id === activeServer);
     const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % list.length : 0;
-    setActiveServer(list[nextIndex].id);
+    setActiveServer(list[nextIndex].id as any);
   };
 
   // Calculate 100-chunk pagination ranges
@@ -270,6 +286,11 @@ export const Watch: React.FC = () => {
           }
         }
         setEmbedUrl(url);
+
+        // Seamlessly sync activeServer if backend selected the primary working server for this audio
+        if (response.data.server && response.data.server !== activeServer) {
+          setActiveServer(response.data.server);
+        }
       } catch (err) {
         console.error('Error fetching episode dynamic source:', err);
       }
@@ -386,7 +407,20 @@ export const Watch: React.FC = () => {
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 <select
                   value={activeTranslationFilter}
-                  onChange={(e) => setActiveTranslationFilter(e.target.value as any)}
+                  onChange={(e) => {
+                    const val = e.target.value as any;
+                    setActiveTranslationFilter(val);
+                    if (val === 'hindi') {
+                      setActiveTranslation('hindi');
+                      setActiveServer('raretoon');
+                    } else if (val === 'dub') {
+                      setActiveTranslation('dub');
+                      setActiveServer('datsav');
+                    } else if (val === 'sub') {
+                      setActiveTranslation('sub');
+                      setActiveServer('vidplay');
+                    }
+                  }}
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', borderRadius: '4px', padding: '5px', fontSize: '10px', outline: 'none', cursor: 'pointer' }}
                 >
                   <option value="sub_dub" style={{ background: '#110e16', color: '#fff' }}>All Audio</option>
@@ -626,14 +660,32 @@ export const Watch: React.FC = () => {
             {/* SUB servers group */}
             {animeDetail.hasSub !== false && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 800, color: '#e2e8f0', minWidth: '70px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => { setActiveTranslation('sub'); setActiveServer('vidplay'); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: activeTranslation === 'sub' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${activeTranslation === 'sub' ? 'rgba(139, 92, 246, 0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: activeTranslation === 'sub' ? '#c084fc' : '#e2e8f0',
+                    minWidth: '70px',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Switch to Japanese Audio with Subtitles"
+                >
                   <span style={{ fontSize: '9px', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '2px', padding: '0 2px', lineHeight: '1.2' }}>CC</span>
                   SUB
-                </span>
+                </button>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {[
-                    { id: 'vidplay', name: 'Vidplay', badge: '⚡ 24/7' },
+                    { id: 'vidplay', name: 'Vidplay' },
                     { id: 'datsav', name: 'DatSaV' },
                     { id: 'byfms', name: 'BYFMS' },
                     { id: 'dghg', name: 'DGHG' }
@@ -664,11 +716,6 @@ export const Watch: React.FC = () => {
                           <Play size={7} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
                         </div>
                         {s.name}
-                        {s.badge && (
-                          <span style={{ fontSize: '9px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(139, 92, 246, 0.2)', color: isSelected ? '#fff' : '#c084fc', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
-                            {s.badge}
-                          </span>
-                        )}
                       </button>
                     );
                   })}
@@ -679,15 +726,33 @@ export const Watch: React.FC = () => {
             {/* DUB servers group */}
             {animeDetail.hasDub !== false && hasDub && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 800, color: '#e2e8f0', minWidth: '70px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => { setActiveTranslation('dub'); setActiveServer('datsav'); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: activeTranslation === 'dub' ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${activeTranslation === 'dub' ? 'rgba(6, 182, 212, 0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: activeTranslation === 'dub' ? '#22d3ee' : '#e2e8f0',
+                    minWidth: '70px',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Switch to English Dubbed Audio"
+                >
                   <span style={{ fontSize: '12px' }}>🎙️</span>
                   DUB
-                </span>
+                </button>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {[
-                    { id: 'vidplay', name: 'Vidplay', badge: '⚡ 24/7' },
                     { id: 'datsav', name: 'DatSaV' },
+                    { id: 'vidplay', name: 'Vidplay' },
                     { id: 'byfms', name: 'BYFMS' },
                     { id: 'dghg', name: 'DGHG' }
                   ].map((s) => {
@@ -717,11 +782,6 @@ export const Watch: React.FC = () => {
                           <Play size={7} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
                         </div>
                         {s.name}
-                        {s.badge && (
-                          <span style={{ fontSize: '9px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(6, 182, 212, 0.2)', color: isSelected ? '#fff' : '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
-                            {s.badge}
-                          </span>
-                        )}
                       </button>
                     );
                   })}
@@ -732,18 +792,36 @@ export const Watch: React.FC = () => {
             {/* HINDI Dubbed servers group - ONLY rendered if anime has Hindi audio */}
             {hasHindi && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 800, color: '#fbbf24', minWidth: '70px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => { setActiveTranslation('hindi'); setActiveServer('raretoon'); }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: activeTranslation === 'hindi' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.08)',
+                    border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(245, 158, 11, 0.6)' : 'rgba(245, 158, 11, 0.25)'}`,
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#fbbf24',
+                    minWidth: '70px',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Switch to Hindi Dubbed Audio"
+                >
                   <span style={{ fontSize: '12px' }}>🇮🇳</span>
                   HINDI
-                </span>
+                </button>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {[
-                    { id: 'vidplay', name: 'Vidplay', badge: '⚡ Multi' },
-                    { id: 'raretoon', name: 'RareToon', badge: '🇮🇳 Clean' },
+                    { id: 'raretoon', name: 'RareToon' },
                     { id: 'byfms', name: 'BYFMS' },
                     { id: 'datsav', name: 'DatSaV' },
-                    { id: 'dghg', name: 'DGHG' }
+                    { id: 'dghg', name: 'DGHG' },
+                    { id: 'vidplay', name: 'Vidplay' }
                   ].map((s) => {
                     const isSelected = activeTranslation === 'hindi' && activeServer === s.id;
                     return (
@@ -771,11 +849,6 @@ export const Watch: React.FC = () => {
                           <Play size={7} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
                         </div>
                         {s.name}
-                        {s.badge && (
-                          <span style={{ fontSize: '9px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(245, 158, 11, 0.2)', color: isSelected ? '#fff' : '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
-                            {s.badge}
-                          </span>
-                        )}
                       </button>
                     );
                   })}
@@ -817,7 +890,16 @@ export const Watch: React.FC = () => {
                     className="related-item-card"
                   >
                     <div style={{ width: '110px', height: '155px', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
-                      <img src={item.posterImage} alt={item.title} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'var(--transition-fast)' }} />
+                      <img
+                        src={item.posterImage}
+                        alt={item.title}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'var(--transition-fast)' }}
+                      />
                       <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.85)', padding: '2px 6px', borderRadius: '3px', fontSize: '10px', fontWeight: 700, color: 'var(--color-accent)', display: 'flex', alignItems: 'center', gap: '2px' }}>
                         ⭐ {item.score.toFixed(1)}
                       </div>
@@ -855,6 +937,10 @@ export const Watch: React.FC = () => {
               src={animeDetail.posterImage}
               alt={animeName}
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+              }}
               style={{ width: '100%', height: '280px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
             />
 
@@ -878,7 +964,16 @@ export const Watch: React.FC = () => {
             {/* 4K HD widescreen banner */}
             {animeDetail.bannerImage && (
               <div style={{ width: '100%', height: '150px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', position: 'relative' }}>
-                <img src={animeDetail.bannerImage} alt={animeName} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img
+                  src={animeDetail.bannerImage}
+                  alt={animeName}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80';
+                  }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(17,14,22,0.95))' }} />
               </div>
             )}

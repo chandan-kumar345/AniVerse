@@ -24,7 +24,17 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {newRelease.map((anime) => (
             <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
-              <img src={anime.posterImage} alt={anime.title} referrerPolicy="no-referrer" style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }} className="section-item-thumb" />
+              <img
+                src={anime.posterImage}
+                alt={anime.title}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                }}
+                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                className="section-item-thumb"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}
@@ -46,7 +56,17 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {newAdded.map((anime) => (
             <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
-              <img src={anime.posterImage} alt={anime.title} referrerPolicy="no-referrer" style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }} className="section-item-thumb" />
+              <img
+                src={anime.posterImage}
+                alt={anime.title}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                }}
+                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                className="section-item-thumb"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}
@@ -68,7 +88,17 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {justCompleted.map((anime) => (
             <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
-              <img src={anime.posterImage} alt={anime.title} referrerPolicy="no-referrer" style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }} className="section-item-thumb" />
+              <img
+                src={anime.posterImage}
+                alt={anime.title}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                }}
+                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                className="section-item-thumb"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}

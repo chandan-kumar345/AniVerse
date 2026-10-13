@@ -119,6 +119,10 @@ export const AnimeDetail: React.FC = () => {
           alt={anime.title}
           referrerPolicy="no-referrer"
           loading="eager"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80';
+          }}
           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
         />
         {/* Cinematic gradient overlays */}
@@ -139,6 +143,10 @@ export const AnimeDetail: React.FC = () => {
               alt={anime.title}
               referrerPolicy="no-referrer"
               loading="eager"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+              }}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </div>
@@ -362,7 +370,11 @@ export const AnimeDetail: React.FC = () => {
                         src={item.posterImage}
                         alt={item.title}
                         referrerPolicy="no-referrer"
-                        style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                        }}
+                        style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
                         <h4 style={{ fontSize: '13px', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '5px', transition: 'var(--transition-fast)', lineHeight: '1.4' }} className="related-title">

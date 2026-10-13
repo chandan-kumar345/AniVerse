@@ -216,6 +216,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                     src={hdImage}
                     alt={anime.title}
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80';
+                    }}
                     style={{
                       position: 'relative',
                       width: '100%',
@@ -249,6 +253,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                     src={anime.posterImage}
                     alt=""
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+                    }}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
@@ -258,6 +266,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                       src={anime.posterImage}
                       alt={anime.title}
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+                      }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   </div>
