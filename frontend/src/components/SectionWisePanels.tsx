@@ -14,16 +14,17 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
   justCompleted,
 }) => {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px', margin: '24px 0' }} className="home-sections-grid">
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', margin: '24px 0' }} className="home-sections-grid">
       
       {/* Column 1: New Release */}
-      <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '20px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '16px', borderLeft: '4px solid var(--color-primary)', paddingLeft: '10px' }}>
+      <div className="nm-card" style={{ padding: '22px' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
           New Release
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {newRelease.map((anime) => (
-            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
+            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '14px', textDecoration: 'none', padding: '8px', borderRadius: '10px', transition: 'var(--transition-fast)' }} className="section-list-item">
               <img
                 src={anime.posterImage}
                 alt={anime.title}
@@ -32,7 +33,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
@@ -40,7 +41,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  ⭐ {anime.score.toFixed(1)} • {anime.type}
+                  <span style={{ color: '#facc15' }}>★</span> {anime.score.toFixed(1)} • {anime.type}
                 </div>
               </div>
             </Link>
@@ -49,13 +50,14 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
       </div>
 
       {/* Column 2: New Added */}
-      <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '20px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '16px', borderLeft: '4px solid var(--color-accent)', paddingLeft: '10px' }}>
+      <div className="nm-card" style={{ padding: '22px' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" style={{ height: '18px', width: '3px', background: 'var(--color-accent)', boxShadow: '0 0 10px var(--color-accent)' }} />
           New Added
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {newAdded.map((anime) => (
-            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
+            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '14px', textDecoration: 'none', padding: '8px', borderRadius: '10px', transition: 'var(--transition-fast)' }} className="section-list-item">
               <img
                 src={anime.posterImage}
                 alt={anime.title}
@@ -64,7 +66,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
@@ -72,7 +74,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  ⭐ {anime.score.toFixed(1)} • {anime.type}
+                  <span style={{ color: '#facc15' }}>★</span> {anime.score.toFixed(1)} • {anime.type}
                 </div>
               </div>
             </Link>
@@ -81,13 +83,14 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
       </div>
 
       {/* Column 3: Just Completed */}
-      <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '20px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '16px', borderLeft: '4px solid var(--color-teal)', paddingLeft: '10px' }}>
+      <div className="nm-card" style={{ padding: '22px' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" style={{ height: '18px', width: '3px', background: 'var(--color-teal)', boxShadow: '0 0 10px var(--color-teal)' }} />
           Just Completed
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {justCompleted.map((anime) => (
-            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '12px', textDecoration: 'none' }} className="section-list-item">
+            <Link to={`/anime/${anime.slug}`} key={anime.id} style={{ display: 'flex', gap: '14px', textDecoration: 'none', padding: '8px', borderRadius: '10px', transition: 'var(--transition-fast)' }} className="section-list-item">
               <img
                 src={anime.posterImage}
                 alt={anime.title}
@@ -96,7 +99,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
@@ -104,7 +107,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  ⭐ {anime.score.toFixed(1)} • {anime.type}
+                  <span style={{ color: '#facc15' }}>★</span> {anime.score.toFixed(1)} • {anime.type}
                 </div>
               </div>
             </Link>

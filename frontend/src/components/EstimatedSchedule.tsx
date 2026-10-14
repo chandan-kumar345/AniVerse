@@ -213,30 +213,32 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
   };
 
   return (
-    <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', margin: '10px 0 24px' }}>
+    <div className="nm-card" style={{ padding: '26px', margin: '14px 0 28px' }}>
       
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#fff' }}>
-          Estimated Schedule <span style={{ color: 'var(--text-dark)', fontWeight: 500, fontSize: '14px', marginLeft: '6px' }}>- Now: {formatLiveTime(currentTime)}</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" />
+          Estimated Schedule <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '14px', marginLeft: '10px' }}>Now: {formatLiveTime(currentTime)}</span>
         </h2>
       </div>
 
-      {/* DAYS SLIDER */}
-      <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px', marginBottom: '24px' }}>
+      {/* DAYS SLIDER - Inset Neumorphic Track */}
+      <div style={{ display: 'flex', alignItems: 'center', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '16px', padding: '10px 14px', marginBottom: '24px' }}>
         
         {/* Prev Arrow */}
         <button 
           onClick={handlePrevDay} 
           disabled={selectedDayOffset === -3}
-          style={{ background: 'none', border: 'none', color: selectedDayOffset === -3 ? 'var(--text-dark)' : '#fff', cursor: selectedDayOffset === -3 ? 'not-allowed' : 'pointer', padding: '10px', display: 'flex', alignItems: 'center', transition: 'var(--transition-fast)' }}
-          className="sched-arrow-btn"
+          className="nm-icon-btn"
+          style={{ width: '38px', height: '38px', opacity: selectedDayOffset === -3 ? 0.35 : 1, cursor: selectedDayOffset === -3 ? 'not-allowed' : 'pointer' }}
+          aria-label="Previous day"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={18} />
         </button>
 
         {/* Days List */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', overflowX: 'auto', gap: '10px' }} className="no-scrollbar">
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', overflowX: 'auto', gap: '10px', padding: '0 10px' }} className="no-scrollbar">
           {days.map((day) => {
             const isActive = day.offset === selectedDayOffset;
             const isToday = day.offset === 0;
@@ -245,26 +247,27 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 key={day.offset}
                 onClick={() => setSelectedDayOffset(day.offset)}
                 style={{
-                  background: 'none',
-                  border: 'none',
+                  background: isActive ? '#1e2034' : 'none',
+                  border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
+                  borderRadius: '12px',
+                  boxShadow: isActive ? '4px 4px 10px #08090f, -3px -3px 8px #22253c' : 'none',
                   outline: 'none',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '6px 16px',
-                  borderBottom: isActive ? '3px solid var(--color-primary)' : '3px solid transparent',
-                  color: isActive ? '#fff' : 'var(--text-dark)',
+                  padding: '8px 18px',
+                  color: isActive ? '#fff' : 'var(--text-muted)',
                   transition: 'var(--transition-fast)',
-                  minWidth: '70px'
+                  minWidth: '72px'
                 }}
                 className={`sched-day-tab ${isActive ? 'active' : ''}`}
               >
-                <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px' }}>{day.month} {day.dayNum}</span>
-                <span style={{ fontSize: '18px', fontWeight: isActive ? 800 : 600, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px' }}>{day.month} {day.dayNum}</span>
+                <span style={{ fontSize: '16px', fontWeight: isActive ? 800 : 600, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {day.dayName}
-                  {isToday && <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-primary)', background: 'rgba(139, 92, 246, 0.15)', padding: '2px 4px', borderRadius: '3px', marginLeft: '2px' }}>TODAY</span>}
+                  {isToday && <span style={{ fontSize: '9px', fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', padding: '2px 5px', borderRadius: '4px', marginLeft: '4px' }}>TODAY</span>}
                 </span>
               </button>
             );
@@ -275,10 +278,11 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
         <button 
           onClick={handleNextDay} 
           disabled={selectedDayOffset === 3}
-          style={{ background: 'none', border: 'none', color: selectedDayOffset === 3 ? 'var(--text-dark)' : '#fff', cursor: selectedDayOffset === 3 ? 'not-allowed' : 'pointer', padding: '10px', display: 'flex', alignItems: 'center', transition: 'var(--transition-fast)' }}
-          className="sched-arrow-btn"
+          className="nm-icon-btn"
+          style={{ width: '38px', height: '38px', opacity: selectedDayOffset === 3 ? 0.35 : 1, cursor: selectedDayOffset === 3 ? 'not-allowed' : 'pointer' }}
+          aria-label="Next day"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={18} />
         </button>
       </div>
 

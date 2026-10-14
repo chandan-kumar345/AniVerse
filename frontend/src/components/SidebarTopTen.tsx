@@ -31,21 +31,35 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
   const currentList = getSortedList();
 
   return (
-    <div style={{ background: '#12121c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px', width: '100%' }}>
+    <div className="nm-card" style={{ padding: '22px', width: '100%' }}>
       
       {/* HEADER & TABS */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#fff' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
           Top 10 Anime
         </h3>
         
-        {/* Tab Buttons */}
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', padding: '3px' }}>
+        {/* Tab Buttons - Neumorphic inset well */}
+        <div style={{ display: 'flex', background: '#10121d', boxShadow: 'var(--nm-inset)', borderRadius: '9999px', padding: '4px', border: '1px solid rgba(255,255,255,0.03)' }}>
           {(['day', 'week', 'month'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              style={{ flex: 1, border: 'none', background: activeTab === tab ? 'var(--color-primary)' : 'none', color: activeTab === tab ? '#fff' : 'var(--text-muted)', padding: '6px 12px', fontSize: '12px', fontWeight: 700, borderRadius: '4px', cursor: 'pointer', textTransform: 'uppercase', transition: 'var(--transition-fast)' }}
+              style={{ 
+                flex: 1, 
+                border: 'none', 
+                background: activeTab === tab ? '#1e2034' : 'none', 
+                color: activeTab === tab ? '#fff' : 'var(--text-muted)', 
+                padding: '6px 12px', 
+                fontSize: '11px', 
+                fontWeight: 700, 
+                borderRadius: '9999px', 
+                cursor: 'pointer', 
+                textTransform: 'uppercase', 
+                transition: 'var(--transition-fast)',
+                boxShadow: activeTab === tab ? '3px 3px 6px #08090f, -2px -2px 5px #22253c' : 'none',
+              }}
             >
               {tab === 'day' ? 'Today' : tab}
             </button>
@@ -54,7 +68,7 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
       </div>
 
       {/* ITEMS LIST */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {currentList.map((anime, index) => {
           const rank = index + 1;
           const rankColors = ['#f59e0b', '#3b82f6', '#10b981']; // Gold, Blue, Green for Top 3
@@ -64,12 +78,12 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
             <Link
               key={anime.id}
               to={`/anime/${anime.slug}`}
-              style={{ display: 'flex', gap: '15px', alignItems: 'center', textDecoration: 'none', color: 'inherit', padding: '10px 0', borderBottom: index < currentList.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', transition: 'var(--transition-fast)' }}
+              style={{ display: 'flex', gap: '14px', alignItems: 'center', textDecoration: 'none', color: 'inherit', padding: '8px 10px', borderRadius: '10px', transition: 'var(--transition-fast)' }}
               className="top-ten-item"
             >
               
               {/* RANK NUMBER */}
-              <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 900, color: rankColor, filter: rank <= 3 ? `drop-shadow(0 0 5px ${rankColor}40)` : 'none' }}>
+              <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 900, color: rankColor, filter: rank <= 3 ? `drop-shadow(0 0 6px ${rankColor}50)` : 'none', flexShrink: 0 }}>
                 {String(rank).padStart(2, '0')}
               </div>
 

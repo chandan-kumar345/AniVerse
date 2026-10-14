@@ -170,7 +170,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
         
         {/* Connector arrow line for replies */}
         {isReply && (
-          <div style={{ position: 'absolute', top: '12px', left: '-20px', color: 'var(--border-color)', display: 'flex', alignItems: 'center' }}>
+          <div style={{ position: 'absolute', top: '14px', left: '-20px', color: 'rgba(139, 92, 246, 0.4)', display: 'flex', alignItems: 'center' }}>
             <CornerDownRight size={14} />
           </div>
         )}
@@ -180,48 +180,110 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
           <img
             src={`https://api.dicebear.com/7.x/bottts/svg?seed=${comment.user.username}`}
             alt={comment.user.username}
-            style={{ width: isReply ? '32px' : '42px', height: isReply ? '32px' : '42px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(139,92,246,0.2)', padding: '2px' }}
+            style={{
+              width: isReply ? '34px' : '44px',
+              height: isReply ? '34px' : '44px',
+              borderRadius: '50%',
+              background: 'var(--bg-surface-elevated)',
+              boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+              border: '2px solid rgba(139, 92, 246, 0.3)',
+              padding: '2px'
+            }}
           />
         </div>
 
         {/* Content body */}
-        <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px', position: 'relative' }}>
-          
+        <div
+          style={{
+            flex: 1,
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid rgba(255,255,255,0.04)',
+            borderRadius: '16px',
+            boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+            padding: '16px',
+            position: 'relative'
+          }}
+        >
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--color-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--color-primary)' }}>
               {comment.user.username}
             </span>
-            <span style={{ fontSize: '11px', color: 'var(--text-dark)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
               {formatCommentDate(comment.createdAt)}
             </span>
           </div>
 
           {/* Text */}
-          <p style={{ fontSize: '14px', color: '#e5e7eb', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+          <p style={{ fontSize: '14px', color: '#e5e7eb', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
             {comment.text}
           </p>
 
           {/* Action Row */}
-          <div style={{ display: 'flex', gap: '16px', marginTop: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '14px', alignItems: 'center' }}>
             {/* Like */}
-            <button onClick={() => handleLike(comment.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', transition: 'var(--transition-fast)' }} className="comment-act-btn">
-              <Heart size={14} className="heart-icon" />
+            <button
+              onClick={() => handleLike(comment.id)}
+              className="nm-pill"
+              style={{
+                border: 'none',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                fontWeight: 600
+              }}
+            >
+              <Heart size={13} className="heart-icon" />
               <span>{comment.likes}</span>
             </button>
 
             {/* Reply */}
             {isAuthenticated && (
-              <button onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', transition: 'var(--transition-fast)' }} className="comment-act-btn">
-                <MessageSquare size={14} />
+              <button
+                onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
+                className="nm-pill"
+                style={{
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderRadius: '9999px',
+                  fontWeight: 600
+                }}
+              >
+                <MessageSquare size={13} />
                 <span>Reply</span>
               </button>
             )}
 
             {/* Delete */}
             {canDelete && (
-              <button onClick={() => handleDelete(comment.id)} style={{ background: 'none', border: 'none', color: '#ef4444', opacity: 0.6, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto', fontSize: '12px', transition: 'var(--transition-fast)' }} className="comment-act-btn">
-                <Trash2 size={13} />
+              <button
+                onClick={() => handleDelete(comment.id)}
+                className="nm-pill"
+                style={{
+                  border: 'none',
+                  color: '#ef4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  marginLeft: 'auto',
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderRadius: '9999px'
+                }}
+              >
+                <Trash2 size={12} />
                 <span>Delete</span>
               </button>
             )}
@@ -229,18 +291,41 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
 
           {/* Inline Reply input field */}
           {replyToId === comment.id && (
-            <form onSubmit={(e) => handlePostReply(e, comment.id)} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+            <form onSubmit={(e) => handlePostReply(e, comment.id)} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px' }}>
               <textarea
                 placeholder="Write a reply..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                style={{ width: '100%', minHeight: '60px', background: '#0e0e15', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '6px', padding: '10px', outline: 'none', fontSize: '13px', resize: 'vertical' }}
+                style={{
+                  width: '100%',
+                  minHeight: '65px',
+                  background: 'var(--bg-surface-recessed)',
+                  boxShadow: 'var(--nm-inset)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  color: '#fff',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  outline: 'none',
+                  fontSize: '13px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
               />
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setReplyToId(null)} style={{ padding: '6px 12px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
+                <button
+                  type="button"
+                  onClick={() => setReplyToId(null)}
+                  className="nm-pill"
+                  style={{ padding: '6px 14px', border: 'none', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', borderRadius: '9999px' }}
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={loading} style={{ padding: '6px 14px', background: 'var(--color-primary)', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 600, borderRadius: '4px', cursor: 'pointer' }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="nm-btn-primary"
+                  style={{ padding: '6px 16px', fontSize: '11px', borderRadius: '9999px', cursor: 'pointer' }}
+                >
                   Reply
                 </button>
               </div>
@@ -252,12 +337,24 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '30px' }}>
-      
+    <div
+      className="nm-card"
+      style={{
+        borderRadius: '24px',
+        padding: '28px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        marginTop: '10px'
+      }}
+    >
       {/* HEADER */}
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '12px' }}>
-        Comments ({comments.length})
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '14px' }}>
+        <span className="section-indicator" />
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+          Comments ({comments.length})
+        </h3>
+      </div>
 
       {/* INPUT FORM */}
       {isAuthenticated ? (
@@ -265,36 +362,75 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
           <img
             src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user?.username}`}
             alt="avatar"
-            style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(139,92,246,0.2)' }}
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              background: 'var(--bg-surface-elevated)',
+              boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+              border: '2px solid rgba(139,92,246,0.3)',
+              padding: '2px'
+            }}
           />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <textarea
               placeholder="Join the discussion... Type your comment here."
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
-              style={{ width: '100%', minHeight: '80px', background: '#12121c', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', borderRadius: '8px', padding: '12px', outline: 'none', fontSize: '14px', resize: 'vertical', fontFamily: 'inherit', transition: 'var(--transition-smooth)' }}
+              style={{
+                width: '100%',
+                minHeight: '85px',
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                color: '#fff',
+                borderRadius: '14px',
+                padding: '14px',
+                outline: 'none',
+                fontSize: '14px',
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                transition: 'border-color 0.2s ease'
+              }}
               className="comment-textarea"
             />
             <button
               type="submit"
               disabled={loading || !newCommentText.trim()}
-              className="btn-primary"
-              style={{ alignSelf: 'flex-end', padding: '8px 20px', fontSize: '13px' }}
+              className="nm-btn-primary"
+              style={{
+                alignSelf: 'flex-end',
+                padding: '8px 24px',
+                fontSize: '13px',
+                borderRadius: '9999px',
+                cursor: 'pointer'
+              }}
             >
               Post Comment
             </button>
           </div>
         </form>
       ) : (
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', padding: '20px', borderRadius: '8px', textAlign: 'center', color: 'var(--text-muted)' }}>
-          Please <a href="/auth" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>Sign In</a> to write a comment and discuss this episode.
+        <div
+          style={{
+            background: 'var(--bg-surface-recessed)',
+            boxShadow: 'var(--nm-inset)',
+            border: '1px solid rgba(255,255,255,0.03)',
+            padding: '24px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            fontSize: '13px'
+          }}
+        >
+          Please <a href="/auth" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 700 }}>Sign In</a> to write a comment and join the discussion.
         </div>
       )}
 
       {/* COMMENTS FEED */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {comments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dark)', fontSize: '14px' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '14px' }}>
             No comments yet. Be the first to start the conversation!
           </div>
         ) : (
@@ -315,7 +451,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
       <style>{`
         .comment-act-btn:hover { color: var(--color-primary) !important; }
         .comment-act-btn:hover .heart-icon { fill: var(--color-primary); }
-        .comment-textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 10px rgba(139, 92, 246, 0.15); }
+        .comment-textarea:focus { border-color: rgba(139, 92, 246, 0.4); }
       `}</style>
     </div>
   );

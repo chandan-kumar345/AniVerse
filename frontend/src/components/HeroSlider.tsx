@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Plus, Check, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import type { AnimeData } from './AnimeCard';
@@ -18,23 +18,135 @@ interface HeroSliderProps {
 // ============================================================================
 
 const MANUAL_BANNER_OVERRIDES: Record<string, string> = {
-  "one-piece": "https://i.pinimg.com/1200x/61/ae/19/61ae197acc5c8964d74530d348594d35.jpg",
-  // Examples:
-  "Bleach: Thousand-Year Blood War": "https://i.pinimg.com/736x/f7/c3/1a/f7c31a2870e425053d488e5cc4f21220.jpg",
+  // One Piece (Gear 5 & Wano / Egghead Ultra HD 4K)
+  "one-piece": "https://image.tmdb.org/t/p/original/v38qp4bySLTXYu3MF8r5GD51FN3.jpg",
+  "one piece": "https://image.tmdb.org/t/p/original/v38qp4bySLTXYu3MF8r5GD51FN3.jpg",
+
+  // Solo Leveling (Sung Jin-woo & Shadow Monarch army)
+  "solo-leveling": "https://image.tmdb.org/t/p/original/xMNH87maNLt9n2bMDYeI6db5VFm.jpg",
+  "solo leveling": "https://image.tmdb.org/t/p/original/xMNH87maNLt9n2bMDYeI6db5VFm.jpg",
+  "solo-leveling-season-2-arise-from-the-shadow": "https://image.tmdb.org/t/p/original/xMNH87maNLt9n2bMDYeI6db5VFm.jpg",
+
+  // Jujutsu Kaisen / JJK Season 2 / JJK 0 (Gojo Satoru Hollow Purple & Sukuna)
+  "jujutsu-kaisen": "https://image.tmdb.org/t/p/original/2otstbLfQ7MXuFt1X8MFOb4OIgd.jpg",
+  "jujutsu kaisen": "https://image.tmdb.org/t/p/original/2otstbLfQ7MXuFt1X8MFOb4OIgd.jpg",
+  "jujutsu-kaisen-season-2": "https://image.tmdb.org/t/p/original/qpin8cASXEVtwhzNsprHYFiOAGk.jpg",
+  "jujutsu-kaisen-0": "https://image.tmdb.org/t/p/original/qpin8cASXEVtwhzNsprHYFiOAGk.jpg",
+
+  // Demon Slayer (Tanjiro Hinokami Kagura Sun Breathing & Hashira Training)
+  "demon-slayer": "https://image.tmdb.org/t/p/original/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+  "demon slayer": "https://image.tmdb.org/t/p/original/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+  "demon-slayer-kimetsu-no-yaiba": "https://image.tmdb.org/t/p/original/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+  "demon-slayer-kimetsu-no-yaiba-hashira-training-arc": "https://image.tmdb.org/t/p/original/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+  "demon-slayer-kimetsu-no-yaiba-the-movie-mugen-train": "https://image.tmdb.org/t/p/original/3GQKYh6Trm8pxd2AypovoYQf4Ay.jpg",
+
+  // Bleach: Thousand-Year Blood War (Ichigo Dual Zangetsu)
+  "bleach": "https://image.tmdb.org/t/p/original/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg",
+  "bleach-thousand-year-blood-war": "https://image.tmdb.org/t/p/original/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg",
+  "bleach: thousand-year blood war": "https://image.tmdb.org/t/p/original/o0NsbcIvsllg6CJX0FBFY8wWbsn.jpg",
+
+  // Attack on Titan (Eren Yeager Founder & Colossal Titan)
+  "attack-on-titan": "https://image.tmdb.org/t/p/original/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg",
+  "attack on titan": "https://image.tmdb.org/t/p/original/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg",
+  "attack-on-titan-the-final-season": "https://image.tmdb.org/t/p/original/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg",
+
+  // Chainsaw Man (Denji with revving blades)
+  "chainsaw-man": "https://image.tmdb.org/t/p/original/5DUMPBSnHOZsbBv81GFXZXvDpo6.jpg",
+  "chainsaw man": "https://image.tmdb.org/t/p/original/5DUMPBSnHOZsbBv81GFXZXvDpo6.jpg",
+
+  // DAN DA DAN (Momo & Okarun paranormal aura)
+  "dan-da-dan": "https://image.tmdb.org/t/p/original/uNTrRKIOyKYISthoeizghtXPEOK.jpg",
+  "dan da dan": "https://image.tmdb.org/t/p/original/uNTrRKIOyKYISthoeizghtXPEOK.jpg",
+  "dandadan": "https://image.tmdb.org/t/p/original/uNTrRKIOyKYISthoeizghtXPEOK.jpg",
+
+  // Naruto & Naruto Shippuden (Six Paths Sage Mode)
+  "naruto": "https://image.tmdb.org/t/p/original/z0YhJvomqedHF85bplUJEotkN5l.jpg",
+  "naruto-shippuden": "https://image.tmdb.org/t/p/original/z0YhJvomqedHF85bplUJEotkN5l.jpg",
+  "naruto shippuden": "https://image.tmdb.org/t/p/original/z0YhJvomqedHF85bplUJEotkN5l.jpg",
+
+  // Dragon Ball Super & Dragon Ball Z (Goku Ultra Instinct & SSJ)
+  "dragon-ball-super": "https://image.tmdb.org/t/p/original/qA2UwUQbj05aeBMCuC0mHSQ4loE.jpg",
+  "dragon ball super": "https://image.tmdb.org/t/p/original/qA2UwUQbj05aeBMCuC0mHSQ4loE.jpg",
+  "dragon-ball-z": "https://image.tmdb.org/t/p/original/ydf1CeiBLfdxiyNTpskM0802TKl.jpg",
+  "dragon ball z": "https://image.tmdb.org/t/p/original/ydf1CeiBLfdxiyNTpskM0802TKl.jpg",
+
+  // Hunter x Hunter (Killua Godspeed & Gon)
+  "hunter-x-hunter": "https://image.tmdb.org/t/p/original/bFKKyCI89Xq98Gul8cGox8K3sZa.jpg",
+  "hunter-x-hunter-2011": "https://image.tmdb.org/t/p/original/bFKKyCI89Xq98Gul8cGox8K3sZa.jpg",
+  "hunter x hunter": "https://image.tmdb.org/t/p/original/bFKKyCI89Xq98Gul8cGox8K3sZa.jpg",
+
+  // Blue Lock (Egoist Striker Isagi Yoichi)
+  "blue-lock": "https://image.tmdb.org/t/p/original/seMRyWVwIVBWbC9xaMzDMZJ8fUH.jpg",
+  "blue lock": "https://image.tmdb.org/t/p/original/seMRyWVwIVBWbC9xaMzDMZJ8fUH.jpg",
+
+  // Black Clover (Asta Demon Anti-Magic Form)
+  "black-clover": "https://image.tmdb.org/t/p/original/qu9epTZh29fGUkY7ZYc9PVsv0Ig.jpg",
+  "black-clover-season-2": "https://image.tmdb.org/t/p/original/qu9epTZh29fGUkY7ZYc9PVsv0Ig.jpg",
+  "black clover": "https://image.tmdb.org/t/p/original/qu9epTZh29fGUkY7ZYc9PVsv0Ig.jpg",
+
+  // One Punch Man (Saitama Serious Punch)
+  "one-punch-man": "https://image.tmdb.org/t/p/original/s0w8JbuNNxL1YgaHeDWih12C3jG.jpg",
+  "one punch man": "https://image.tmdb.org/t/p/original/s0w8JbuNNxL1YgaHeDWih12C3jG.jpg",
+
+  // Kaiju No. 8 (Kafka Hibino)
+  "kaiju-no-8": "https://image.tmdb.org/t/p/original/htGeuCcNhlBe8GTx3izKOsd8frw.jpg",
+  "kaiju no. 8": "https://image.tmdb.org/t/p/original/htGeuCcNhlBe8GTx3izKOsd8frw.jpg",
+
+  // My Hero Academia (Deku One For All)
+  "my-hero-academia": "https://image.tmdb.org/t/p/original/3ILMlmC30QUnYkY3XEBOyJ82Dqu.jpg",
+  "my-hero-academia-season-7": "https://image.tmdb.org/t/p/original/3ILMlmC30QUnYkY3XEBOyJ82Dqu.jpg",
+  "my hero academia": "https://image.tmdb.org/t/p/original/3ILMlmC30QUnYkY3XEBOyJ82Dqu.jpg",
+
+  // Spy x Family (Loid, Yor, Anya)
+  "spy-x-family": "https://image.tmdb.org/t/p/original/lysUnU6V0VfcthDbviuVlIqgHOR.jpg",
+  "spy x family": "https://image.tmdb.org/t/p/original/lysUnU6V0VfcthDbviuVlIqgHOR.jpg",
+
+  // Death Note (Light Yagami & Ryuk)
+  "death-note": "https://image.tmdb.org/t/p/original/z8IPicmEKXUO4I2UDdMEqw7RqOE.jpg",
+  "death note": "https://image.tmdb.org/t/p/original/z8IPicmEKXUO4I2UDdMEqw7RqOE.jpg",
+
+  // Fullmetal Alchemist: Brotherhood (Edward & Alphonse Elric)
+  "fullmetal-alchemist-brotherhood": "https://image.tmdb.org/t/p/original/2UG177tWHy7xRmMKWJHB7nAUmKd.jpg",
+  "fullmetal alchemist": "https://image.tmdb.org/t/p/original/2UG177tWHy7xRmMKWJHB7nAUmKd.jpg",
+
+  // Your Name (Taki & Mitsuha Split Sky 4K UHD)
+  "your-name": "https://image.tmdb.org/t/p/original/mMtUybQ6hL24FXo0F3Z4j2KG7kZ.jpg",
+  "your name": "https://image.tmdb.org/t/p/original/mMtUybQ6hL24FXo0F3Z4j2KG7kZ.jpg",
+  "your name.": "https://image.tmdb.org/t/p/original/mMtUybQ6hL24FXo0F3Z4j2KG7kZ.jpg",
+  "kimi-no-na-wa": "https://image.tmdb.org/t/p/original/mMtUybQ6hL24FXo0F3Z4j2KG7kZ.jpg"
 };
 
 const MANUAL_POSITION_OVERRIDES: Record<string, string> = {
-  "one-piece": "center 50%", // Pushes up the vertical cover image to show Luffy's face and straw hat properly
-  // Examples:
-  "Bleach: Thousand-Year Blood War": "right 15%",
+  "one-piece": "center 22%",
+  "one piece": "center 22%",
+  "solo-leveling": "center 24%",
+  "solo leveling": "center 24%",
+  "jujutsu-kaisen": "center 20%",
+  "jujutsu kaisen": "center 20%",
+  "demon-slayer": "center 20%",
+  "demon slayer": "center 20%",
+  "bleach": "center 20%",
+  "attack-on-titan": "center 28%",
+  "chainsaw-man": "center 20%",
+  "dan-da-dan": "center 25%",
+  "naruto": "center 22%",
+  "dragon-ball-super": "center 20%",
+  "dragon-ball-z": "center 25%",
+  "hunter-x-hunter": "center 22%",
+  "blue-lock": "center 20%",
+  "black-clover": "center 20%",
+  "one-punch-man": "center 20%",
+  "kaiju-no-8": "center 24%",
+  "my-hero-academia": "center 22%",
+  "spy-x-family": "center 20%",
+  "death-note": "center 22%",
+  "your-name": "center 25%",
+  "your name": "center 25%",
+  "your name.": "center 25%",
+  "kimi-no-na-wa": "center 25%"
 };
 
-const MANUAL_STYLE_OVERRIDES: Record<string, React.CSSProperties> = {
-  "Bleach: Thousand-Year Blood War": {
-    objectFit: "contain",
-    backgroundColor: "transparent",
-  },
-};
+const MANUAL_STYLE_OVERRIDES: Record<string, React.CSSProperties> = {};
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
   const navigate = useNavigate();
@@ -44,44 +156,66 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
   const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Memoize activeItems so reference is stable and limited to top 10 anime
   // Reorder list to ensure One Piece is the 1st anime shown if it exists in the list
-  const onePieceIndex = animeList.findIndex(
-    (anime) =>
-      anime.slug.toLowerCase().includes('one-piece') ||
-      anime.title.toLowerCase().includes('one piece')
-  );
+  const activeItems = useMemo(() => {
+    if (!animeList || animeList.length === 0) return [];
 
-  let orderedAnimeList = [...animeList];
-  if (onePieceIndex > -1) {
-    const [onePiece] = orderedAnimeList.splice(onePieceIndex, 1);
-    orderedAnimeList.unshift(onePiece);
-  }
+    const onePieceIndex = animeList.findIndex(
+      (anime) =>
+        anime.slug.toLowerCase().includes('one-piece') ||
+        anime.title.toLowerCase().includes('one piece')
+    );
 
-  // Active items limit to top 10
-  const activeItems = orderedAnimeList.slice(0, 10);
+    let ordered = [...animeList];
+    if (onePieceIndex > -1) {
+      const [onePiece] = ordered.splice(onePieceIndex, 1);
+      ordered.unshift(onePiece);
+    }
 
+    return ordered.slice(0, 10);
+  }, [animeList]);
+
+  const totalSlides = activeItems.length;
+
+  // Sequential Next and Prev navigation (strictly 1 slide at a time)
+  const goToNext = useCallback(() => {
+    setActiveIndex((prev) => (totalSlides > 0 ? (prev + 1) % totalSlides : 0));
+    setProgress(0);
+  }, [totalSlides]);
+
+  const goToPrev = useCallback(() => {
+    setActiveIndex((prev) => (totalSlides > 0 ? (prev === 0 ? totalSlides - 1 : prev - 1) : 0));
+    setProgress(0);
+  }, [totalSlides]);
+
+  // Robust autoplay timer: strictly runs 1 slide at a time in sequence (0 -> 1 -> 2 -> ... -> 9)
+  // Keeps side-effects out of setState callbacks to eliminate StrictMode skipping
   useEffect(() => {
-    if (activeItems.length === 0) return;
+    if (totalSlides <= 1) return;
 
-    const stepTime = 50; // ms
-    const totalTime = 6000; // ms
+    setProgress(0);
+    const duration = 6000; // 6 seconds per slide
+    const intervalTime = 50; // update progress every 50ms
+    const step = (intervalTime / duration) * 100;
+    let currentProgress = 0;
 
     const timer = setInterval(() => {
       if (isHovered) return;
 
-      setProgress((prev) => {
-        if (prev >= 100) {
-          setActiveIndex((idx) => (idx + 1) % activeItems.length);
-          return 0;
-        }
-        return prev + (stepTime / totalTime) * 100;
-      });
-    }, stepTime);
+      currentProgress += step;
+      if (currentProgress >= 100) {
+        clearInterval(timer);
+        goToNext();
+      } else {
+        setProgress(currentProgress);
+      }
+    }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [activeItems.length, isHovered]);
+  }, [activeIndex, isHovered, totalSlides, goToNext]);
 
-  // Fetch watchlist status for hero items if logged in
+  // Fetch watchlist status for hero items if logged in (stable dependency)
   useEffect(() => {
     const fetchWatchlistStatuses = async () => {
       if (!isAuthenticated || activeItems.length === 0) return;
@@ -109,14 +243,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveIndex((prev) => (prev === 0 ? activeItems.length - 1 : prev - 1));
-    setProgress(0);
+    goToPrev();
   };
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setActiveIndex((prev) => (prev === activeItems.length - 1 ? 0 : prev + 1));
-    setProgress(0);
+    goToNext();
   };
 
   const handleDotClick = (index: number) => {
@@ -166,21 +298,39 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         const isActive = index === activeIndex;
         const genresList = anime.genres.split(',').map((g) => g.trim());
 
-        // Check if this anime is One Piece (fuzzy search for safety)
-        const isOnePiece = anime.slug.toLowerCase().includes('one-piece') || anime.title.toLowerCase().includes('one piece');
+        // Smart fuzzy matching for custom ultra-HD 4K anime wallpaper
+        const findBannerOverride = (): string | undefined => {
+          const s = anime.slug.toLowerCase();
+          const t = anime.title.toLowerCase();
+          if (MANUAL_BANNER_OVERRIDES[anime.slug]) return MANUAL_BANNER_OVERRIDES[anime.slug];
+          if (MANUAL_BANNER_OVERRIDES[anime.title]) return MANUAL_BANNER_OVERRIDES[anime.title];
+          for (const [k, v] of Object.entries(MANUAL_BANNER_OVERRIDES)) {
+            const keyLower = k.toLowerCase();
+            if (s === keyLower || t === keyLower || s.includes(keyLower) || t.includes(keyLower)) {
+              return v;
+            }
+          }
+          return undefined;
+        };
 
-        const customBanner = MANUAL_BANNER_OVERRIDES[anime.slug] || MANUAL_BANNER_OVERRIDES[anime.title] || (isOnePiece
-          ? "https://i.pinimg.com/1200x/61/ae/19/61ae197acc5c8964d74530d348594d35.jpg"
-          : undefined);
+        const findPositionOverride = (): string => {
+          const s = anime.slug.toLowerCase();
+          const t = anime.title.toLowerCase();
+          if (MANUAL_POSITION_OVERRIDES[anime.slug]) return MANUAL_POSITION_OVERRIDES[anime.slug];
+          if (MANUAL_POSITION_OVERRIDES[anime.title]) return MANUAL_POSITION_OVERRIDES[anime.title];
+          for (const [k, v] of Object.entries(MANUAL_POSITION_OVERRIDES)) {
+            const keyLower = k.toLowerCase();
+            if (s === keyLower || t === keyLower || s.includes(keyLower) || t.includes(keyLower)) {
+              return v;
+            }
+          }
+          return "center 22%";
+        };
 
-        const hasBanner = !!anime.bannerImage || isOnePiece || !!customBanner;
-
+        const customBanner = findBannerOverride();
+        const hasBanner = !!customBanner || !!anime.bannerImage;
         const hdImage = customBanner || getHDImageUrl(anime.bannerImage || anime.posterImage);
-
-        const customPosition = MANUAL_POSITION_OVERRIDES[anime.slug] || MANUAL_POSITION_OVERRIDES[anime.title] || (isOnePiece
-          ? "center 10%"
-          : "center 20%");
-
+        const customPosition = findPositionOverride();
         const customStyle = MANUAL_STYLE_OVERRIDES[anime.slug] || MANUAL_STYLE_OVERRIDES[anime.title] || {};
 
         return (
@@ -307,22 +457,28 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               }}
               className="hero-text-container"
             >
-              {/* Spotlight Tag */}
+              {/* Spotlight Tag - Neumorphic convex pill */}
               <div
                 className="hero-tag"
                 style={{
-                  color: 'var(--color-primary)',
+                  background: '#181a2b',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  borderRadius: '9999px',
+                  padding: '6px 16px',
+                  boxShadow: '3px 3px 8px #080910, -2px -2px 6px #20233a',
+                  width: 'fit-content',
+                  color: 'var(--color-accent)',
                   fontWeight: 700,
                   textTransform: 'uppercase',
-                  fontSize: '14px',
-                  letterSpacing: '2px',
+                  fontSize: '12px',
+                  letterSpacing: '1.5px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   marginBottom: '16px',
                 }}
               >
-                <Star size={16} style={{ fill: 'var(--color-primary)' }} />
+                <Star size={14} style={{ fill: 'var(--color-primary)', color: 'var(--color-primary)' }} />
                 #{index + 1} Spotlight
               </div>
 
@@ -330,11 +486,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               <h1
                 className="hero-title"
                 style={{
-                  fontSize: '42px',
+                  fontSize: '44px',
                   fontWeight: 800,
                   fontFamily: 'var(--font-display)',
                   marginBottom: '16px',
                   lineHeight: '1.1',
+                  textShadow: '0 4px 16px rgba(0,0,0,0.6)',
                 }}
               >
                 {anime.title}
@@ -346,7 +503,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '14px',
+                  gap: '12px',
                   fontSize: '13px',
                   color: 'var(--text-muted)',
                   marginBottom: '18px',
@@ -355,16 +512,21 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               >
                 <span
                   style={{
-                    background: 'var(--color-accent)',
-                    color: '#000',
+                    background: '#161828',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: 'inset 2px 2px 4px #08090f, inset -2px -2px 4px #1c1e30',
+                    color: '#facc15',
                     fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
+                    padding: '3px 12px',
+                    borderRadius: '9999px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
                   }}
                 >
-                  ⭐ {anime.score.toFixed(2)}
+                  ★ {anime.score.toFixed(2)}
                 </span>
-                <span>{anime.type}</span>
+                <span className="nm-pill" style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>{anime.type}</span>
                 <span>•</span>
                 <span>{anime.releasedYear}</span>
                 <span>•</span>
@@ -388,45 +550,38 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                 {anime.description}
               </p>
 
-              {/* Genres */}
+              {/* Genres - Neumorphic tags */}
               <div
                 className="hero-genres"
-                style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '30px' }}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '28px' }}
               >
                 {genresList.map((genre) => (
                   <span
                     key={genre}
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px',
-                      padding: '4px 10px',
-                      fontSize: '12px',
-                      color: 'var(--text-main)',
-                    }}
+                    className="nm-tag"
                   >
                     {genre}
                   </span>
                 ))}
               </div>
 
-              {/* Buttons */}
-              <div className="hero-btns" style={{ display: 'flex', gap: '16px' }}>
+              {/* Buttons - Neumorphic 3D primary and secondary */}
+              <div className="hero-btns" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button
                   onClick={() => handleWatchNow(anime.slug)}
-                  className="btn-primary"
-                  style={{ padding: '12px 28px', fontSize: '15px' }}
+                  className="nm-btn-primary"
+                  style={{ padding: '13px 30px', fontSize: '15px' }}
                 >
                   <Play size={18} style={{ fill: '#fff' }} /> Watch Now
                 </button>
                 <button
                   onClick={() => handleToggleWatchlist(anime.id)}
-                  className="btn-secondary"
-                  style={{ padding: '12px 24px', fontSize: '15px' }}
+                  className="nm-btn-secondary"
+                  style={{ padding: '13px 26px', fontSize: '15px' }}
                 >
                   {watchlistStatus[anime.id] ? (
                     <>
-                      <Check size={18} style={{ color: 'var(--color-accent)' }} /> In Watchlist
+                      <Check size={18} style={{ color: 'var(--color-primary)' }} /> In Watchlist
                     </>
                   ) : (
                     <>
@@ -440,7 +595,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         );
       })}
 
-      {/* ARROWS CONTROLS */}
+      {/* ARROWS CONTROLS - Circular Neumorphic Buttons */}
       <div
         style={{
           position: 'absolute',
@@ -448,18 +603,19 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           right: '50px',
           zIndex: 10,
           display: 'flex',
-          gap: '10px',
+          gap: '12px',
         }}
         className="hero-arrows"
       >
         <button
           onClick={handlePrev}
           style={{
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(0,0,0,0.5)',
-            width: '40px',
-            height: '40px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
+            background: '#161828',
+            boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
+            border: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -468,17 +624,19 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             transition: 'var(--transition-fast)',
           }}
           className="slider-arrow"
+          aria-label="Previous slide"
         >
           <ChevronLeft size={20} />
         </button>
         <button
           onClick={handleNext}
           style={{
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(0,0,0,0.5)',
-            width: '40px',
-            height: '40px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
+            background: '#161828',
+            boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
+            border: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -487,6 +645,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             transition: 'var(--transition-fast)',
           }}
           className="slider-arrow"
+          aria-label="Next slide"
         >
           <ChevronRight size={20} />
         </button>
@@ -518,10 +677,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           width: 100%;
           height: 600px;
           overflow: hidden;
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          background-color: #0a090c;
-          box-shadow: var(--glass-shadow);
+          border-radius: 28px;
+          border: 2px solid rgba(139, 92, 246, 0.35);
+          background-color: #0d0f18;
+          box-shadow: var(--nm-hero-frame);
         }
 
         .hero-slide {
@@ -548,7 +707,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-backdrop-banner {
-          width: 65%;
+          width: 72%;
           height: 100%;
           position: absolute;
           top: 0;
@@ -567,7 +726,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: linear-gradient(90deg, #0a090c 0%, #0a090c 35%, rgba(10, 9, 12, 0.95) 45%, rgba(10, 9, 12, 0.6) 65%, rgba(10, 9, 12, 0) 90%);
+          background: linear-gradient(90deg, #0d0f18 0%, #0d0f18 32%, rgba(13, 15, 24, 0.94) 46%, rgba(13, 15, 24, 0.45) 68%, rgba(13, 15, 24, 0) 95%);
           z-index: 2;
         }
 
@@ -576,8 +735,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 150px;
-          background: linear-gradient(0deg, #0a090c 0%, rgba(10, 9, 12, 0) 100%);
+          height: 160px;
+          background: linear-gradient(0deg, #0d0f18 0%, rgba(13, 15, 24, 0) 100%);
           z-index: 2;
         }
 
@@ -614,12 +773,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-poster-card {
-          width: 200px;
+          width: 210px;
           aspect-ratio: 2/3;
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
-          border: 2px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+          border: 2px solid rgba(139, 92, 246, 0.4);
+          box-shadow: 6px 6px 20px #08090f, -4px -4px 14px #20233b, 0 0 24px rgba(139, 92, 246, 0.35);
           transform: rotate(2deg) translateY(-10px);
           animation: floatCard 6s ease-in-out infinite alternate;
         }
@@ -641,21 +800,24 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-dot {
-          width: 10px;
-          height: 10px;
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.3);
-          border: none;
+          background: #181a2b;
+          box-shadow: inset 1px 1px 2px #07080e, inset -1px -1px 2px #22253c;
+          border: 1px solid rgba(255, 255, 255, 0.04);
           cursor: pointer;
           padding: 0;
-          transition: all 0.3s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .hero-dot.active {
-          background: var(--color-primary);
-          width: 28px;
-          border-radius: 5px;
-          box-shadow: var(--glow-shadow);
+          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+          width: 32px;
+          height: 9px;
+          border-radius: 9999px;
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 0 14px rgba(139, 92, 246, 0.65);
         }
 
         /* Autoplay Progress Bar */
@@ -665,21 +827,22 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           width: 100%;
           height: 4px;
-          background: rgba(255, 255, 255, 0.05);
+          background: rgba(255, 255, 255, 0.04);
           z-index: 10;
         }
 
         .hero-progress-bar {
           height: 100%;
-          background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+          background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%);
           width: 0%;
           transition: width 0.05s linear;
         }
 
         .slider-arrow:hover { 
-          background: var(--color-primary) !important; 
-          border-color: var(--color-primary) !important; 
-          box-shadow: var(--glow-shadow); 
+          background: #1e2034 !important; 
+          border-color: rgba(139, 92, 246, 0.6) !important; 
+          box-shadow: 0 0 16px rgba(139, 92, 246, 0.5) !important; 
+          transform: scale(1.06);
         }
 
         @media (max-width: 992px) {

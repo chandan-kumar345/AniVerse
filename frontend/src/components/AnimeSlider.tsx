@@ -33,16 +33,27 @@ export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList, show
       
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: '#fff', borderLeft: '4px solid var(--color-primary)', paddingLeft: '12px' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+          <span className="section-indicator" />
           {title}
         </h2>
-        {/* Buttons Nav */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={scrollLeft} style={{ border: '1px solid rgba(255,255,255,0.06)', background: '#12121c', width: '32px', height: '32px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', transition: 'var(--transition-fast)' }} className="nav-arrow">
-            <ChevronLeft size={16} />
+        {/* Buttons Nav - Neumorphic circular buttons */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={scrollLeft} 
+            className="nm-icon-btn"
+            style={{ width: '36px', height: '36px' }}
+            aria-label="Scroll left"
+          >
+            <ChevronLeft size={18} />
           </button>
-          <button onClick={scrollRight} style={{ border: '1px solid rgba(255,255,255,0.06)', background: '#12121c', width: '32px', height: '32px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', transition: 'var(--transition-fast)' }} className="nav-arrow">
-            <ChevronRight size={16} />
+          <button 
+            onClick={scrollRight} 
+            className="nm-icon-btn"
+            style={{ width: '36px', height: '36px' }}
+            aria-label="Scroll right"
+          >
+            <ChevronRight size={18} />
           </button>
         </div>
       </div>
@@ -50,7 +61,7 @@ export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList, show
       {/* HORIZONTAL CAROUSEL */}
       <div
         ref={sliderRef}
-        style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollBehavior: 'smooth', paddingBottom: '10px', scrollbarWidth: 'none' /* Firefox */ }}
+        style={{ display: 'flex', gap: '20px', overflowX: 'auto', scrollBehavior: 'smooth', paddingBottom: '16px', paddingTop: '4px', scrollbarWidth: 'none' }}
         className="horizontal-slider"
       >
         {animeList.map((anime) => (
@@ -62,7 +73,6 @@ export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList, show
 
       <style>{`
         .horizontal-slider::-webkit-scrollbar { display: none; }
-        .nav-arrow:hover { background: var(--color-primary) !important; border-color: var(--color-primary) !important; }
         @media (max-width: 1200px) {
           .slider-card-wrap { flex: 0 0 calc(25% - 15px) !important; }
         }

@@ -81,42 +81,75 @@ export const Header: React.FC = () => {
     setShowSuggestions(false);
   };
 
+  const location = window.location.pathname;
+
   return (
-    <header className="glass-header" style={{ height: '70px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      <div className="app-container" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px' }}>
+    <header className="glass-header" style={{ height: '74px', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div className="app-container" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
         
         {/* LOGO */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
           <img src="/logo.png" alt="AniVerse" style={{ height: '42px', objectFit: 'contain' }} />
         </Link>
  
-        {/* SEARCH BAR */}
-        <div ref={autocompleteRef} style={{ flex: '0 1 450px', position: 'relative', margin: '0 20px', display: 'none' /* Will show if screen > 768px */ }} className="desktop-search">
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '25px', padding: '2px 6px 2px 16px', transition: 'var(--transition-smooth)' }} className="search-form">
+        {/* SEARCH BAR - Neumorphic Inset Capsule */}
+        <div ref={autocompleteRef} style={{ flex: '0 1 480px', position: 'relative', margin: '0 24px', display: 'none' }} className="desktop-search">
+          <form 
+            onSubmit={handleSearchSubmit} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              background: '#10121d', 
+              borderRadius: '9999px', 
+              boxShadow: 'var(--nm-inset)', 
+              border: '1px solid rgba(255,255,255,0.04)', 
+              padding: '4px 6px 4px 18px', 
+              transition: 'var(--transition-smooth)' 
+            }} 
+            className="search-form"
+          >
             <input
               type="text"
-              placeholder="Search anime..."
+              placeholder="Search anime, movies, series..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', height: '36px' }}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', height: '36px', paddingRight: '10px' }}
             />
-            <button type="submit" style={{ background: 'var(--color-primary)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'var(--transition-smooth)' }}>
+            <button 
+              type="submit" 
+              style={{ 
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', 
+                border: 'none', 
+                borderRadius: '50%', 
+                width: '34px', 
+                height: '34px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: 'pointer', 
+                color: '#fff', 
+                boxShadow: '0 4px 14px rgba(139, 92, 246, 0.45)',
+                transition: 'var(--transition-smooth)',
+                flexShrink: 0
+              }}
+              className="search-btn"
+            >
               <Search size={16} />
             </button>
           </form>
  
-          {/* Autocomplete Dropdown */}
+          {/* Autocomplete Dropdown - Neumorphic elevated menu */}
           {showSuggestions && suggestions.length > 0 && (
-            <div style={{ position: 'absolute', top: '105%', left: 0, right: 0, background: '#111119', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.8)', zIndex: 99, overflow: 'hidden', padding: '6px 0' }}>
+            <div style={{ position: 'absolute', top: '115%', left: 0, right: 0, background: '#141624', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', boxShadow: 'var(--nm-elevated)', zIndex: 99, overflow: 'hidden', padding: '8px 0' }}>
               {suggestions.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleSuggestionClick(item.slug)}
-                  style={{ display: 'flex', gap: '12px', padding: '10px 16px', cursor: 'pointer', transition: 'var(--transition-fast)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                  style={{ display: 'flex', gap: '12px', padding: '10px 18px', cursor: 'pointer', transition: 'var(--transition-fast)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
                   className="suggestion-item"
                 >
                   <img
@@ -127,7 +160,7 @@ export const Header: React.FC = () => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                     }}
-                    style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }}
+                    style={{ width: '42px', height: '56px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
@@ -144,73 +177,98 @@ export const Header: React.FC = () => {
         </div>
 
         {/* NAVIGATION LINKS & AUTH */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <Link to="/" style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 500, transition: 'var(--transition-fast)' }} className="nav-link">Home</Link>
-            <Link to="/search" style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 500, transition: 'var(--transition-fast)' }} className="nav-link">Catalog</Link>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Link 
+              to="/" 
+              className={`nav-pill ${location === '/' ? 'active' : ''}`}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/search" 
+              className={`nav-pill ${location.startsWith('/search') ? 'active' : ''}`}
+            >
+              Catalog
+            </Link>
             {isAuthenticated && (
-              <>
-                <Link to="/profile?tab=watchlist" style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '5px', transition: 'var(--transition-fast)' }} className="nav-link">
-                  <Heart size={16} /> Watchlist
-                </Link>
-              </>
+              <Link 
+                to="/profile?tab=watchlist" 
+                className={`nav-pill ${location.includes('watchlist') ? 'active' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Heart size={15} /> Watchlist
+              </Link>
             )}
           </div>
+
+          {/* Vertical Separator */}
+          <div className="desktop-links" style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)' }} />
 
           {/* USER ACTION BUTTONS */}
           {isAuthenticated ? (
             <div ref={profileDropdownRef} style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff' }}
+                className="nm-pill"
+                style={{ 
+                  background: '#161828', 
+                  border: '1px solid rgba(255,255,255,0.06)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  cursor: 'pointer', 
+                  color: '#fff',
+                  padding: '5px 14px 5px 6px'
+                }}
               >
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', overflow: 'hidden', border: '2px solid var(--color-primary)' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)' }}>
                   {user?.avatar ? (
                     <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} alt="avatar" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     user?.username.charAt(0).toUpperCase()
                   )}
                 </div>
-                <span className="desktop-username" style={{ fontWeight: 600, fontSize: '14px' }}>{user?.username}</span>
+                <span className="desktop-username" style={{ fontWeight: 600, fontSize: '13px' }}>{user?.username}</span>
                 <ChevronDown size={14} style={{ opacity: 0.7 }} />
               </button>
 
               {/* Profile Dropdown */}
               {isProfileDropdownOpen && (
-                <div style={{ position: 'absolute', top: '120%', right: 0, width: '200px', background: '#111119', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden', zIndex: 99 }}>
+                <div style={{ position: 'absolute', top: '125%', right: 0, width: '210px', background: '#141624', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', boxShadow: 'var(--nm-elevated)', overflow: 'hidden', zIndex: 99, padding: '6px' }}>
                   <Link
                     to="/profile"
                     onClick={() => setIsProfileDropdownOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '14px' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '13px', borderRadius: '8px' }}
                     className="dropdown-item"
                   >
-                    <User size={16} /> Profile
+                    <User size={15} /> Profile
                   </Link>
                   <Link
                     to="/profile?tab=history"
                     onClick={() => setIsProfileDropdownOpen(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '14px' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '13px', borderRadius: '8px' }}
                     className="dropdown-item"
                   >
-                    <History size={16} /> Watch History
+                    <History size={15} /> Watch History
                   </Link>
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '4px 0' }} />
                   <button
                     onClick={() => {
                       logout();
                       setIsProfileDropdownOpen(false);
                       navigate('/');
                     }}
-                    style={{ width: '100%', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', color: '#ef4444', textAlign: 'left', cursor: 'pointer', fontSize: '14px', transition: 'var(--transition-fast)' }}
+                    style={{ width: '100%', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ef4444', textAlign: 'left', cursor: 'pointer', fontSize: '13px', transition: 'var(--transition-fast)', borderRadius: '8px' }}
                     className="dropdown-item logout"
                   >
-                    <LogOut size={16} /> Log Out
+                    <LogOut size={15} /> Log Out
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/auth" className="btn-primary" style={{ padding: '8px 18px', fontSize: '14px', borderRadius: '20px' }}>
+            <Link to="/auth" className="nm-btn-primary" style={{ padding: '8px 22px', fontSize: '13px' }}>
               Sign In
             </Link>
           )}
@@ -218,10 +276,10 @@ export const Header: React.FC = () => {
           {/* MOBILE MENU TOGGLE */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="mobile-toggle"
-            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'none' }}
+            className="mobile-toggle nm-icon-btn"
+            style={{ display: 'none' }}
           >
-            {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </nav>
       </div>
@@ -264,28 +322,30 @@ export const Header: React.FC = () => {
           .desktop-links, .desktop-username { display: none !important; }
           .mobile-toggle { display: block !important; }
         }
-        .nav-link {
-          position: relative;
-          padding: 6px 0;
+        .nav-pill {
+          color: var(--text-muted);
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 8px 20px;
+          border-radius: 9999px;
+          transition: var(--transition-fast);
+          border: 1px solid transparent;
         }
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          width: 0;
-          height: 2px;
-          background-color: var(--color-primary);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          transform: translateX(-50%);
+        .nav-pill:hover {
+          color: #fff;
+          background: rgba(255, 255, 255, 0.03);
         }
-        .nav-link:hover::after {
-          width: 100%;
+        .nav-pill.active {
+          background: #1a1d30;
+          color: #fff;
+          box-shadow: 4px 4px 10px #08090f, -3px -3px 8px #22253c;
+          border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .nav-link:hover { color: var(--color-primary) !important; }
         .dropdown-item:hover { background: rgba(255,255,255,0.05); }
         .dropdown-item.logout:hover { background: rgba(239, 68, 68, 0.08); }
-        .search-form:focus-within { border-color: var(--color-primary) !important; box-shadow: var(--glow-shadow); }
+        .search-form:focus-within { border-color: rgba(139, 92, 246, 0.5) !important; box-shadow: inset 3px 3px 6px #08090f, inset -3px -3px 6px #1a1c2e, 0 0 16px rgba(139, 92, 246, 0.25) !important; }
+        .search-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(139, 92, 246, 0.6) !important; }
         .suggestion-item:hover { background: rgba(255,255,255,0.04); }
       `}</style>
     </header>

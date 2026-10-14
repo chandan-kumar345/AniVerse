@@ -63,16 +63,46 @@ export const Auth: React.FC = () => {
       </div>
 
       {/* GLASS PANEL FORM CONTAINER */}
-      <div className="glass-panel" style={{ padding: '30px' }}>
+      <div
+        className="nm-card"
+        style={{
+          borderRadius: '28px',
+          padding: '36px',
+          border: '1px solid rgba(139, 92, 246, 0.25)',
+          boxShadow: '12px 12px 30px #07080e, -8px -8px 24px #1d2036, 0 0 32px rgba(139, 92, 246, 0.15)'
+        }}
+      >
         
-        {/* TAB BUTTONS */}
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '4px', marginBottom: '24px' }}>
+        {/* TAB BUTTONS - Neumorphic Well */}
+        <div
+          style={{
+            display: 'flex',
+            background: 'var(--bg-surface-recessed)',
+            boxShadow: 'var(--nm-inset)',
+            border: '1px solid rgba(255,255,255,0.03)',
+            borderRadius: '9999px',
+            padding: '5px',
+            marginBottom: '26px'
+          }}
+        >
           <button
             onClick={() => {
               setIsLoginTab(true);
               setError(null);
             }}
-            style={{ flex: 1, border: 'none', background: isLoginTab ? 'var(--color-primary)' : 'none', color: isLoginTab ? '#fff' : 'var(--text-muted)', padding: '10px', fontSize: '14px', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+            className={isLoginTab ? 'nm-btn-primary' : ''}
+            style={{
+              flex: 1,
+              border: 'none',
+              background: isLoginTab ? undefined : 'transparent',
+              color: isLoginTab ? '#fff' : 'var(--text-muted)',
+              padding: '10px',
+              fontSize: '14px',
+              fontWeight: 700,
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
             Sign In
           </button>
@@ -81,7 +111,19 @@ export const Auth: React.FC = () => {
               setIsLoginTab(false);
               setError(null);
             }}
-            style={{ flex: 1, border: 'none', background: !isLoginTab ? 'var(--color-primary)' : 'none', color: !isLoginTab ? '#fff' : 'var(--text-muted)', padding: '10px', fontSize: '14px', fontWeight: 600, borderRadius: '6px', cursor: 'pointer', transition: 'var(--transition-fast)' }}
+            className={!isLoginTab ? 'nm-btn-primary' : ''}
+            style={{
+              flex: 1,
+              border: 'none',
+              background: !isLoginTab ? undefined : 'transparent',
+              color: !isLoginTab ? '#fff' : 'var(--text-muted)',
+              padding: '10px',
+              fontSize: '14px',
+              fontWeight: 700,
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
             Register
           </button>
@@ -89,21 +131,32 @@ export const Auth: React.FC = () => {
 
         {/* ERROR MESSAGE DISPLAY */}
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#fca5a5', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '20px' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '12px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '20px' }}>
             <AlertCircle size={16} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
         {/* FORM */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Email / Username field (LOGIN ONLY) */}
           {isLoginTab && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Email or Username</label>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0 12px' }} className="input-wrap">
-                <User size={16} style={{ color: 'var(--text-dark)', marginRight: '10px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email or Username</label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'var(--bg-surface-recessed)',
+                  boxShadow: 'var(--nm-inset)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: '14px',
+                  padding: '4px 14px'
+                }}
+                className="input-wrap"
+              >
+                <User size={16} style={{ color: 'var(--text-muted)', marginRight: '10px' }} />
                 <input
                   type="text"
                   placeholder="Type here..."
@@ -118,10 +171,21 @@ export const Auth: React.FC = () => {
 
           {/* Email field (SIGNUP ONLY) */}
           {!isLoginTab && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address</label>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0 12px' }} className="input-wrap">
-                <Mail size={16} style={{ color: 'var(--text-dark)', marginRight: '10px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Address</label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'var(--bg-surface-recessed)',
+                  boxShadow: 'var(--nm-inset)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: '14px',
+                  padding: '4px 14px'
+                }}
+                className="input-wrap"
+              >
+                <Mail size={16} style={{ color: 'var(--text-muted)', marginRight: '10px' }} />
                 <input
                   type="email"
                   placeholder="you@example.com"
@@ -136,10 +200,21 @@ export const Auth: React.FC = () => {
 
           {/* Username field (SIGNUP ONLY) */}
           {!isLoginTab && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Username</label>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0 12px' }} className="input-wrap">
-                <User size={16} style={{ color: 'var(--text-dark)', marginRight: '10px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'var(--bg-surface-recessed)',
+                  boxShadow: 'var(--nm-inset)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: '14px',
+                  padding: '4px 14px'
+                }}
+                className="input-wrap"
+              >
+                <User size={16} style={{ color: 'var(--text-muted)', marginRight: '10px' }} />
                 <input
                   type="text"
                   placeholder="e.g. NarutoUzumaki"
@@ -153,10 +228,21 @@ export const Auth: React.FC = () => {
           )}
 
           {/* Password field (BOTH) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Password</label>
-            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0 12px' }} className="input-wrap">
-              <Lock size={16} style={{ color: 'var(--text-dark)', marginRight: '10px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: '14px',
+                padding: '4px 14px'
+              }}
+              className="input-wrap"
+            >
+              <Lock size={16} style={{ color: 'var(--text-muted)', marginRight: '10px' }} />
               <input
                 type="password"
                 placeholder="••••••••"
@@ -172,11 +258,20 @@ export const Auth: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary"
-            style={{ width: '100%', padding: '14px 0', justifyContent: 'center', fontWeight: 700, fontSize: '15px', borderRadius: '8px', marginTop: '10px' }}
+            className="nm-btn-primary"
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '15px',
+              borderRadius: '9999px',
+              marginTop: '10px',
+              cursor: 'pointer'
+            }}
           >
             {loading ? 'Processing...' : isLoginTab ? 'Sign In' : 'Create Account'}
-            {!loading && <ArrowRight size={16} />}
+            {!loading && <ArrowRight size={16} style={{ marginLeft: '6px' }} />}
           </button>
         </form>
       </div>

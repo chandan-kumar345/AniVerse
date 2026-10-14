@@ -178,6 +178,7 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
                 description
                 bannerImage
                 coverImage {
+                  extraLarge
                   large
                 }
                 averageScore
@@ -256,8 +257,8 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
         title: animeTitle,
         englishTitle: media.title.english || null,
         description: cleanedDescription,
-        bannerImage: media.bannerImage || media.coverImage?.large,
-        posterImage: media.coverImage?.large,
+        bannerImage: media.bannerImage || media.coverImage?.extraLarge || media.coverImage?.large,
+        posterImage: media.coverImage?.extraLarge || media.coverImage?.large,
         rating: 'PG-13',
         score,
         type,
@@ -343,6 +344,7 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
                 description
                 bannerImage
                 coverImage {
+                  extraLarge
                   large
                 }
                 averageScore
@@ -419,8 +421,8 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
         title: animeTitle,
         englishTitle: media.title.english || null,
         description: cleanedDescription,
-        bannerImage: media.bannerImage || media.coverImage?.large,
-        posterImage: media.coverImage?.large,
+        bannerImage: media.bannerImage || media.coverImage?.extraLarge || media.coverImage?.large,
+        posterImage: media.coverImage?.extraLarge || media.coverImage?.large,
         rating: 'PG-13',
         score,
         type,
@@ -1095,18 +1097,18 @@ export async function getEpisodeSources(req: Request, res: Response) {
     const slug = anime.slug || '';
     const requestedServer = (server as string)?.toLowerCase();
     const activeTranslation = (lang as string)?.toLowerCase() || 'sub';
-    const isHindi = activeTranslation === 'hindi' || requestedServer === 'raretoon';
+    const isHindi = activeTranslation === 'hindi';
     const isDub = activeTranslation === 'dub';
 
-    // Prioritize best guaranteed working server for the requested audio stream:
-    // HINDI -> 'raretoon' (autoembed.co?lang=hi)
-    // DUB   -> 'datsav' (vidsrc.pm?dub=1)
-    // SUB   -> 'vidplay' (vidlink.pro)
-    const defaultWorkingServer = isHindi ? 'raretoon' : (isDub ? 'datsav' : 'vidplay');
-    const isExplicit = req.query.explicit === 'true' || req.query.explicit === '1';
+    // Prioritize high-performance, verified working servers:
+    // SUB   -> 'videasy' (player.videasy.to)
+    // DUB   -> 'vidsrc'  (vidsrc.pm?dub=1)
+    // HINDI -> 'videasy' (player.videasy.to?ds_lang=hi)
+    const defaultWorkingServer = isHindi ? 'videasy' : (isDub ? 'vidsrc' : 'videasy');
 
     let activeServer = requestedServer;
-    if (!activeServer || (!isExplicit && isHindi && activeServer === 'vidplay') || (!isExplicit && isDub && activeServer === 'vidplay')) {
+    // Auto-heal dead servers (vidplay, dghg, raretoon, byfms, datsav) to working servers
+    if (!activeServer || activeServer === 'vidplay' || activeServer === 'dghg' || activeServer === 'raretoon' || activeServer === 'byfms' || activeServer === 'datsav') {
       activeServer = defaultWorkingServer;
     }
 
@@ -1260,39 +1262,33 @@ export async function getEpisodeSources(req: Request, res: Response) {
 
       if (isHindi) {
         serverSources = [
-          { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` },
-          { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` },
-          { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` },
-          { id: 'dghg', name: 'DGHG', embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` },
-          { id: 'vidplay', name: 'Vidplay', embedUrl: `https://vidlink.pro/movie/${movieTmdbId}?multiLang=true` }
+          { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true&ds_lang=hi` },
+          { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` },
+          { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embed/${movieTmdbId}` },
+          { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` },
+          { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` }
         ];
       } else if (isDub) {
-        const datsavMovieDub = animeMalId
+        const vidsrcMovieDub = animeMalId
           ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1`
           : `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=en`;
-        const vidplayDub = animeMalId
-          ? `https://vidlink.pro/anime/${animeMalId}/1/dub`
-          : `https://vidlink.pro/movie/${movieTmdbId}?multiLang=true`;
         serverSources = [
-          { id: 'datsav', name: 'DatSaV', embedUrl: datsavMovieDub },
-          { id: 'vidplay', name: 'Vidplay', embedUrl: vidplayDub },
-          { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` },
-          { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` },
-          { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/movie/${movieTmdbId}?dub=1` }
+          { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: vidsrcMovieDub },
+          { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true` },
+          { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embed/${movieTmdbId}` },
+          { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` },
+          { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` }
         ];
       } else {
-        const datsavMovieSub = animeMalId
+        const vidsrcMovieSub = animeMalId
           ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1`
           : `https://vidsrc.pm/embed/movie/${movieTmdbId}`;
-        const vidplaySub = animeMalId
-          ? `https://vidlink.pro/anime/${animeMalId}/1/sub`
-          : `https://vidlink.pro/movie/${movieTmdbId}`;
         serverSources = [
-          { id: 'vidplay', name: 'Vidplay', embedUrl: vidplaySub },
-          { id: 'datsav', name: 'DatSaV', embedUrl: datsavMovieSub },
-          { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}` },
-          { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/movie/${movieTmdbId}` },
-          { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}` }
+          { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true` },
+          { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: vidsrcMovieSub },
+          { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embed/${movieTmdbId}` },
+          { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` },
+          { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/movie/tmdb/${movieTmdbId}` }
         ];
       }
 
@@ -1577,41 +1573,35 @@ export async function getEpisodeSources(req: Request, res: Response) {
 
     if (isHindi) {
       serverSources = [
-        { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` },
-        { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` },
-        { id: 'datsav', name: 'DatSaV', embedUrl: `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` },
-        { id: 'dghg', name: 'DGHG', embedUrl: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` },
-        { id: 'vidplay', name: 'Vidplay', embedUrl: `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?multiLang=true` }
+        { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true&ds_lang=hi` },
+        { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` },
+        { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` },
+        { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` },
+        { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` }
       ];
     } else if (isDub) {
       // DUB (English Dubbed) - Each server provides real English DUB source
-      const datsavDub = animeMalId
+      const vidsrcDub = animeMalId
         ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1`
         : `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1`;
-      const vidplayDub = animeMalId
-        ? `https://vidlink.pro/anime/${animeMalId}/${episodeNumber}/dub`
-        : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?multiLang=true`;
       serverSources = [
-        { id: 'datsav', name: 'DatSaV', embedUrl: datsavDub },
-        { id: 'vidplay', name: 'Vidplay', embedUrl: vidplayDub },
-        { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` },
-        { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` },
-        { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/tv/${tmdbId}?s=${seasonNumber}&e=${epNumToUse}&dub=1` }
+        { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: vidsrcDub },
+        { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true` },
+        { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` },
+        { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}` },
+        { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` }
       ];
     } else {
       // SUB (Japanese Audio + English/CC Subtitles)
-      const datsavSub = animeMalId
+      const vidsrcSub = animeMalId
         ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}`
         : `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}`;
-      const vidplaySub = animeMalId
-        ? `https://vidlink.pro/anime/${animeMalId}/${episodeNumber}/sub`
-        : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${epNumToUse}`;
       serverSources = [
-        { id: 'vidplay', name: 'Vidplay', embedUrl: vidplaySub },
-        { id: 'datsav', name: 'DatSaV', embedUrl: datsavSub },
-        { id: 'byfms', name: 'BYFMS', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` },
-        { id: 'dghg', name: 'DGHG', embedUrl: `https://player.smashy.stream/tv/${tmdbId}?s=${seasonNumber}&e=${epNumToUse}` },
-        { id: 'raretoon', name: 'RareToon', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` }
+        { id: 'videasy', name: 'VidEasy HD', embedUrl: `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true` },
+        { id: 'vidsrc', name: 'VidSrc Direct', embedUrl: vidsrcSub },
+        { id: 'twoembed', name: '2Embed Global', embedUrl: `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` },
+        { id: 'vidsrc_me', name: 'VidSrc Media', embedUrl: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}` },
+        { id: 'autoembed', name: 'AutoEmbed', embedUrl: `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` }
       ];
     }
 

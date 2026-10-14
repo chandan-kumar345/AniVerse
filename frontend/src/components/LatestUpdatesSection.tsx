@@ -21,11 +21,12 @@ export const LatestUpdatesSection: React.FC<LatestUpdatesSectionProps> = ({
       
       {/* LEFT COLUMN: LATEST EPISODE UPDATES */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', borderLeft: '4px solid var(--color-primary)', paddingLeft: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+            <span className="section-indicator" />
             Latest Updates
           </h2>
-          <Link to="/search" style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }} className="view-all-link">
+          <Link to="/search" className="nm-pill" style={{ color: 'var(--text-main)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, padding: '6px 16px' }}>
             View Catalog <ChevronRight size={14} />
           </Link>
         </div>
@@ -41,18 +42,26 @@ export const LatestUpdatesSection: React.FC<LatestUpdatesSectionProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <SidebarTopTen animeList={topTen} />
 
-        {/* Genres wrapper card */}
-        <div style={{ background: '#110e16', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '14px' }}>
+        {/* Genres wrapper card - Neumorphic panel */}
+        <div className="nm-card" style={{ padding: '22px' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+            <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
             Genres
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
             {genres.slice(0, 16).map((genre) => (
               <Link
                 key={genre}
                 to={`/search?genre=${encodeURIComponent(genre)}`}
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', padding: '8px 12px', fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'none', textAlign: 'center', fontWeight: 500, transition: 'var(--transition-fast)' }}
-                className="genre-item-link"
+                className="nm-tag"
+                style={{ 
+                  textDecoration: 'none', 
+                  justifyContent: 'center',
+                  padding: '7px 12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  transition: 'var(--transition-fast)'
+                }}
               >
                 {genre}
               </Link>

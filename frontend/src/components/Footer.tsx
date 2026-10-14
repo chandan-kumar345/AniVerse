@@ -4,26 +4,26 @@ import { Heart, Shield } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ background: '#07070a', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '60px 20px 30px', marginTop: '60px', position: 'relative' }}>
+    <footer style={{ background: 'var(--bg-main)', borderTop: '1px solid rgba(255,255,255,0.04)', padding: '60px 20px 30px', marginTop: '60px', position: 'relative' }}>
       <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
         
         {/* About column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
-            <img src="/logo.png" alt="AniVerse" style={{ height: '36px', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="AniVerse" style={{ height: '38px', objectFit: 'contain' }} />
           </Link>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.7' }}>
             AniVerse is a premium anime streaming platform featuring high-definition playback, an interactive custom player, and a passionate social community.
           </p>
-          <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-            <a href="https://github.com" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', transition: 'var(--transition-fast)' }} className="social-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/></svg>
+          <div style={{ display: 'flex', gap: '14px', marginTop: '8px' }}>
+            <a href="https://github.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/></svg>
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', transition: 'var(--transition-fast)' }} className="social-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', transition: 'var(--transition-fast)' }} className="social-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/><polygon points="10 15 15 12 10 9"/></svg>
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/><polygon points="10 15 15 12 10 9"/></svg>
             </a>
           </div>
         </div>

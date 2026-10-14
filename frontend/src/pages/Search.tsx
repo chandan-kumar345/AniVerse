@@ -136,48 +136,86 @@ export const Search: React.FC = () => {
     <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
       
       {/* HEADER TITLE */}
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, marginBottom: '24px', borderLeft: '4px solid var(--color-primary)', paddingLeft: '12px' }}>
-        Anime Catalog
-      </h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+        <span className="section-indicator" />
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
+          Anime Catalog
+        </h2>
+      </div>
 
       {/* SEARCH / FILTERS BUTTONS FOR MOBILE */}
       <div className="mobile-filter-bar" style={{ display: 'none', gap: '10px', marginBottom: '20px' }}>
-        <button onClick={() => setIsMobileFiltersOpen(true)} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+        <button onClick={() => setIsMobileFiltersOpen(true)} className="nm-pill" style={{ flex: 1, justifyContent: 'center', padding: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Filter size={16} /> Filters
         </button>
       </div>
 
       {/* MAIN LAYOUT GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '30px' }} className="search-grid-layout">
+      <div style={{ display: 'grid', gridTemplateColumns: '290px 1fr', gap: '30px' }} className="search-grid-layout">
         
         {/* FILTERS PANEL (LEFT SIDEBAR) */}
-        <aside className={`filters-panel ${isMobileFiltersOpen ? 'mobile-open' : ''}`} style={{ background: '#12121c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '24px', height: 'fit-content', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
+        <aside
+          className={`nm-card filters-panel ${isMobileFiltersOpen ? 'mobile-open' : ''}`}
+          style={{
+            borderRadius: '24px',
+            padding: '24px',
+            height: 'fit-content',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}
+        >
           {/* Mobile close */}
           <div style={{ display: 'none', justifyContent: 'space-between', alignItems: 'center' }} className="mobile-filter-header">
-            <h3>Filters</h3>
+            <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Filters</h3>
             <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
           </div>
 
-          {/* Search field */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0 10px' }}>
+          {/* Search field - Neumorphic Inset */}
+          <form
+            onSubmit={handleSearchSubmit}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-surface-recessed)',
+              boxShadow: 'var(--nm-inset)',
+              border: '1px solid rgba(255,255,255,0.03)',
+              borderRadius: '9999px',
+              padding: '4px 8px 4px 16px'
+            }}
+          >
             <input
               type="text"
               placeholder="Keyword..."
               value={searchField}
               onChange={(e) => setSearchField(e.target.value)}
-              style={{ flex: 1, background: 'none', border: 'none', padding: '10px 0', color: '#fff', outline: 'none', fontSize: '13px' }}
+              style={{ flex: 1, background: 'none', border: 'none', padding: '8px 0', color: '#fff', outline: 'none', fontSize: '13px' }}
             />
-            <button type="submit" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><SearchIcon size={16} /></button>
+            <button
+              type="submit"
+              className="nm-icon-btn"
+              style={{ width: '32px', height: '32px', color: '#fff', background: 'var(--color-primary)' }}
+            >
+              <SearchIcon size={14} />
+            </button>
           </form>
 
           {/* Genre select */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Genre</label>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Genre</label>
             <select
               value={selectedGenre}
               onChange={(e) => setSelectedGenre(e.target.value)}
-              style={{ background: '#0e0e15', border: '1px solid rgba(255,255,255,0.08)', padding: '10px', color: '#fff', borderRadius: '8px', outline: 'none', fontSize: '13px' }}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
             >
               <option value="">All Genres</option>
               {genres.map((g) => (
@@ -188,11 +226,20 @@ export const Search: React.FC = () => {
 
           {/* Format/Type select */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Format</label>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Format</label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              style={{ background: '#0e0e15', border: '1px solid rgba(255,255,255,0.08)', padding: '10px', color: '#fff', borderRadius: '8px', outline: 'none', fontSize: '13px' }}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
             >
               <option value="">All Types</option>
               <option value="TV">TV</option>
@@ -204,11 +251,20 @@ export const Search: React.FC = () => {
 
           {/* Status select */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Airing Status</label>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Airing Status</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              style={{ background: '#0e0e15', border: '1px solid rgba(255,255,255,0.08)', padding: '10px', color: '#fff', borderRadius: '8px', outline: 'none', fontSize: '13px' }}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
             >
               <option value="">All Statuses</option>
               <option value="Currently Airing">Currently Airing</option>
@@ -218,22 +274,39 @@ export const Search: React.FC = () => {
 
           {/* Year select */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>Released Year</label>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Released Year</label>
             <input
               type="number"
               placeholder="e.g. 2024"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              style={{ background: '#0e0e15', border: '1px solid rgba(255,255,255,0.08)', padding: '10px', color: '#fff', borderRadius: '8px', outline: 'none', fontSize: '13px' }}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
             />
           </div>
 
           {/* Filter action buttons */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <button onClick={() => applyFilters(1)} className="btn-primary" style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+            <button
+              onClick={() => applyFilters(1)}
+              className="nm-btn-primary"
+              style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+            >
               Filter
             </button>
-            <button onClick={clearFilters} className="btn-secondary" style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px' }}>
+            <button
+              onClick={clearFilters}
+              className="nm-pill"
+              style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+            >
               Reset
             </button>
           </div>
@@ -244,14 +317,26 @@ export const Search: React.FC = () => {
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} style={{ height: '280px', width: '100%', borderRadius: '8px' }} className="shimmer" />
+                <div key={i} style={{ height: '280px', width: '100%', borderRadius: '16px' }} className="shimmer" />
               ))}
             </div>
           ) : animeList.length === 0 ? (
-            <div style={{ textTransform: 'none', background: '#12121c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '60px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <h3>No results matching your filters.</h3>
+            <div
+              className="nm-card"
+              style={{
+                borderRadius: '24px',
+                padding: '60px 20px',
+                textAlign: 'center',
+                color: 'var(--text-muted)'
+              }}
+            >
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800 }}>No results matching your filters.</h3>
               <p style={{ marginTop: '8px', fontSize: '14px' }}>Try resetting filters or searching another keyword.</p>
-              <button onClick={clearFilters} className="btn-primary" style={{ marginTop: '20px', padding: '8px 24px', fontSize: '13px' }}>
+              <button
+                onClick={clearFilters}
+                className="nm-btn-primary"
+                style={{ marginTop: '24px', padding: '10px 28px', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+              >
                 Reset Catalog
               </button>
             </div>
@@ -270,19 +355,29 @@ export const Search: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    style={{ padding: '8px 14px', opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
-                    className="btn-secondary"
+                    style={{ padding: '9px 18px', opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', borderRadius: '9999px' }}
+                    className="nm-pill"
                   >
                     <ChevronLeft size={16} /> Prev
                   </button>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                    Page <span style={{ color: '#fff' }}>{currentPage}</span> of {totalPages}
+                  <span
+                    className="nm-pill"
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '9999px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    Page <span style={{ color: '#fff', fontWeight: 800 }}>{currentPage}</span> of {totalPages}
                   </span>
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    style={{ padding: '8px 14px', opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
-                    className="btn-secondary"
+                    style={{ padding: '9px 18px', opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', borderRadius: '9999px' }}
+                    className="nm-pill"
                   >
                     Next <ChevronRight size={16} />
                   </button>
