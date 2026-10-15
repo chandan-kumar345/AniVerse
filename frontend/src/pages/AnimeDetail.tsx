@@ -326,29 +326,29 @@ export const AnimeDetail: React.FC = () => {
                 Information
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Type</span><span style={{ fontWeight: 600 }}>{anime.type}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Type</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.type}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Studio</span><span style={{ fontWeight: 600 }}>{anime.studio || 'Unknown'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Studio</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.studio || 'Unknown'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Status</span><span style={{ fontWeight: 600, color: anime.status === 'Currently Airing' ? '#22c55e' : '#fff' }}>{anime.status}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Status</span><span style={{ fontWeight: 700, color: anime.status === 'Currently Airing' ? '#22c55e' : '#22d3ee' }}>{anime.status}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Released</span><span style={{ fontWeight: 600 }}>{anime.releasedYear || 'Unknown'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Released</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.releasedYear || 'Unknown'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Duration</span><span style={{ fontWeight: 600 }}>{anime.duration || '24m per ep'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Duration</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.duration || '24m per ep'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Score</span><span style={{ color: '#facc15', fontWeight: 700 }}>★ {anime.score.toFixed(2)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Score</span><span style={{ color: '#facc15', fontWeight: 800 }}>★ {anime.score.toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Episodes</span><span style={{ fontWeight: 600 }}>{episodeCount}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Episodes</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{episodeCount}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Rating</span><span style={{ fontWeight: 600 }}>{anime.rating || 'Not Rated'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Rating</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.rating || 'Not Rated'}</span>
                 </div>
               </div>
             </div>

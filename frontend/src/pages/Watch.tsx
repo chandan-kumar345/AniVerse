@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Play, Lightbulb, AlertTriangle, Plus, Check, Info, Tv } from 'lucide-react';
+import { Play, Lightbulb, AlertTriangle, Plus, Check, Info, Tv, RefreshCw } from 'lucide-react';
 import { CommentsSection } from '../components/CommentsSection';
 import axios from 'axios';
 
@@ -15,6 +15,21 @@ interface EpisodeDetail {
   duration?: string | null;
   hasDub?: boolean;
 }
+
+export interface ServerSource {
+  id: string;
+  name: string;
+  embedUrl?: string;
+}
+
+const DEFAULT_FALLBACK_SERVERS: ServerSource[] = [
+  { id: 'vidsrc', name: 'HD-1: Ultra HD' },
+  { id: 'vidsrc_me', name: 'HD-2: VidSrc Pro' },
+  { id: 'vidsrc_io', name: 'HD-3: StreamCloud' },
+  { id: 'twoembed', name: 'HD-4: 2Embed Global' },
+  { id: 'autoembed', name: 'HD-5: AutoEmbed Multi' },
+  { id: 'videasy', name: 'HD-6: VidEasy Backup' }
+];
 
 interface AnimeDetailData {
   id: string;
@@ -35,6 +50,8 @@ interface AnimeDetailData {
   hasSub?: boolean | null;
   hasDub?: boolean | null;
   hasHindi?: boolean | null;
+  isMultiAudio?: boolean;
+  availableAudios?: string[];
 }
 
 export const Watch: React.FC = () => {
@@ -67,39 +84,44 @@ export const Watch: React.FC = () => {
   const [lightsOff, setLightsOff] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // High-performance streaming server states
-  const [activeServer, setActiveServer] = useState<'videasy' | 'vidsrc' | 'twoembed' | 'vidsrc_me' | 'autoembed'>('videasy');
+  // High-performance streaming server states (Default to vidsrc / HD-1 Ultra HD)
+  const [activeServer, setActiveServer] = useState<string>('vidsrc');
+  const [availableServers, setAvailableServers] = useState<ServerSource[]>([]);
+  const [serversByAudio, setServersByAudio] = useState<{
+    sub?: ServerSource[];
+    dub?: ServerSource[];
+    hindi?: ServerSource[];
+  }>({});
   const [activeTranslation, setActiveTranslation] = useState<'sub' | 'dub' | 'hindi'>('sub');
 
   // Translation availability state
+  const [hasSub, setHasSub] = useState(true);
   const [hasDub, setHasDub] = useState(true);
   const [hasHindi, setHasHindi] = useState(false);
+  const [isMultiAudio, setIsMultiAudio] = useState(false);
+  const [availableAudios, setAvailableAudios] = useState<string[]>(['sub']);
   const [seasons, setSeasons] = useState<{ seasonNumber: number; title: string; slug: string }[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [embedUrl, setEmbedUrl] = useState('');
 
-  // Silent internal fallback server switcher (prioritizes active working servers)
+  // Seamless server switcher that cycles through active working servers of the active audio
   const switchToNextServer = () => {
-    const list = activeTranslation === 'dub'
-      ? [
-          { id: 'vidsrc', name: 'VidSrc Direct' },
-          { id: 'videasy', name: 'VidEasy HD' },
-          { id: 'twoembed', name: '2Embed Global' },
-          { id: 'vidsrc_me', name: 'VidSrc Media' },
-          { id: 'autoembed', name: 'AutoEmbed' }
-        ]
-      : [
-          { id: 'videasy', name: 'VidEasy HD' },
-          { id: 'vidsrc', name: 'VidSrc Direct' },
-          { id: 'twoembed', name: '2Embed Global' },
-          { id: 'vidsrc_me', name: 'VidSrc Media' },
-          { id: 'autoembed', name: 'AutoEmbed' }
-        ];
-
-    const currentIndex = list.findIndex(s => s.id === activeServer);
-    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % list.length : 0;
-    setActiveServer(list[nextIndex].id as any);
+    const currentList = serversByAudio[activeTranslation] || availableServers;
+    if (currentList.length > 0) {
+      const currentIndex = currentList.findIndex(s => s.id === activeServer);
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % currentList.length : 0;
+      const nextServer = currentList[nextIndex];
+      setActiveServer(nextServer.id);
+      if (nextServer.embedUrl) {
+        setEmbedUrl(nextServer.embedUrl);
+      }
+    } else {
+      const fallbackList = ['vidsrc', 'vidsrc_me', 'vidsrc_io', 'twoembed', 'autoembed', 'videasy'];
+      const currentIndex = fallbackList.indexOf(activeServer);
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % fallbackList.length : 0;
+      setActiveServer(fallbackList[nextIndex]);
+    }
   };
 
   // Calculate 100-chunk pagination ranges
@@ -208,8 +230,16 @@ export const Watch: React.FC = () => {
         setHasNext(epRes.data.hasNext);
         const epHasDub = epRes.data.hasDub ?? true;
         setHasDub(epHasDub);
+        const epHasSub = epRes.data.hasSub ?? true;
+        setHasSub(epHasSub);
         const epHasHindi = epRes.data.hasHindi ?? false;
         setHasHindi(epHasHindi);
+        if (epRes.data.isMultiAudio !== undefined) {
+          setIsMultiAudio(Boolean(epRes.data.isMultiAudio));
+        }
+        if (epRes.data.availableAudios) {
+          setAvailableAudios(epRes.data.availableAudios);
+        }
 
         // Fetch anime details and related list (franchise content)
         const detailRes = await axiosInstance.get(`/api/anime/${slug}`);
@@ -219,15 +249,27 @@ export const Watch: React.FC = () => {
         if (animeData.hasHindi !== undefined) {
           setHasHindi(Boolean(animeData.hasHindi));
         }
+        if (animeData.hasDub !== undefined) {
+          setHasDub(Boolean(animeData.hasDub));
+        }
+        if (animeData.hasSub !== undefined) {
+          setHasSub(Boolean(animeData.hasSub));
+        }
+        if (animeData.isMultiAudio !== undefined) {
+          setIsMultiAudio(Boolean(animeData.isMultiAudio));
+        }
+        if (animeData.availableAudios) {
+          setAvailableAudios(animeData.availableAudios);
+        }
 
-        let defaultTranslation: 'sub' | 'dub' = 'sub';
-        if (animeData.hasSub === false && animeData.hasDub !== false && epHasDub) {
+        let defaultTranslation: 'sub' | 'dub' | 'hindi' = 'sub';
+        if (animeData.hasSub === false && animeData.hasDub) {
           defaultTranslation = 'dub';
         }
         setActiveTranslation((prev) => {
           if (prev === 'hindi' && (epHasHindi || animeData.hasHindi)) return 'hindi';
-          if (prev === 'dub' && epHasDub) return 'dub';
-          if (prev === 'sub' && animeData.hasSub !== false) return 'sub';
+          if (prev === 'dub' && (epHasDub && animeData.hasDub !== false)) return 'dub';
+          if (prev === 'sub' && (epHasSub && animeData.hasSub !== false)) return 'sub';
           return defaultTranslation;
         });
         setEpisodesList(detailRes.data.anime.episodes || []);
@@ -267,6 +309,27 @@ export const Watch: React.FC = () => {
         });
         
         let url = response.data.embedUrl || '';
+        if (response.data.servers && response.data.servers.length > 0) {
+          setAvailableServers(response.data.servers);
+        }
+        if (response.data.serversByAudio) {
+          setServersByAudio(response.data.serversByAudio);
+        }
+        if (response.data.availableAudios) {
+          setAvailableAudios(response.data.availableAudios);
+        }
+        if (response.data.isMultiAudio !== undefined) {
+          setIsMultiAudio(response.data.isMultiAudio);
+        }
+        if (response.data.hasDub !== undefined) {
+          setHasDub(response.data.hasDub);
+        }
+        if (response.data.hasHindi !== undefined) {
+          setHasHindi(response.data.hasHindi);
+        }
+        if (response.data.hasSub !== undefined) {
+          setHasSub(response.data.hasSub);
+        }
         
         // Append playback settings locally for the resolved url
         if (url) {
@@ -282,6 +345,9 @@ export const Watch: React.FC = () => {
         // Seamlessly sync activeServer if backend selected the primary working server for this audio
         if (response.data.server && response.data.server !== activeServer) {
           setActiveServer(response.data.server);
+        }
+        if (response.data.lang && response.data.lang !== activeTranslation) {
+          setActiveTranslation(response.data.lang);
         }
       } catch (err) {
         console.error('Error fetching episode dynamic source:', err);
@@ -368,22 +434,22 @@ export const Watch: React.FC = () => {
       )}
 
       {/* BREADCRUMB NAVIGATION */}
-      <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', alignItems: 'center' }}>
-        <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</Link>
-        <span>/</span>
-        <Link to={`/anime/${animeDetail.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>{animeName}</Link>
-        <span>/</span>
-        <span style={{ color: 'var(--color-primary)' }}>Episode {epNum}</span>
+      <div className="nm-breadcrumb" style={{ marginBottom: '18px' }}>
+        <Link to="/" style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>Home</Link>
+        <span style={{ color: '#64748b' }}>/</span>
+        <Link to={`/anime/${animeDetail.slug}`} style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>{animeName}</Link>
+        <span style={{ color: '#64748b' }}>/</span>
+        <span style={{ color: '#c084fc', fontWeight: 800, background: 'rgba(139, 92, 246, 0.15)', padding: '2px 10px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>Episode {epNum}</span>
       </div>
 
       {/* THEATER MAIN SCREEN BOX (2-COLUMN LAYOUT) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isExpanded ? '1fr' : '320px 1fr',
+          gridTemplateColumns: isExpanded ? '1fr' : '330px 1fr',
           gap: '24px',
           alignItems: 'stretch',
-          marginBottom: '24px',
+          marginBottom: '26px',
           position: 'relative',
           zIndex: lightsOff ? 1000 : 1
         }}
@@ -392,11 +458,14 @@ export const Watch: React.FC = () => {
 
         {/* COLUMN 1: SIDEBAR (LEFT) - EPISODES (STRETCHED TO MATCH ROW HEIGHT) */}
         {!isExpanded && (
-          <div className="nm-card" style={{ padding: '18px 16px', display: 'flex', flexDirection: 'column', height: '70%', width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
-                <span className="section-indicator" style={{ height: '16px', width: '3px' }} />
+          <div className="nm-card" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '540px', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="section-indicator" style={{ height: '18px', width: '4px', margin: 0 }} />
                 Episodes
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                  {filteredEpisodes.length}
+                </span>
               </h3>
 
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -407,21 +476,29 @@ export const Watch: React.FC = () => {
                     setActiveTranslationFilter(val);
                     if (val === 'hindi') {
                       setActiveTranslation('hindi');
-                      setActiveServer('videasy');
+                      setActiveServer('vidsrc');
                     } else if (val === 'dub') {
                       setActiveTranslation('dub');
                       setActiveServer('vidsrc');
                     } else if (val === 'sub') {
                       setActiveTranslation('sub');
-                      setActiveServer('videasy');
+                      setActiveServer('vidsrc');
                     }
                   }}
-                  style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.04)', color: '#fff', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
                 >
-                  <option value="sub_dub" style={{ background: '#141624', color: '#fff' }}>All Audio</option>
-                  <option value="sub" style={{ background: '#141624', color: '#fff' }}>Sub</option>
-                  <option value="dub" style={{ background: '#141624', color: '#fff' }}>Dub</option>
-                  {hasHindi && <option value="hindi" style={{ background: '#141624', color: '#fff' }}>Hindi</option>}
+                  {isMultiAudio ? (
+                    <>
+                      <option value="sub_dub" style={{ background: '#141624', color: '#fff' }}>All Audio</option>
+                      {hasSub && <option value="sub" style={{ background: '#141624', color: '#fff' }}>Sub (JP)</option>}
+                      {hasDub && <option value="dub" style={{ background: '#141624', color: '#fff' }}>Dub (EN)</option>}
+                      {hasHindi && <option value="hindi" style={{ background: '#141624', color: '#fff' }}>Hindi (HI)</option>}
+                    </>
+                  ) : (
+                    <option value="sub" style={{ background: '#141624', color: '#fff' }}>
+                      {hasDub && !hasSub ? 'Dub (EN)' : 'Sub (JP)'}
+                    </option>
+                  )}
                 </select>
 
                 {episodesList.length > 100 && (
@@ -431,7 +508,7 @@ export const Watch: React.FC = () => {
                       const [start, end] = e.target.value.split('-').map(Number);
                       setSelectedRange({ start, end });
                     }}
-                    style={{ width: '74px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.04)', color: '#fff', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ width: '80px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
                   >
                     {ranges.map((r, idx) => (
                       <option key={idx} value={`${r.start}-${r.end}`} style={{ background: '#141624', color: '#fff' }}>{r.label}</option>
@@ -444,22 +521,23 @@ export const Watch: React.FC = () => {
                   placeholder="Find"
                   value={episodeSearch}
                   onChange={(e) => setEpisodeSearch(e.target.value)}
-                  style={{ width: '54px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', color: '#fff', outline: 'none' }}
+                  style={{ width: '56px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', color: '#ffffff', outline: 'none', fontWeight: 600 }}
                 />
               </div>
             </div>
 
-            {/* Episode buttons in a 6-column grid - Neumorphic buttons */}
+            {/* Episode buttons in a 6-column grid with tactile neumorphic buttons */}
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(6, 1fr)',
-                gridAutoRows: '34px',
+                gridAutoRows: '36px',
                 gap: '8px',
                 overflowY: 'auto',
                 paddingRight: '4px',
                 flex: 1,
-                alignContent: 'start'
+                alignContent: 'start',
+                maxHeight: '480px'
               }}
               className="no-scrollbar"
             >
@@ -467,44 +545,12 @@ export const Watch: React.FC = () => {
                 const isActive = ep.episodeNumber === parseInt(epNum || '1');
                 const isWatched = watchedEpisodes.includes(ep.episodeNumber);
 
-                let bg = '#161828';
-                let border = '1px solid rgba(255,255,255,0.04)';
-                let textColor = 'var(--text-main)';
-                let shadow = '2px 2px 5px #08090f, -2px -2px 4px #1e2034';
-
-                if (isActive) {
-                  bg = 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)';
-                  border = '1px solid rgba(255,255,255,0.2)';
-                  textColor = '#fff';
-                  shadow = '0 4px 12px rgba(139, 92, 246, 0.55)';
-                } else if (isWatched) {
-                  bg = '#1a1b2d';
-                  border = '1px solid rgba(139, 92, 246, 0.3)';
-                  textColor = '#c084fc';
-                  shadow = '2px 2px 5px #08090f';
-                }
-
                 return (
                   <Link
                     key={ep.id}
                     to={`/watch/${slug}/episode/${ep.episodeNumber}`}
-                    style={{
-                      height: '34px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: bg,
-                      border: border,
-                      color: textColor,
-                      textDecoration: 'none',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      borderRadius: '8px',
-                      boxShadow: shadow,
-                      transition: 'var(--transition-fast)'
-                    }}
+                    className={`nm-episode-btn ${isActive ? 'active' : ''} ${isWatched && !isActive ? 'watched' : ''}`}
                     title={`Episode ${ep.episodeNumber}`}
-                    className="episode-sidebar-btn"
                   >
                     {ep.episodeNumber}
                   </Link>
@@ -518,53 +564,82 @@ export const Watch: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
 
           {/* Top banner notice - Inset Neumorphic pill */}
-          <div style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-            <Info size={15} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-            <span>Registered users can track watched episodes, create watchlist, and post comments.</span>
+          <div style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Info size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <span>Free anime streaming in full HD. If a stream loads slowly, switch mirrors below.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="live-ping-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Server Active</span>
+            </div>
           </div>
 
-          {/* Video Player Container - Neumorphic Bezel */}
-          <div style={{ width: '100%', background: '#000', borderRadius: '20px', overflow: 'hidden', border: '2.5px solid rgba(139, 92, 246, 0.3)', position: 'relative', aspectRatio: '16/9', boxShadow: '10px 10px 26px #06070d, -8px -8px 20px #1b1e32, 0 0 24px rgba(139, 92, 246, 0.2)' }}>
-            {embedUrl ? (
-              <iframe
-                key={embedUrl}
-                src={embedUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                allowFullScreen
-                title={`${activeServer} Player`}
-                referrerPolicy="no-referrer"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                onError={() => {
-                  switchToNextServer();
-                }}
-              />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', color: '#bcc5cf', fontSize: '14px', background: '#09080d' }}>
-                Loading stream sources...
+          {/* Video Player Container - Neumorphic Cinema Bezel with Header Bar */}
+          <div className="nm-player-bezel">
+            {/* Player Mini Top Control Bar */}
+            <div style={{ background: '#0e101a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: '#ffffff', fontWeight: 800 }}>{animeName}</span>
+                <span style={{ color: '#c084fc', fontWeight: 700 }}>• Episode {epNum}</span>
               </div>
-            )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '11px', color: '#cbd5e1', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AnimeStream Ultra HD'}</strong>
+                </span>
+                <button
+                  onClick={switchToNextServer}
+                  className="nm-pill"
+                  style={{ border: 'none', color: '#ffffff', cursor: 'pointer', padding: '5px 12px', fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  title="Switch to next server mirror"
+                >
+                  <RefreshCw size={11} style={{ color: '#8b5cf6' }} /> Next Mirror
+                </button>
+              </div>
+            </div>
+
+            <div style={{ width: '100%', aspectRatio: '16/9', position: 'relative', background: '#000' }}>
+              {embedUrl ? (
+                <iframe
+                  key={embedUrl}
+                  src={embedUrl}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  allowFullScreen
+                  title={`${activeServer} Player`}
+                  referrerPolicy="no-referrer"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  onError={() => {
+                    switchToNextServer();
+                  }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: '14px', background: '#09080d' }}>
+                  Loading stream sources...
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sub-player Control Settings Bar - Neumorphic Card */}
-          <div className="nm-card" style={{ padding: '12px 20px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', borderRadius: '14px' }}>
+          <div className="nm-card" style={{ padding: '14px 22px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
 
             {/* Playback helpers */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 700, color: '#cbd5e1' }}>
 
               <button
                 onClick={() => setIsExpanded(prev => !prev)}
                 className="nm-pill"
-                style={{ border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '6px 14px' }}
+                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
               >
                 <Tv size={14} style={{ color: '#8b5cf6' }} /> {isExpanded ? 'Shrink' : 'Expand'}
               </button>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
                 <input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} style={{ accentColor: '#8b5cf6', cursor: 'pointer' }} />
                 <span>Auto Play</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
                 <input type="checkbox" checked={autoNext} onChange={(e) => setAutoNext(e.target.checked)} style={{ accentColor: '#8b5cf6', cursor: 'pointer' }} />
                 <span>Auto Next</span>
               </label>
@@ -576,12 +651,12 @@ export const Watch: React.FC = () => {
                   gap: '6px',
                   cursor: 'pointer',
                   background: '#f59e0b',
-                  color: '#000',
-                  padding: '3px 10px',
+                  color: '#000000',
+                  padding: '4px 12px',
                   borderRadius: '9999px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '12px',
-                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+                  boxShadow: '0 2px 10px rgba(245, 158, 11, 0.45)'
                 }}
               >
                 <input type="checkbox" checked={autoSkip} onChange={(e) => setAutoSkip(e.target.checked)} style={{ accentColor: '#000', cursor: 'pointer' }} />
@@ -591,14 +666,14 @@ export const Watch: React.FC = () => {
               <button
                 onClick={() => setLightsOff(prev => !prev)}
                 className="nm-pill"
-                style={{ border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '6px 14px' }}
+                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
               >
                 <Lightbulb size={14} style={{ fill: lightsOff ? '#fff' : 'none' }} /> Light
               </button>
             </div>
 
             {/* Skip arrows and report triggers */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#cbd5e1', fontWeight: 700 }}>
 
               {/* Prev / Next */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -606,7 +681,7 @@ export const Watch: React.FC = () => {
                   onClick={handlePrevEpisode}
                   disabled={!hasPrev}
                   className="nm-pill"
-                  style={{ color: hasPrev ? '#fff' : 'rgba(255,255,255,0.25)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '6px 14px' }}
+                  style={{ color: hasPrev ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
                 >
                   ◀ Prev
                 </button>
@@ -614,257 +689,299 @@ export const Watch: React.FC = () => {
                   onClick={handleNextEpisode}
                   disabled={!hasNext}
                   className="nm-pill"
-                  style={{ color: hasNext ? '#fff' : 'rgba(255,255,255,0.25)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '6px 14px' }}
+                  style={{ color: hasNext ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
                 >
                   Next ▶
                 </button>
               </div>
 
-              <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+              <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
 
               <button 
                 className="nm-pill"
-                style={{ color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, padding: '6px 12px' }}
+                style={{ color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 14px' }}
               >
-                <AlertTriangle size={14} /> Report
+                <AlertTriangle size={14} style={{ color: '#f59e0b' }} /> Report
               </button>
 
               <button
                 onClick={toggleWatchlist}
                 className="nm-pill"
-                style={{ color: inWatchlist ? 'var(--color-primary)' : 'var(--text-muted)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, padding: '6px 14px' }}
+                style={{ color: inWatchlist ? 'var(--color-primary)' : '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 16px' }}
               >
                 {inWatchlist ? <Check size={14} style={{ color: 'var(--color-primary)' }} /> : <Plus size={14} />} Add to list
               </button>
             </div>
           </div>
 
-          {/* Translation Toggles & Aniwave Servers Bar - Neumorphic Panel */}
-          <div className="nm-card" style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'stretch' }}>
+          {/* Translation Toggles & High-Performance Streaming Servers Bar */}
+          <div className="nm-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px', alignItems: 'stretch' }}>
 
             {/* Active Audio Mode Indicator */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', fontSize: '13px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Active Audio:</span>
+                <span style={{ color: '#cbd5e1', fontWeight: 700 }}>Active Audio Track:</span>
                 <span className="nm-pill" style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontWeight: 800,
                   fontSize: '12px',
-                  padding: '4px 12px',
+                  padding: '5px 14px',
                   color: activeTranslation === 'hindi' ? '#fbbf24' : activeTranslation === 'dub' ? '#22d3ee' : '#c084fc',
+                  border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(251, 191, 36, 0.4)' : activeTranslation === 'dub' ? 'rgba(34, 211, 238, 0.4)' : 'rgba(192, 132, 252, 0.4)'}`
                 }}>
                   {activeTranslation === 'hindi' ? '🇮🇳 Hindi Dubbed' : activeTranslation === 'dub' ? '🎙️ English Dubbed' : '🇯🇵 Japanese (CC SUB)'}
                 </span>
+                {isMultiAudio ? (
+                  <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                    Multi-Audio ({availableAudios.map(a => a.toUpperCase()).join(' / ')})
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '11px', color: '#818cf8', background: 'rgba(129, 140, 248, 0.12)', border: '1px solid rgba(129, 140, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                    Single Audio ({availableAudios[0]?.toUpperCase() || 'SUB'})
+                  </span>
+                )}
               </div>
-              <span style={{ color: 'var(--text-dark)', fontSize: '12px' }}>
-                💡 Select server below to switch multi-audio feeds
+              <span style={{ color: '#818cf8', fontSize: '12px', fontWeight: 600 }}>
+                ⚡ Click any server below for immediate smooth playback
               </span>
             </div>
 
-            {/* SUB servers group */}
-            {animeDetail.hasSub !== false && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <button
-                  onClick={() => { setActiveTranslation('sub'); setActiveServer('videasy'); }}
-                  className="nm-pill"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: activeTranslation === 'sub' ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : '#161828',
-                    border: `1px solid ${activeTranslation === 'sub' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    padding: '6px 14px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: '#fff',
-                    minWidth: '76px',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: activeTranslation === 'sub' ? '0 4px 14px rgba(139, 92, 246, 0.55)' : 'none'
-                  }}
-                  title="Switch to Japanese Audio with Subtitles"
-                >
-                  <span style={{ fontSize: '9px', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '2px', padding: '0 2px', lineHeight: '1.2' }}>CC</span>
-                  SUB
-                </button>
+            {/* If Single Audio Anime: Show clean single audio server list only */}
+            {!isMultiAudio ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
+                    This anime is available in single audio ({hasDub && !hasSub ? 'English Dubbed' : 'Japanese with English Subtitles'}). Select a streaming server:
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                  <div
+                    className="nm-pill"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      padding: '8px 18px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      color: '#fff',
+                      minWidth: '84px',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 16px rgba(139, 92, 246, 0.65)'
+                    }}
+                  >
+                    <span style={{ fontSize: '10px', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '3px', padding: '0 3px', lineHeight: '1.2' }}>CC</span>
+                    {hasDub && !hasSub ? 'DUB' : 'SUB'}
+                  </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {[
-                    { id: 'videasy', name: 'VidEasy HD' },
-                    { id: 'vidsrc', name: 'VidSrc Direct' },
-                    { id: 'twoembed', name: '2Embed' },
-                    { id: 'vidsrc_me', name: 'VidSrc Media' },
-                    { id: 'autoembed', name: 'AutoEmbed' }
-                  ].map((s) => {
-                    const isSelected = activeTranslation === 'sub' && activeServer === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => { setActiveTranslation('sub'); setActiveServer(s.id as any); }}
-                        style={{
-                          background: isSelected ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : '#161828',
-                          border: '1px solid ' + (isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'),
-                          color: isSelected ? '#fff' : 'var(--text-muted)',
-                          padding: '7px 16px',
-                          borderRadius: '9999px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: isSelected ? '0 4px 14px rgba(139, 92, 246, 0.55)' : '3px 3px 6px #08090f, -2px -2px 5px #20233a',
-                          transition: 'all 0.15s ease'
-                        }}
-                        className="server-badge"
-                      >
-                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Play size={7} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
-                        </div>
-                        {s.name}
-                      </button>
-                    );
-                  })}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {(serversByAudio[activeTranslation] || (availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS)).map((s: ServerSource) => {
+                      const isSelected = activeServer === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => {
+                            setActiveServer(s.id);
+                            if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                          }}
+                          className={`nm-server-pill ${isSelected ? 'active' : ''}`}
+                        >
+                          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Play size={8} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
+                          </div>
+                          {s.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            )}
+            ) : (
+              /* If Multi Audio Anime: Show distinct audio-wise server panels (SUB, DUB, HINDI) */
+              <>
+                {/* SUB servers group */}
+                {hasSub && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        setActiveTranslation('sub');
+                        const subList: ServerSource[] = serversByAudio.sub || availableServers;
+                        if (subList.length > 0) {
+                          const targetServer = subList.find(s => s.id === activeServer) || subList[0];
+                          setActiveServer(targetServer.id);
+                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                        }
+                      }}
+                      className="nm-pill"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: activeTranslation === 'sub' ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : '#151726',
+                        border: `1px solid ${activeTranslation === 'sub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        padding: '8px 18px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#fff',
+                        minWidth: '84px',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: activeTranslation === 'sub' ? '0 4px 16px rgba(139, 92, 246, 0.65)' : 'none'
+                      }}
+                      title="Switch to Japanese Audio with Subtitles"
+                    >
+                      <span style={{ fontSize: '10px', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '3px', padding: '0 3px', lineHeight: '1.2' }}>CC</span>
+                      SUB
+                    </button>
 
-            {/* DUB servers group */}
-            {animeDetail.hasDub !== false && hasDub && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <button
-                  onClick={() => { setActiveTranslation('dub'); setActiveServer('vidsrc'); }}
-                  className="nm-pill"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : '#161828',
-                    border: `1px solid ${activeTranslation === 'dub' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    padding: '6px 14px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: '#fff',
-                    minWidth: '76px',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: activeTranslation === 'dub' ? '0 4px 14px rgba(6, 182, 212, 0.55)' : 'none'
-                  }}
-                  title="Switch to English Dubbed Audio"
-                >
-                  <span style={{ fontSize: '12px' }}>🎙️</span>
-                  DUB
-                </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {(serversByAudio.sub || (activeTranslation === 'sub' && availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS)).map((s: ServerSource) => {
+                        const isSelected = activeTranslation === 'sub' && activeServer === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              setActiveTranslation('sub');
+                              setActiveServer(s.id);
+                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                            }}
+                            className={`nm-server-pill ${isSelected ? 'active' : ''}`}
+                          >
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Play size={8} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
+                            </div>
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {[
-                    { id: 'vidsrc', name: 'VidSrc Direct' },
-                    { id: 'videasy', name: 'VidEasy HD' },
-                    { id: 'twoembed', name: '2Embed' },
-                    { id: 'vidsrc_me', name: 'VidSrc Media' },
-                    { id: 'autoembed', name: 'AutoEmbed' }
-                  ].map((s) => {
-                    const isSelected = activeTranslation === 'dub' && activeServer === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => { setActiveTranslation('dub'); setActiveServer(s.id as any); }}
-                        style={{
-                          background: isSelected ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : '#161828',
-                          border: '1px solid ' + (isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'),
-                          color: isSelected ? '#fff' : 'var(--text-muted)',
-                          padding: '7px 16px',
-                          borderRadius: '9999px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: isSelected ? '0 4px 14px rgba(6, 182, 212, 0.55)' : '3px 3px 6px #08090f, -2px -2px 5px #20233a',
-                          transition: 'all 0.15s ease'
-                        }}
-                        className="server-badge"
-                      >
-                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Play size={7} style={{ fill: isSelected ? '#0891b2' : '#fff', color: isSelected ? '#0891b2' : '#fff', marginLeft: '1px' }} />
-                        </div>
-                        {s.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                {/* DUB servers group - ONLY rendered if anime has English dub */}
+                {hasDub && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        setActiveTranslation('dub');
+                        const dubList: ServerSource[] = serversByAudio.dub || availableServers;
+                        if (dubList.length > 0) {
+                          const targetServer = dubList.find(s => s.id === activeServer) || dubList[0];
+                          setActiveServer(targetServer.id);
+                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                        }
+                      }}
+                      className="nm-pill"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : '#151726',
+                        border: `1px solid ${activeTranslation === 'dub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        padding: '8px 18px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#fff',
+                        minWidth: '84px',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: activeTranslation === 'dub' ? '0 4px 16px rgba(6, 182, 212, 0.65)' : 'none'
+                      }}
+                      title="Switch to English Dubbed Audio"
+                    >
+                      <span style={{ fontSize: '12px' }}>🎙️</span>
+                      DUB
+                    </button>
 
-            {/* HINDI Dubbed servers group - ONLY rendered if anime has Hindi audio */}
-            {hasHindi && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
-                <button
-                  onClick={() => { setActiveTranslation('hindi'); setActiveServer('videasy'); }}
-                  className="nm-pill"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#161828',
-                    border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    padding: '6px 14px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: '#fff',
-                    minWidth: '76px',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: activeTranslation === 'hindi' ? '0 4px 14px rgba(245, 158, 11, 0.55)' : 'none'
-                  }}
-                  title="Switch to Hindi Dubbed Audio"
-                >
-                  <span style={{ fontSize: '12px' }}>🇮🇳</span>
-                  HINDI
-                </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {(serversByAudio.dub || (activeTranslation === 'dub' && availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS)).map((s: ServerSource) => {
+                        const isSelected = activeTranslation === 'dub' && activeServer === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              setActiveTranslation('dub');
+                              setActiveServer(s.id);
+                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                            }}
+                            className={`nm-server-pill ${isSelected ? 'active' : ''}`}
+                            style={isSelected ? { background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', boxShadow: '0 4px 16px rgba(6, 182, 212, 0.65)' } : {}}
+                          >
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Play size={8} style={{ fill: isSelected ? '#0891b2' : '#fff', color: isSelected ? '#0891b2' : '#fff', marginLeft: '1px' }} />
+                            </div>
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {[
-                    { id: 'videasy', name: 'VidEasy HD' },
-                    { id: 'vidsrc', name: 'VidSrc Direct' },
-                    { id: 'twoembed', name: '2Embed' },
-                    { id: 'vidsrc_me', name: 'VidSrc Media' },
-                    { id: 'autoembed', name: 'AutoEmbed' }
-                  ].map((s) => {
-                    const isSelected = activeTranslation === 'hindi' && activeServer === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => { setActiveTranslation('hindi'); setActiveServer(s.id as any); }}
-                        style={{
-                          background: isSelected ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#161828',
-                          border: '1px solid ' + (isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'),
-                          color: isSelected ? '#fff' : 'var(--text-muted)',
-                          padding: '7px 16px',
-                          borderRadius: '9999px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: isSelected ? '0 4px 14px rgba(245, 158, 11, 0.55)' : '3px 3px 6px #08090f, -2px -2px 5px #20233a',
-                          transition: 'all 0.15s ease'
-                        }}
-                        className="server-badge"
-                      >
-                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Play size={7} style={{ fill: isSelected ? '#d97706' : '#fff', color: isSelected ? '#d97706' : '#fff', marginLeft: '1px' }} />
-                        </div>
-                        {s.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                {/* HINDI Dubbed servers group - ONLY rendered if anime has Hindi audio */}
+                {hasHindi && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        setActiveTranslation('hindi');
+                        const hindiList: ServerSource[] = serversByAudio.hindi || availableServers;
+                        if (hindiList.length > 0) {
+                          const targetServer = hindiList.find(s => s.id === activeServer) || hindiList[0];
+                          setActiveServer(targetServer.id);
+                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                        }
+                      }}
+                      className="nm-pill"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#151726',
+                        border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        padding: '8px 18px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        color: '#fff',
+                        minWidth: '84px',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: activeTranslation === 'hindi' ? '0 4px 16px rgba(245, 158, 11, 0.65)' : 'none'
+                      }}
+                      title="Switch to Hindi Dubbed Audio"
+                    >
+                      <span style={{ fontSize: '12px' }}>🇮🇳</span>
+                      HINDI
+                    </button>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {(serversByAudio.hindi || (activeTranslation === 'hindi' && availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS)).map((s: ServerSource) => {
+                        const isSelected = activeTranslation === 'hindi' && activeServer === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              setActiveTranslation('hindi');
+                              setActiveServer(s.id);
+                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                            }}
+                            className={`nm-server-pill ${isSelected ? 'active' : ''}`}
+                            style={isSelected ? { background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.65)' } : {}}
+                          >
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Play size={8} style={{ fill: isSelected ? '#d97706' : '#fff', color: isSelected ? '#d97706' : '#fff', marginLeft: '1px' }} />
+                            </div>
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -1032,15 +1149,15 @@ export const Watch: React.FC = () => {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                 <span className="section-indicator" />
-                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#fff' }}>
+                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#ffffff' }}>
                   Quick Stats
                 </h4>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>Type:</span><span style={{ fontWeight: 600 }}>{animeDetail.type}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>Status:</span><span style={{ fontWeight: 600, color: 'var(--color-teal)' }}>{animeDetail.status}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>Studio:</span><span style={{ fontWeight: 600 }}>{animeDetail.studio || 'Unknown'}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>Duration:</span><span style={{ fontWeight: 600 }}>{animeDetail.duration || '24 min'}</span></div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Type:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.type}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Status:</span><span style={{ fontWeight: 700, color: '#22d3ee' }}>{animeDetail.status}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Studio:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.studio || 'Unknown'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Duration:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.duration || '24 min'}</span></div>
               </div>
             </div>
           </div>
@@ -1084,26 +1201,26 @@ export const Watch: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
                 {animeDetail.hasSub !== false && (
-                  <span className="nm-tag" style={{ background: 'rgba(139, 92, 246, 0.15)', color: 'var(--color-primary)', borderColor: 'rgba(139, 92, 246, 0.3)' }}>SUB</span>
+                  <span className="nm-tag" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', borderColor: 'rgba(139, 92, 246, 0.4)', fontWeight: 800 }}>SUB</span>
                 )}
                 {animeDetail.hasDub !== false && (
-                  <span className="nm-tag" style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--color-teal)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>DUB</span>
+                  <span className="nm-tag" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', borderColor: 'rgba(6, 182, 212, 0.4)', fontWeight: 800 }}>DUB</span>
                 )}
                 {hasHindi && (
-                  <span className="nm-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.3)' }}>🇮🇳 HINDI</span>
+                  <span className="nm-tag" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.4)', fontWeight: 800 }}>🇮🇳 HINDI</span>
                 )}
-                <span style={{ color: 'var(--text-muted)', fontSize: '12px', marginLeft: '4px' }}>
-                  • Released: {animeDetail.releasedYear || 'Unknown'} • Rating: {animeDetail.score ? `⭐ ${animeDetail.score.toFixed(1)}` : 'N/A'}
+                <span style={{ color: '#cbd5e1', fontSize: '13px', marginLeft: '6px', fontWeight: 600 }}>
+                  • Released: <strong style={{ color: '#fff' }}>{animeDetail.releasedYear || 'Unknown'}</strong> • Rating: <strong style={{ color: '#fbbf24' }}>{animeDetail.score ? `⭐ ${animeDetail.score.toFixed(1)}` : 'N/A'}</strong>
                 </span>
               </div>
 
               {/* Seasons Switcher Section */}
               {seasons.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                  <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                     Seasons & Movies:
                   </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '2px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
                     {seasons.map((s: any) => {
                       const isActive = s.slug === animeDetail.slug;
                       return (
@@ -1112,10 +1229,10 @@ export const Watch: React.FC = () => {
                           onClick={() => !isActive && navigate(`/watch/${s.slug}/episode/1`)}
                           className={isActive ? 'nm-btn-primary' : 'nm-pill season-switch-btn'}
                           style={{
-                            padding: '7px 16px',
+                            padding: '8px 18px',
                             borderRadius: '9999px',
                             fontSize: '12px',
-                            fontWeight: isActive ? 800 : 600,
+                            fontWeight: isActive ? 800 : 700,
                             cursor: isActive ? 'default' : 'pointer'
                           }}
                         >
@@ -1128,9 +1245,9 @@ export const Watch: React.FC = () => {
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '14px' }}>
-              <h4 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 700 }}>Synopsis</h4>
-              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13.5px', lineHeight: '1.75' }}>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+              <h4 style={{ fontSize: '14px', color: '#ffffff', marginBottom: '8px', fontWeight: 800 }}>Synopsis</h4>
+              <p style={{ color: '#e2e8f0', fontSize: '14px', lineHeight: '1.8' }}>
                 {animeDetail.description}
               </p>
             </div>

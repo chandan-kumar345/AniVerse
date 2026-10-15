@@ -15,28 +15,29 @@
   --color-accent-hover: #a855f7;
   --color-teal: #06b6d4; /* Teal */
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dark: #64748b;
+  --text-main: #ffffff;
+  --text-muted: #cbd5e1; /* High-contrast crisp readable text */
+  --text-subtle: #94a3b8;
+  --text-dark: #818cf8; /* Subtle tinted accent for small meta */
   
-  --border-color: rgba(255, 255, 255, 0.05);
-  --border-color-active: rgba(139, 92, 246, 0.4);
-  --border-nm: 1px solid rgba(255, 255, 255, 0.06);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-active: rgba(139, 92, 246, 0.5);
+  --border-nm: 1px solid rgba(255, 255, 255, 0.08);
   
-  /* Neumorphic Shadows System */
-  --nm-flat: 5px 5px 12px #08090f, -4px -4px 10px #1c1e30;
-  --nm-card: 6px 6px 14px #090a10, -5px -5px 12px #1e2034;
-  --nm-card-hover: 8px 8px 20px #07080d, -6px -6px 16px #242740, 0 0 18px rgba(139, 92, 246, 0.35);
-  --nm-elevated: 8px 8px 18px #08090e, -6px -6px 14px #22243a;
-  --nm-inset: inset 3px 3px 6px #08090f, inset -3px -3px 6px #1a1c2e;
-  --nm-inset-deep: inset 4px 4px 8px #07080d, inset -4px -4px 8px #181a2b;
-  --nm-convex-btn: 4px 4px 10px #090a10, -3px -3px 8px #22253c;
-  --nm-primary-btn: 0 8px 20px rgba(109, 40, 217, 0.45), inset 0 1px 1.5px rgba(255, 255, 255, 0.35);
-  --nm-glow: 0 0 25px rgba(139, 92, 246, 0.35);
-  --nm-hero-frame: 12px 12px 30px #07080e, -8px -8px 24px #1d2036, 0 0 32px rgba(139, 92, 246, 0.25);
+  /* Neumorphic Shadows System (Refined Tactile Depth) */
+  --nm-flat: 6px 6px 14px #07080e, -5px -5px 12px #1b1e32;
+  --nm-card: 8px 8px 18px #06070d, -6px -6px 14px #1c1f34;
+  --nm-card-hover: 10px 10px 24px #05060b, -7px -7px 18px #222642, 0 0 20px rgba(139, 92, 246, 0.35);
+  --nm-elevated: 8px 8px 18px #06070d, -6px -6px 14px #20233a;
+  --nm-inset: inset 3px 3px 6px #06070c, inset -3px -3px 6px #191b2c;
+  --nm-inset-deep: inset 4px 4px 8px #05060b, inset -4px -4px 8px #171929;
+  --nm-convex-btn: 4px 4px 10px #07080e, -3px -3px 8px #1f2238;
+  --nm-primary-btn: 0 8px 20px rgba(109, 40, 217, 0.55), inset 0 1px 1.5px rgba(255, 255, 255, 0.45);
+  --nm-glow: 0 0 25px rgba(139, 92, 246, 0.45);
+  --nm-hero-frame: 14px 14px 34px #05060a, -9px -9px 26px #1b1e34, 0 0 32px rgba(139, 92, 246, 0.3);
   
-  --glow-shadow: 0 0 16px rgba(139, 92, 246, 0.45);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  --glow-shadow: 0 0 18px rgba(139, 92, 246, 0.55);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
   
   --font-display: 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
@@ -105,14 +106,107 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-surface-elevated);
   border-radius: 9999px;
   box-shadow: var(--nm-convex-btn);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
   transition: var(--transition-fast);
 }
 
 .nm-pill:hover {
-  box-shadow: 2px 2px 6px #08090f, -2px -2px 6px #242742;
-  border-color: rgba(139, 92, 246, 0.35);
-  color: #fff;
+  box-shadow: 2px 2px 6px #07080e, -2px -2px 6px #242742;
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #ffffff;
+}
+
+.nm-breadcrumb {
+  background: rgba(16, 18, 29, 0.85);
+  box-shadow: 4px 4px 10px #07080e, -3px -3px 8px #1c1f34;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.nm-episode-btn {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #151726;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 10px;
+  box-shadow: 3px 3px 6px #07080d, -2px -2px 5px #1d2036;
+  transition: all 0.15s ease-out;
+}
+
+.nm-episode-btn:hover {
+  background: #ffffff !important;
+  color: #0b0c14 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-2px);
+}
+
+.nm-episode-btn.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+}
+
+.nm-episode-btn.watched {
+  background: #17192a;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  color: #c084fc;
+}
+
+.nm-player-bezel {
+  width: 100%;
+  background: #090a12;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid rgba(139, 92, 246, 0.35);
+  position: relative;
+  box-shadow: 12px 12px 30px #05060b, -8px -8px 24px #1b1e34, 0 0 28px rgba(139, 92, 246, 0.25);
+}
+
+.nm-server-pill {
+  padding: 8px 18px;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #151726;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  box-shadow: 3px 3px 7px #07080e, -2px -2px 6px #1e2136;
+  transition: all 0.15s ease-out;
+}
+
+.nm-server-pill:hover {
+  background: #1c1f34;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.4);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.nm-server-pill.active {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.65), inset 0 1px 1.5px rgba(255, 255, 255, 0.4);
 }
 
 .nm-btn-primary {
