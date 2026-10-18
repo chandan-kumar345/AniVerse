@@ -423,7 +423,7 @@ export const Watch: React.FC = () => {
   }
 
   return (
-    <div className="app-container" style={{ padding: '16px 20px', color: '#fff', position: 'relative' }}>
+    <div className="app-container" style={{ padding: '16px 20px', color: 'var(--text-main)', position: 'relative' }}>
 
       {/* THEATER LIGHTS OFF DARK BLANKET */}
       {lightsOff && (
@@ -435,11 +435,11 @@ export const Watch: React.FC = () => {
 
       {/* BREADCRUMB NAVIGATION */}
       <div className="nm-breadcrumb" style={{ marginBottom: '18px' }}>
-        <Link to="/" style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>Home</Link>
-        <span style={{ color: '#64748b' }}>/</span>
-        <Link to={`/anime/${animeDetail.slug}`} style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>{animeName}</Link>
-        <span style={{ color: '#64748b' }}>/</span>
-        <span style={{ color: '#c084fc', fontWeight: 800, background: 'rgba(139, 92, 246, 0.15)', padding: '2px 10px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>Episode {epNum}</span>
+        <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>Home</Link>
+        <span style={{ color: 'var(--text-muted)' }}>/</span>
+        <Link to={`/anime/${animeDetail.slug}`} style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>{animeName}</Link>
+        <span style={{ color: 'var(--text-muted)' }}>/</span>
+        <span style={{ color: 'var(--color-primary)', fontWeight: 800, background: 'var(--bg-surface-recessed)', padding: '2px 10px', borderRadius: '6px', border: 'var(--border-nm)' }}>Episode {epNum}</span>
       </div>
 
       {/* THEATER MAIN SCREEN BOX (2-COLUMN LAYOUT) */}
@@ -458,12 +458,12 @@ export const Watch: React.FC = () => {
 
         {/* COLUMN 1: SIDEBAR (LEFT) - EPISODES (STRETCHED TO MATCH ROW HEIGHT) */}
         {!isExpanded && (
-          <div className="nm-card" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '540px', width: '100%' }}>
+          <div className="nm-card watch-episodes-column" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '540px', width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="section-indicator" style={{ height: '18px', width: '4px', margin: 0 }} />
                 Episodes
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg-surface-recessed)', padding: '2px 8px', borderRadius: '6px' }}>
                   {filteredEpisodes.length}
                 </span>
               </h3>
@@ -485,17 +485,17 @@ export const Watch: React.FC = () => {
                       setActiveServer('vidsrc');
                     }
                   }}
-                  style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  style={{ background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)', color: 'var(--text-main)', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
                 >
                   {isMultiAudio ? (
                     <>
-                      <option value="sub_dub" style={{ background: '#141624', color: '#fff' }}>All Audio</option>
-                      {hasSub && <option value="sub" style={{ background: '#141624', color: '#fff' }}>Sub (JP)</option>}
-                      {hasDub && <option value="dub" style={{ background: '#141624', color: '#fff' }}>Dub (EN)</option>}
-                      {hasHindi && <option value="hindi" style={{ background: '#141624', color: '#fff' }}>Hindi (HI)</option>}
+                      <option value="sub_dub" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>All Audio</option>
+                      {hasSub && <option value="sub" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Sub (JP)</option>}
+                      {hasDub && <option value="dub" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Dub (EN)</option>}
+                      {hasHindi && <option value="hindi" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Hindi (HI)</option>}
                     </>
                   ) : (
-                    <option value="sub" style={{ background: '#141624', color: '#fff' }}>
+                    <option value="sub" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
                       {hasDub && !hasSub ? 'Dub (EN)' : 'Sub (JP)'}
                     </option>
                   )}
@@ -508,10 +508,10 @@ export const Watch: React.FC = () => {
                       const [start, end] = e.target.value.split('-').map(Number);
                       setSelectedRange({ start, end });
                     }}
-                    style={{ width: '80px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ width: '80px', background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)', color: 'var(--text-main)', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
                   >
                     {ranges.map((r, idx) => (
-                      <option key={idx} value={`${r.start}-${r.end}`} style={{ background: '#141624', color: '#fff' }}>{r.label}</option>
+                      <option key={idx} value={`${r.start}-${r.end}`} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>{r.label}</option>
                     ))}
                   </select>
                 )}
@@ -521,7 +521,7 @@ export const Watch: React.FC = () => {
                   placeholder="Find"
                   value={episodeSearch}
                   onChange={(e) => setEpisodeSearch(e.target.value)}
-                  style={{ width: '56px', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', color: '#ffffff', outline: 'none', fontWeight: 600 }}
+                  style={{ width: '56px', background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)', borderRadius: '8px', padding: '6px 8px', fontSize: '11px', color: 'var(--text-main)', outline: 'none', fontWeight: 600 }}
                 />
               </div>
             </div>
@@ -561,10 +561,10 @@ export const Watch: React.FC = () => {
         )}
 
         {/* COLUMN 2: VIDEO PLAYER + SETTINGS CONTROL PANEL (RIGHT) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+        <div className="watch-player-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
 
           {/* Top banner notice - Inset Neumorphic pill */}
-          <div style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
+          <div style={{ background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)', borderRadius: '12px', padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Info size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
               <span>Free anime streaming in full HD. If a stream loads slowly, switch mirrors below.</span>
@@ -578,22 +578,22 @@ export const Watch: React.FC = () => {
           {/* Video Player Container - Neumorphic Cinema Bezel with Header Bar */}
           <div className="nm-player-bezel">
             {/* Player Mini Top Control Bar */}
-            <div style={{ background: '#0e101a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+            <div style={{ background: 'var(--bg-surface-elevated)', borderBottom: 'var(--border-nm)', padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: '#ffffff', fontWeight: 800 }}>{animeName}</span>
-                <span style={{ color: '#c084fc', fontWeight: 700 }}>• Episode {epNum}</span>
+                <span style={{ color: 'var(--text-main)', fontWeight: 800 }}>{animeName}</span>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>• Episode {epNum}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '11px', color: '#cbd5e1', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AnimeStream Ultra HD'}</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  Active Mirror: <strong style={{ color: 'var(--text-main)' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AnimeStream Ultra HD'}</strong>
                 </span>
                 <button
                   onClick={switchToNextServer}
                   className="nm-pill"
-                  style={{ border: 'none', color: '#ffffff', cursor: 'pointer', padding: '5px 12px', fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  style={{ border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: '5px 12px', fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   title="Switch to next server mirror"
                 >
-                  <RefreshCw size={11} style={{ color: '#8b5cf6' }} /> Next Mirror
+                  <RefreshCw size={11} style={{ color: 'var(--color-primary)' }} /> Next Mirror
                 </button>
               </div>
             </div>
@@ -624,23 +624,23 @@ export const Watch: React.FC = () => {
           <div className="nm-card" style={{ padding: '14px 22px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
 
             {/* Playback helpers */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 700, color: '#cbd5e1' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>
 
               <button
                 onClick={() => setIsExpanded(prev => !prev)}
                 className="nm-pill"
-                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
+                style={{ border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
               >
-                <Tv size={14} style={{ color: '#8b5cf6' }} /> {isExpanded ? 'Shrink' : 'Expand'}
+                <Tv size={14} style={{ color: 'var(--color-primary)' }} /> {isExpanded ? 'Shrink' : 'Expand'}
               </button>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
-                <input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} style={{ accentColor: '#8b5cf6', cursor: 'pointer' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)' }}>
+                <input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
                 <span>Auto Play</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
-                <input type="checkbox" checked={autoNext} onChange={(e) => setAutoNext(e.target.checked)} style={{ accentColor: '#8b5cf6', cursor: 'pointer' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--text-main)' }}>
+                <input type="checkbox" checked={autoNext} onChange={(e) => setAutoNext(e.target.checked)} style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
                 <span>Auto Next</span>
               </label>
 
@@ -666,14 +666,14 @@ export const Watch: React.FC = () => {
               <button
                 onClick={() => setLightsOff(prev => !prev)}
                 className="nm-pill"
-                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
+                style={{ border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
               >
                 <Lightbulb size={14} style={{ fill: lightsOff ? '#fff' : 'none' }} /> Light
               </button>
             </div>
 
             {/* Skip arrows and report triggers */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#cbd5e1', fontWeight: 700 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: 'var(--text-main)', fontWeight: 700 }}>
 
               {/* Prev / Next */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -681,7 +681,7 @@ export const Watch: React.FC = () => {
                   onClick={handlePrevEpisode}
                   disabled={!hasPrev}
                   className="nm-pill"
-                  style={{ color: hasPrev ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
+                  style={{ color: hasPrev ? 'var(--text-main)' : 'var(--text-muted)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
                 >
                   ◀ Prev
                 </button>
@@ -689,17 +689,17 @@ export const Watch: React.FC = () => {
                   onClick={handleNextEpisode}
                   disabled={!hasNext}
                   className="nm-pill"
-                  style={{ color: hasNext ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
+                  style={{ color: hasNext ? 'var(--text-main)' : 'var(--text-muted)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
                 >
                   Next ▶
                 </button>
               </div>
 
-              <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
+              <span style={{ color: 'var(--border-color-soft)' }}>|</span>
 
               <button 
                 className="nm-pill"
-                style={{ color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 14px' }}
+                style={{ color: 'var(--text-main)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 14px' }}
               >
                 <AlertTriangle size={14} style={{ color: '#f59e0b' }} /> Report
               </button>
@@ -707,7 +707,7 @@ export const Watch: React.FC = () => {
               <button
                 onClick={toggleWatchlist}
                 className="nm-pill"
-                style={{ color: inWatchlist ? 'var(--color-primary)' : '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 16px' }}
+                style={{ color: inWatchlist ? 'var(--color-primary)' : 'var(--text-main)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 16px' }}
               >
                 {inWatchlist ? <Check size={14} style={{ color: 'var(--color-primary)' }} /> : <Plus size={14} />} Add to list
               </button>
@@ -718,9 +718,9 @@ export const Watch: React.FC = () => {
           <div className="nm-card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px', alignItems: 'stretch' }}>
 
             {/* Active Audio Mode Indicator */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid var(--border-color-soft)', paddingBottom: '14px', fontSize: '13px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: '#cbd5e1', fontWeight: 700 }}>Active Audio Track:</span>
+                <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>Active Audio Track:</span>
                 <span className="nm-pill" style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -728,8 +728,8 @@ export const Watch: React.FC = () => {
                   fontWeight: 800,
                   fontSize: '12px',
                   padding: '5px 14px',
-                  color: activeTranslation === 'hindi' ? '#fbbf24' : activeTranslation === 'dub' ? '#22d3ee' : '#c084fc',
-                  border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(251, 191, 36, 0.4)' : activeTranslation === 'dub' ? 'rgba(34, 211, 238, 0.4)' : 'rgba(192, 132, 252, 0.4)'}`
+                  color: activeTranslation === 'hindi' ? '#fbbf24' : activeTranslation === 'dub' ? '#22d3ee' : 'var(--color-primary)',
+                  border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(251, 191, 36, 0.4)' : activeTranslation === 'dub' ? 'rgba(34, 211, 238, 0.4)' : 'rgba(139, 92, 246, 0.4)'}`
                 }}>
                   {activeTranslation === 'hindi' ? '🇮🇳 Hindi Dubbed' : activeTranslation === 'dub' ? '🎙️ English Dubbed' : '🇯🇵 Japanese (CC SUB)'}
                 </span>
@@ -738,12 +738,12 @@ export const Watch: React.FC = () => {
                     Multi-Audio ({availableAudios.map(a => a.toUpperCase()).join(' / ')})
                   </span>
                 ) : (
-                  <span style={{ fontSize: '11px', color: '#818cf8', background: 'rgba(129, 140, 248, 0.12)', border: '1px solid rgba(129, 140, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                  <span style={{ fontSize: '11px', color: 'var(--color-primary)', background: 'var(--bg-surface-recessed)', border: 'var(--border-nm)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
                     Single Audio ({availableAudios[0]?.toUpperCase() || 'SUB'})
                   </span>
                 )}
               </div>
-              <span style={{ color: '#818cf8', fontSize: '12px', fontWeight: 600 }}>
+              <span style={{ color: 'var(--color-primary)', fontSize: '12px', fontWeight: 600 }}>
                 ⚡ Click any server below for immediate smooth playback
               </span>
             </div>
@@ -821,16 +821,16 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'sub' ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : '#151726',
-                        border: `1px solid ${activeTranslation === 'sub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        background: activeTranslation === 'sub' ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' : 'var(--bg-surface-elevated)',
+                        border: activeTranslation === 'sub' ? '1px solid rgba(255,255,255,0.3)' : 'var(--border-nm)',
                         padding: '8px 18px',
                         fontSize: '12px',
                         fontWeight: 800,
-                        color: '#fff',
+                        color: activeTranslation === 'sub' ? '#fff' : 'var(--text-main)',
                         minWidth: '84px',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: activeTranslation === 'sub' ? '0 4px 16px rgba(139, 92, 246, 0.65)' : 'none'
+                        boxShadow: activeTranslation === 'sub' ? 'var(--nm-primary-btn)' : 'var(--nm-convex-btn)'
                       }}
                       title="Switch to Japanese Audio with Subtitles"
                     >
@@ -852,7 +852,7 @@ export const Watch: React.FC = () => {
                             className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                           >
                             <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Play size={8} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
+                              <Play size={8} style={{ fill: isSelected ? 'var(--color-primary-dark)' : 'var(--text-main)', color: isSelected ? 'var(--color-primary-dark)' : 'var(--text-main)', marginLeft: '1px' }} />
                             </div>
                             {s.name}
                           </button>
@@ -880,16 +880,16 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : '#151726',
-                        border: `1px solid ${activeTranslation === 'dub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'var(--bg-surface-elevated)',
+                        border: activeTranslation === 'dub' ? '1px solid rgba(255,255,255,0.3)' : 'var(--border-nm)',
                         padding: '8px 18px',
                         fontSize: '12px',
                         fontWeight: 800,
-                        color: '#fff',
+                        color: activeTranslation === 'dub' ? '#fff' : 'var(--text-main)',
                         minWidth: '84px',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: activeTranslation === 'dub' ? '0 4px 16px rgba(6, 182, 212, 0.65)' : 'none'
+                        boxShadow: activeTranslation === 'dub' ? '0 4px 16px rgba(6, 182, 212, 0.65)' : 'var(--nm-convex-btn)'
                       }}
                       title="Switch to English Dubbed Audio"
                     >
@@ -912,7 +912,7 @@ export const Watch: React.FC = () => {
                             style={isSelected ? { background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', boxShadow: '0 4px 16px rgba(6, 182, 212, 0.65)' } : {}}
                           >
                             <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Play size={8} style={{ fill: isSelected ? '#0891b2' : '#fff', color: isSelected ? '#0891b2' : '#fff', marginLeft: '1px' }} />
+                              <Play size={8} style={{ fill: isSelected ? '#0891b2' : 'var(--text-main)', color: isSelected ? '#0891b2' : 'var(--text-main)', marginLeft: '1px' }} />
                             </div>
                             {s.name}
                           </button>
@@ -940,16 +940,16 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#151726',
-                        border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'var(--bg-surface-elevated)',
+                        border: activeTranslation === 'hindi' ? '1px solid rgba(255,255,255,0.3)' : 'var(--border-nm)',
                         padding: '8px 18px',
                         fontSize: '12px',
                         fontWeight: 800,
-                        color: '#fff',
+                        color: activeTranslation === 'hindi' ? '#fff' : 'var(--text-main)',
                         minWidth: '84px',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: activeTranslation === 'hindi' ? '0 4px 16px rgba(245, 158, 11, 0.65)' : 'none'
+                        boxShadow: activeTranslation === 'hindi' ? '0 4px 16px rgba(245, 158, 11, 0.65)' : 'var(--nm-convex-btn)'
                       }}
                       title="Switch to Hindi Dubbed Audio"
                     >
@@ -998,10 +998,10 @@ export const Watch: React.FC = () => {
                 marginTop: '10px'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color-soft)', paddingBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="section-indicator" />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>
                     Related Anime
                   </h3>
                 </div>
@@ -1038,8 +1038,8 @@ export const Watch: React.FC = () => {
                         height: '155px',
                         borderRadius: '12px',
                         overflow: 'hidden',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        boxShadow: '4px 4px 10px #090a10, -3px -3px 8px #20233c',
+                        border: 'var(--border-nm)',
+                        boxShadow: 'var(--nm-flat)',
                         position: 'relative'
                       }}
                     >
@@ -1078,7 +1078,7 @@ export const Watch: React.FC = () => {
                     <h4
                       style={{
                         fontSize: '12px',
-                        color: '#fff',
+                        color: 'var(--text-main)',
                         fontWeight: 600,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1121,7 +1121,7 @@ export const Watch: React.FC = () => {
               style={{
                 borderRadius: '16px',
                 overflow: 'hidden',
-                boxShadow: '6px 6px 16px #08090f, -4px -4px 12px #20233b',
+                boxShadow: 'var(--nm-hero-frame)',
                 border: '1px solid rgba(139, 92, 246, 0.25)'
               }}
             >
@@ -1144,20 +1144,20 @@ export const Watch: React.FC = () => {
                 boxShadow: 'var(--nm-inset)',
                 borderRadius: '16px',
                 padding: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.03)'
+                border: 'var(--border-nm)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                 <span className="section-indicator" />
-                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#ffffff' }}>
+                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-main)' }}>
                   Quick Stats
                 </h4>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Type:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.type}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Status:</span><span style={{ fontWeight: 700, color: '#22d3ee' }}>{animeDetail.status}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Studio:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.studio || 'Unknown'}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#cbd5e1', fontWeight: 600 }}>Duration:</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{animeDetail.duration || '24 min'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Type:</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{animeDetail.type}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Status:</span><span style={{ fontWeight: 700, color: '#22d3ee' }}>{animeDetail.status}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Studio:</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{animeDetail.studio || 'Unknown'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Duration:</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{animeDetail.duration || '24 min'}</span></div>
               </div>
             </div>
           </div>
@@ -1174,7 +1174,7 @@ export const Watch: React.FC = () => {
                   borderRadius: '16px',
                   overflow: 'hidden',
                   border: '1px solid rgba(139, 92, 246, 0.25)',
-                  boxShadow: '4px 4px 12px #090a10, -3px -3px 8px #20233c',
+                  boxShadow: 'var(--nm-hero-frame)',
                   position: 'relative'
                 }}
               >
@@ -1188,12 +1188,12 @@ export const Watch: React.FC = () => {
                   }}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(13, 15, 24, 0.95))' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(13, 15, 24, 0.8))' }} />
               </div>
             )}
 
             <div>
-              <h2 style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', marginBottom: '10px', lineHeight: '1.2', color: '#fff' }}>
+              <h2 style={{ fontSize: '26px', fontWeight: 800, fontFamily: 'var(--font-display)', marginBottom: '10px', lineHeight: '1.2', color: 'var(--text-main)' }}>
                 <Link to={`/anime/${animeDetail.slug}`} style={{ textDecoration: 'none', color: 'inherit', transition: 'color 0.2s ease' }} className="mini-card-title-link">
                   {animeName}
                 </Link>
@@ -1201,7 +1201,7 @@ export const Watch: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
                 {animeDetail.hasSub !== false && (
-                  <span className="nm-tag" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#c084fc', borderColor: 'rgba(139, 92, 246, 0.4)', fontWeight: 800 }}>SUB</span>
+                  <span className="nm-tag" style={{ background: 'rgba(139, 92, 246, 0.2)', color: 'var(--color-primary)', borderColor: 'rgba(139, 92, 246, 0.4)', fontWeight: 800 }}>SUB</span>
                 )}
                 {animeDetail.hasDub !== false && (
                   <span className="nm-tag" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', borderColor: 'rgba(6, 182, 212, 0.4)', fontWeight: 800 }}>DUB</span>
@@ -1209,15 +1209,15 @@ export const Watch: React.FC = () => {
                 {hasHindi && (
                   <span className="nm-tag" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.4)', fontWeight: 800 }}>🇮🇳 HINDI</span>
                 )}
-                <span style={{ color: '#cbd5e1', fontSize: '13px', marginLeft: '6px', fontWeight: 600 }}>
-                  • Released: <strong style={{ color: '#fff' }}>{animeDetail.releasedYear || 'Unknown'}</strong> • Rating: <strong style={{ color: '#fbbf24' }}>{animeDetail.score ? `⭐ ${animeDetail.score.toFixed(1)}` : 'N/A'}</strong>
+                <span style={{ color: 'var(--text-muted)', fontSize: '13px', marginLeft: '6px', fontWeight: 600 }}>
+                  • Released: <strong style={{ color: 'var(--text-main)' }}>{animeDetail.releasedYear || 'Unknown'}</strong> • Rating: <strong style={{ color: '#fbbf24' }}>{animeDetail.score ? `⭐ ${animeDetail.score.toFixed(1)}` : 'N/A'}</strong>
                 </span>
               </div>
 
               {/* Seasons Switcher Section */}
               {seasons.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
-                  <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', borderTop: '1px solid var(--border-color-soft)', paddingTop: '14px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                     Seasons & Movies:
                   </span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px' }}>
@@ -1245,9 +1245,9 @@ export const Watch: React.FC = () => {
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
-              <h4 style={{ fontSize: '14px', color: '#ffffff', marginBottom: '8px', fontWeight: 800 }}>Synopsis</h4>
-              <p style={{ color: '#e2e8f0', fontSize: '14px', lineHeight: '1.8' }}>
+            <div style={{ borderTop: '1px solid var(--border-color-soft)', paddingTop: '14px' }}>
+              <h4 style={{ fontSize: '14px', color: 'var(--text-main)', marginBottom: '8px', fontWeight: 800 }}>Synopsis</h4>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.8' }}>
                 {animeDetail.description}
               </p>
             </div>
@@ -1289,7 +1289,20 @@ export const Watch: React.FC = () => {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         @media (max-width: 992px) {
-          .watch-theater-split { grid-template-columns: 1fr !important; }
+          .watch-theater-split {
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .watch-player-column {
+            order: 1 !important;
+            width: 100% !important;
+          }
+          .watch-episodes-column {
+            order: 2 !important;
+            width: 100% !important;
+            min-height: auto !important;
+            max-height: 480px !important;
+          }
           .details-mini-card { flex-direction: column !important; }
           .details-mini-card > div { width: 100% !important; }
         }

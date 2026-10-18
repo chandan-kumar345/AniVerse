@@ -185,7 +185,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
               height: isReply ? '34px' : '44px',
               borderRadius: '50%',
               background: 'var(--bg-surface-elevated)',
-              boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+              boxShadow: 'var(--nm-flat)',
               border: '2px solid rgba(139, 92, 246, 0.3)',
               padding: '2px'
             }}
@@ -197,9 +197,9 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
           style={{
             flex: 1,
             background: 'var(--bg-surface-elevated)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            border: 'var(--border-nm)',
             borderRadius: '16px',
-            boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+            boxShadow: 'var(--nm-flat)',
             padding: '16px',
             position: 'relative'
           }}
@@ -215,7 +215,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
           </div>
 
           {/* Text */}
-          <p style={{ fontSize: '14px', color: '#e5e7eb', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
             {comment.text}
           </p>
 
@@ -301,8 +301,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
                   minHeight: '65px',
                   background: 'var(--bg-surface-recessed)',
                   boxShadow: 'var(--nm-inset)',
-                  border: '1px solid rgba(255,255,255,0.04)',
-                  color: '#fff',
+                  border: 'var(--border-nm)',
+                  color: 'var(--text-main)',
                   borderRadius: '12px',
                   padding: '10px 14px',
                   outline: 'none',
@@ -351,7 +351,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '14px' }}>
         <span className="section-indicator" />
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>
           Comments ({comments.length})
         </h3>
       </div>
@@ -367,7 +367,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
               height: '44px',
               borderRadius: '50%',
               background: 'var(--bg-surface-elevated)',
-              boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+              boxShadow: 'var(--nm-flat)',
               border: '2px solid rgba(139,92,246,0.3)',
               padding: '2px'
             }}
@@ -382,8 +382,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({ animeId, episo
                 minHeight: '85px',
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: '1px solid rgba(255,255,255,0.04)',
-                color: '#fff',
+                border: 'var(--border-nm)',
+                color: 'var(--text-main)',
                 borderRadius: '14px',
                 padding: '14px',
                 outline: 'none',

@@ -110,7 +110,7 @@ export const AnimeDetail: React.FC = () => {
   const episodeCount = anime.episodes?.length || 0;
 
   return (
-    <div style={{ color: '#fff', position: 'relative' }}>
+    <div style={{ color: 'var(--text-main)', position: 'relative' }}>
       
       {/* HD BANNER COVER - Full width, no blur, cinematic gradient */}
       <div style={{ position: 'relative', width: '100%', height: '450px', overflow: 'hidden' }}>
@@ -126,8 +126,8 @@ export const AnimeDetail: React.FC = () => {
           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
         />
         {/* Cinematic gradient overlays */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '250px', background: 'linear-gradient(to top, var(--bg-main) 0%, rgba(8, 6, 11, 0.8) 40%, transparent 100%)' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(8, 6, 11, 0.6) 0%, transparent 50%, rgba(8, 6, 11, 0.3) 100%)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '250px', background: 'linear-gradient(to top, var(--bg-main) 0%, rgba(8, 6, 11, 0.6) 40%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(8, 6, 11, 0.4) 0%, transparent 50%, rgba(8, 6, 11, 0.2) 100%)' }} />
       </div>
 
       {/* OVERLAP CONTAINER */}
@@ -137,7 +137,7 @@ export const AnimeDetail: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '36px', alignItems: 'end' }} className="detail-upper-block">
           
           {/* POSTER CARD - HD quality with glowing neumorphic frame */}
-          <div style={{ width: '240px', aspectRatio: '2/3', borderRadius: '20px', overflow: 'hidden', border: '3px solid rgba(139, 92, 246, 0.4)', boxShadow: '10px 10px 24px #07080e, -8px -8px 20px #1e2034, 0 0 28px rgba(139, 92, 246, 0.25)' }} className="detail-poster-wrap">
+          <div style={{ width: '240px', aspectRatio: '2/3', borderRadius: '20px', overflow: 'hidden', border: '3px solid rgba(139, 92, 246, 0.4)', boxShadow: 'var(--nm-hero-frame)' }} className="detail-poster-wrap">
             <img
               src={anime.posterImage}
               alt={anime.title}
@@ -153,7 +153,7 @@ export const AnimeDetail: React.FC = () => {
 
           {/* MAIN INFO TEXTS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '10px' }}>
-            <h1 style={{ fontSize: '38px', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: '1.15', textShadow: '0 4px 16px rgba(0,0,0,0.6)' }} className="detail-title">
+            <h1 style={{ fontSize: '38px', fontWeight: 800, fontFamily: 'var(--font-display)', lineHeight: '1.15', textShadow: '0 4px 16px rgba(0,0,0,0.4)', color: 'var(--text-main)' }} className="detail-title">
               {anime.title}
             </h1>
             {anime.englishTitle && anime.englishTitle !== anime.title && (
@@ -167,13 +167,13 @@ export const AnimeDetail: React.FC = () => {
               <span className="nm-pill" style={{ padding: '5px 14px', color: '#facc15', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Star size={13} style={{ fill: '#facc15' }} /> {anime.score.toFixed(2)}
               </span>
-              <span className="nm-pill" style={{ padding: '5px 14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', color: '#c084fc' }}>
+              <span className="nm-pill" style={{ padding: '5px 14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
                 {anime.type === 'TV' ? <Tv size={13} /> : <Film size={13} />} {anime.type}
               </span>
               <span className="nm-pill" style={{ padding: '5px 14px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
                 <Calendar size={13} /> {anime.releasedYear || 'Unknown'}
               </span>
-              <span className="nm-pill" style={{ padding: '5px 14px', color: anime.status === 'Currently Airing' ? '#22c55e' : '#fff', fontWeight: 600 }}>
+              <span className="nm-pill" style={{ padding: '5px 14px', color: anime.status === 'Currently Airing' ? '#22c55e' : 'var(--text-main)', fontWeight: 600 }}>
                 {anime.status}
               </span>
               {anime.rating && (
@@ -182,7 +182,7 @@ export const AnimeDetail: React.FC = () => {
                 </span>
               )}
               {episodeCount > 0 && (
-                <span className="nm-pill" style={{ padding: '5px 14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', color: '#c084fc' }}>
+                <span className="nm-pill" style={{ padding: '5px 14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)' }}>
                   <Users size={13} /> {episodeCount} EP{episodeCount > 1 ? 'S' : ''}
                 </span>
               )}
@@ -205,7 +205,7 @@ export const AnimeDetail: React.FC = () => {
                   key={genre}
                   to={`/search?genre=${genre}`}
                   className="nm-tag"
-                  style={{ textDecoration: 'none', color: '#c084fc', padding: '6px 16px', fontSize: '12px', fontWeight: 600 }}
+                  style={{ textDecoration: 'none', color: 'var(--color-primary)', padding: '6px 16px', fontSize: '12px', fontWeight: 600 }}
                 >
                   {genre}
                 </Link>
@@ -242,12 +242,12 @@ export const AnimeDetail: React.FC = () => {
                 </button>
 
                 {showWatchlistMenu && (
-                  <div style={{ position: 'absolute', top: '115%', left: 0, width: '190px', background: '#141624', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--nm-elevated)', zIndex: 99, padding: '6px' }}>
+                  <div style={{ position: 'absolute', top: '115%', left: 0, width: '190px', background: 'var(--bg-surface-elevated)', border: 'var(--border-nm)', borderRadius: '14px', overflow: 'hidden', boxShadow: 'var(--nm-card-hover)', zIndex: 99, padding: '6px' }}>
                     {['WATCHING', 'PLAN_TO_WATCH', 'COMPLETED', 'DROPPED'].map((status) => (
                       <button
                         key={status}
                         onClick={() => handleUpdateWatchlist(status)}
-                        style={{ width: '100%', border: 'none', background: watchlistStatus === status ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : 'none', color: '#fff', padding: '10px 14px', textAlign: 'left', fontSize: '13px', cursor: 'pointer', transition: 'var(--transition-fast)', borderRadius: '8px', fontWeight: watchlistStatus === status ? 700 : 500 }}
+                        style={{ width: '100%', border: 'none', background: watchlistStatus === status ? 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' : 'none', color: watchlistStatus === status ? '#fff' : 'var(--text-main)', padding: '10px 14px', textAlign: 'left', fontSize: '13px', cursor: 'pointer', transition: 'var(--transition-fast)', borderRadius: '8px', fontWeight: watchlistStatus === status ? 700 : 500 }}
                         className="watchlist-option-btn"
                       >
                         {status.replace(/_/g, ' ')}
@@ -256,7 +256,7 @@ export const AnimeDetail: React.FC = () => {
                     {inWatchlist && (
                       <button
                         onClick={handleRemoveWatchlist}
-                        style={{ width: '100%', border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'none', color: '#ef4444', padding: '10px 14px', textAlign: 'left', fontSize: '13px', cursor: 'pointer', transition: 'var(--transition-fast)', marginTop: '4px', borderRadius: '8px' }}
+                        style={{ width: '100%', border: 'none', borderTop: '1px solid var(--border-color-soft)', background: 'none', color: '#ef4444', padding: '10px 14px', textAlign: 'left', fontSize: '13px', cursor: 'pointer', transition: 'var(--transition-fast)', marginTop: '4px', borderRadius: '8px' }}
                         className="watchlist-option-btn delete"
                       >
                         Remove from List
@@ -282,16 +282,16 @@ export const AnimeDetail: React.FC = () => {
                   key={s.slug}
                   to={`/anime/${s.slug}`}
                   style={{
-                    background: s.slug === slug ? 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)' : '#161828',
-                    border: `1px solid ${s.slug === slug ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    color: '#fff',
+                    background: s.slug === slug ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' : 'var(--bg-surface-elevated)',
+                    border: s.slug === slug ? '1px solid rgba(255,255,255,0.3)' : 'var(--border-nm)',
+                    color: s.slug === slug ? '#fff' : 'var(--text-main)',
                     padding: '8px 18px',
                     borderRadius: '9999px',
                     fontSize: '13px',
                     fontWeight: s.slug === slug ? 700 : 500,
                     textDecoration: 'none',
                     transition: 'var(--transition-fast)',
-                    boxShadow: s.slug === slug ? '0 4px 16px rgba(139, 92, 246, 0.5)' : '3px 3px 8px #08090f, -2px -2px 6px #20233a',
+                    boxShadow: s.slug === slug ? 'var(--nm-primary-btn)' : 'var(--nm-convex-btn)',
                     whiteSpace: 'nowrap'
                   }}
                   className="season-btn"
@@ -310,7 +310,7 @@ export const AnimeDetail: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Synopsis */}
             <div className="nm-card" style={{ padding: '26px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
                 <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
                 Synopsis
               </h3>
@@ -321,34 +321,34 @@ export const AnimeDetail: React.FC = () => {
 
             {/* Quick Info Grid */}
             <div className="nm-card" style={{ padding: '26px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-main)', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
                 <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
                 Information
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Type</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.type}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Type</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{anime.type}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Studio</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.studio || 'Unknown'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Studio</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{anime.studio || 'Unknown'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Status</span><span style={{ fontWeight: 700, color: anime.status === 'Currently Airing' ? '#22c55e' : '#22d3ee' }}>{anime.status}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Status</span><span style={{ fontWeight: 700, color: anime.status === 'Currently Airing' ? '#22c55e' : 'var(--color-teal)' }}>{anime.status}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Released</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.releasedYear || 'Unknown'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Released</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{anime.releasedYear || 'Unknown'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Duration</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.duration || '24m per ep'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Duration</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{anime.duration || '24m per ep'}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Score</span><span style={{ color: '#facc15', fontWeight: 800 }}>★ {anime.score.toFixed(2)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Score</span><span style={{ color: '#facc15', fontWeight: 800 }}>★ {anime.score.toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Episodes</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{episodeCount}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Episodes</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{episodeCount}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#10121d', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Rating</span><span style={{ fontWeight: 700, color: '#ffffff' }}>{anime.rating || 'Not Rated'}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-surface-recessed)', borderRadius: '10px', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Rating</span><span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{anime.rating || 'Not Rated'}</span>
                 </div>
               </div>
             </div>
@@ -360,7 +360,7 @@ export const AnimeDetail: React.FC = () => {
             {/* Recommendations */}
             {related.length > 0 && (
               <div className="nm-card" style={{ padding: '24px' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
                   <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
                   Related & Recommended
                 </h3>
@@ -380,10 +380,10 @@ export const AnimeDetail: React.FC = () => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                         }}
-                        style={{ width: '48px', height: '68px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
+                        style={{ width: '48px', height: '68px', objectFit: 'cover', borderRadius: '8px', border: 'var(--border-nm)', boxShadow: 'var(--nm-flat)' }}
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.3' }}>
+                        <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.3' }}>
                           {item.title}
                         </h4>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -400,12 +400,12 @@ export const AnimeDetail: React.FC = () => {
       </div>
 
       <style>{`
-        .watchlist-option-btn:hover { background: rgba(255,255,255,0.04) !important; }
-        .watchlist-option-btn.delete:hover { background: rgba(239, 68, 68, 0.08) !important; }
-        .related-item:hover { background: rgba(255,255,255,0.03) !important; border-color: rgba(139, 92, 246, 0.15) !important; }
+        .watchlist-option-btn:hover { background: var(--bg-surface-recessed) !important; }
+        .watchlist-option-btn.delete:hover { background: rgba(239, 68, 68, 0.12) !important; }
+        .related-item:hover { background: var(--bg-surface-recessed) !important; border-color: var(--border-color-active) !important; }
         .related-item:hover .related-title { color: var(--color-primary) !important; }
-        .genre-pill:hover { background: rgba(139, 92, 246, 0.2) !important; border-color: rgba(139, 92, 246, 0.4) !important; color: #fff !important; }
-        .season-btn:hover { background: rgba(139, 92, 246, 0.15) !important; border-color: rgba(139, 92, 246, 0.3) !important; color: #fff !important; }
+        .genre-pill:hover { background: var(--color-primary) !important; color: #fff !important; }
+        .season-btn:hover { border-color: var(--color-primary) !important; }
         
         @media (max-width: 768px) {
           .detail-upper-block { grid-template-columns: 1fr !important; justify-items: center; text-align: center; }

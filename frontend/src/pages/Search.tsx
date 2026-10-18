@@ -133,12 +133,12 @@ export const Search: React.FC = () => {
   };
 
   return (
-    <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
+    <div className="app-container" style={{ padding: '30px 20px', color: 'var(--text-main)' }}>
       
       {/* HEADER TITLE */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
         <span className="section-indicator" />
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.4px' }}>
           Anime Catalog
         </h2>
       </div>
@@ -167,8 +167,8 @@ export const Search: React.FC = () => {
         >
           {/* Mobile close */}
           <div style={{ display: 'none', justifyContent: 'space-between', alignItems: 'center' }} className="mobile-filter-header">
-            <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Filters</h3>
-            <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Filters</h3>
+            <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}><X size={20} /></button>
           </div>
 
           {/* Search field - Neumorphic Inset */}
@@ -179,7 +179,7 @@ export const Search: React.FC = () => {
               alignItems: 'center',
               background: 'var(--bg-surface-recessed)',
               boxShadow: 'var(--nm-inset)',
-              border: '1px solid rgba(255,255,255,0.03)',
+              border: 'var(--border-nm)',
               borderRadius: '9999px',
               padding: '4px 8px 4px 16px'
             }}
@@ -189,7 +189,7 @@ export const Search: React.FC = () => {
               placeholder="Keyword..."
               value={searchField}
               onChange={(e) => setSearchField(e.target.value)}
-              style={{ flex: 1, background: 'none', border: 'none', padding: '8px 0', color: '#fff', outline: 'none', fontSize: '13px' }}
+              style={{ flex: 1, background: 'none', border: 'none', padding: '8px 0', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }}
             />
             <button
               type="submit"
@@ -209,9 +209,9 @@ export const Search: React.FC = () => {
               style={{
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: 'var(--border-nm)',
                 padding: '11px 14px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 borderRadius: '12px',
                 outline: 'none',
                 fontSize: '13px'
@@ -233,9 +233,9 @@ export const Search: React.FC = () => {
               style={{
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: 'var(--border-nm)',
                 padding: '11px 14px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 borderRadius: '12px',
                 outline: 'none',
                 fontSize: '13px'
@@ -258,9 +258,9 @@ export const Search: React.FC = () => {
               style={{
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: 'var(--border-nm)',
                 padding: '11px 14px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 borderRadius: '12px',
                 outline: 'none',
                 fontSize: '13px'
@@ -283,9 +283,9 @@ export const Search: React.FC = () => {
               style={{
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: 'var(--border-nm)',
                 padding: '11px 14px',
-                color: '#fff',
+                color: 'var(--text-main)',
                 borderRadius: '12px',
                 outline: 'none',
                 fontSize: '13px'
@@ -330,7 +330,7 @@ export const Search: React.FC = () => {
                 color: 'var(--text-muted)'
               }}
             >
-              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800 }}>No results matching your filters.</h3>
+              <h3 style={{ color: 'var(--text-main)', fontSize: '18px', fontWeight: 800 }}>No results matching your filters.</h3>
               <p style={{ marginTop: '8px', fontSize: '14px' }}>Try resetting filters or searching another keyword.</p>
               <button
                 onClick={clearFilters}
@@ -371,7 +371,7 @@ export const Search: React.FC = () => {
                       pointerEvents: 'none'
                     }}
                   >
-                    Page <span style={{ color: '#fff', fontWeight: 800 }}>{currentPage}</span> of {totalPages}
+                    Page <span style={{ color: 'var(--text-main)', fontWeight: 800 }}>{currentPage}</span> of {totalPages}
                   </span>
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
@@ -401,7 +401,8 @@ export const Search: React.FC = () => {
             z-index: 1000;
             border-radius: 0 !important;
             transition: left 0.3s ease;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.8);
+            box-shadow: var(--nm-card-hover);
+            background: var(--bg-surface) !important;
           }
           .filters-panel.mobile-open { left: 0; }
           .mobile-filter-header { display: flex !important; margin-bottom: 10px; }

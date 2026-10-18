@@ -30,7 +30,7 @@ export const Footer: React.FC = () => {
 
         {/* Quick Links */}
         <div>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '20px', fontWeight: 600 }}>Quick Links</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-main)', marginBottom: '20px', fontWeight: 700 }}>Quick Links</h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
             <li><Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Home</Link></li>
             <li><Link to="/search" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Catalog</Link></li>
@@ -41,7 +41,7 @@ export const Footer: React.FC = () => {
 
         {/* Community / Support */}
         <div>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '20px', fontWeight: 600 }}>Community</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-main)', marginBottom: '20px', fontWeight: 700 }}>Community</h3>
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
             <li><Link to="/profile" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">My Profile</Link></li>
             <li><Link to="/profile?tab=watchlist" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Watchlist</Link></li>
@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="app-container" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '30px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
+      <div className="app-container" style={{ borderTop: 'var(--border-nm)', marginTop: '30px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
         <p style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
           &copy; {new Date().getFullYear()} AniVerse. All rights reserved. Built for anime fans.
         </p>
@@ -92,7 +92,8 @@ export const Footer: React.FC = () => {
           font-family: var(--font-display);
           font-size: clamp(4rem, 15vw, 15rem);
           font-weight: 900;
-          color: #ffffff;
+          color: var(--text-main);
+          opacity: 0.85;
           cursor: pointer;
           transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease, text-shadow 0.3s ease;
           display: inline-block;

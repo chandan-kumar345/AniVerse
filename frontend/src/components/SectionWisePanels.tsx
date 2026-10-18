@@ -18,7 +18,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
       
       {/* Column 1: New Release */}
       <div className="nm-card" style={{ padding: '22px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
           New Release
         </h3>
@@ -33,11 +33,11 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: 'var(--border-nm)', boxShadow: 'var(--nm-convex-btn)' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
+                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -51,7 +51,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
 
       {/* Column 2: New Added */}
       <div className="nm-card" style={{ padding: '22px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" style={{ height: '18px', width: '3px', background: 'var(--color-accent)', boxShadow: '0 0 10px var(--color-accent)' }} />
           New Added
         </h3>
@@ -66,11 +66,11 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: 'var(--border-nm)', boxShadow: 'var(--nm-convex-btn)' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
+                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -84,7 +84,7 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
 
       {/* Column 3: Just Completed */}
       <div className="nm-card" style={{ padding: '22px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '18px', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" style={{ height: '18px', width: '3px', background: 'var(--color-teal)', boxShadow: '0 0 10px var(--color-teal)' }} />
           Just Completed
         </h3>
@@ -99,11 +99,11 @@ export const SectionWisePanels: React.FC<SectionWisePanelsProps> = ({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                 }}
-                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '3px 3px 8px #08090f' }}
+                style={{ width: '52px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: 'var(--border-nm)', boxShadow: 'var(--nm-convex-btn)' }}
                 className="section-item-thumb"
               />
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-                <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
+                <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} className="section-item-title">
                   {anime.title}
                 </h4>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>

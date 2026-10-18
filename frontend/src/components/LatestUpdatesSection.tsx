@@ -22,7 +22,7 @@ export const LatestUpdatesSection: React.FC<LatestUpdatesSectionProps> = ({
       {/* LEFT COLUMN: LATEST EPISODE UPDATES */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
             <span className="section-indicator" />
             Latest Updates
           </h2>
@@ -31,7 +31,7 @@ export const LatestUpdatesSection: React.FC<LatestUpdatesSectionProps> = ({
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }} className="anime-grid-responsive">
           {latestUpdates.map((anime) => (
             <AnimeCard key={anime.id} anime={anime} />
           ))}
@@ -44,7 +44,7 @@ export const LatestUpdatesSection: React.FC<LatestUpdatesSectionProps> = ({
 
         {/* Genres wrapper card - Neumorphic panel */}
         <div className="nm-card" style={{ padding: '22px' }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
             <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
             Genres
           </h3>

@@ -35,13 +35,13 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
       
       {/* HEADER & TABS */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" style={{ height: '18px', width: '3px' }} />
           Top 10 Anime
         </h3>
         
         {/* Tab Buttons - Neumorphic inset well */}
-        <div style={{ display: 'flex', background: '#10121d', boxShadow: 'var(--nm-inset)', borderRadius: '9999px', padding: '4px', border: '1px solid rgba(255,255,255,0.03)' }}>
+        <div style={{ display: 'flex', background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', borderRadius: '9999px', padding: '4px', border: 'var(--border-nm)' }}>
           {(['day', 'week', 'month'] as const).map((tab) => (
             <button
               key={tab}
@@ -49,8 +49,8 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
               style={{ 
                 flex: 1, 
                 border: 'none', 
-                background: activeTab === tab ? '#1e2034' : 'none', 
-                color: activeTab === tab ? '#fff' : 'var(--text-muted)', 
+                background: activeTab === tab ? 'var(--bg-surface-elevated)' : 'none', 
+                color: activeTab === tab ? 'var(--color-primary)' : 'var(--text-muted)', 
                 padding: '6px 12px', 
                 fontSize: '11px', 
                 fontWeight: 700, 
@@ -58,7 +58,7 @@ export const SidebarTopTen: React.FC<SidebarTopTenProps> = ({ animeList }) => {
                 cursor: 'pointer', 
                 textTransform: 'uppercase', 
                 transition: 'var(--transition-fast)',
-                boxShadow: activeTab === tab ? '3px 3px 6px #08090f, -2px -2px 5px #22253c' : 'none',
+                boxShadow: activeTab === tab ? 'var(--nm-convex-btn)' : 'none',
               }}
             >
               {tab === 'day' ? 'Today' : tab}
