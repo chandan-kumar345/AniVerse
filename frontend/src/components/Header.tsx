@@ -334,19 +334,26 @@ export const Header: React.FC = () => {
         }
         .nav-pill:hover {
           color: #fff;
-          background: rgba(255, 255, 255, 0.03);
+          background: rgba(255, 255, 255, 0.04);
+          box-shadow: 3px 3px 8px #06070c, -2px -2px 6px #1e2238;
         }
         .nav-pill.active {
-          background: #1a1d30;
+          background: linear-gradient(145deg, #1e2238 0%, #151829 100%);
           color: #fff;
-          box-shadow: 4px 4px 10px #08090f, -3px -3px 8px #22253c;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 4px 4px 10px #06070d, -3px -3px 8px #222640, inset 1px 1px 1.5px rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(139, 92, 246, 0.45);
         }
-        .dropdown-item:hover { background: rgba(255,255,255,0.05); }
-        .dropdown-item.logout:hover { background: rgba(239, 68, 68, 0.08); }
-        .search-form:focus-within { border-color: rgba(139, 92, 246, 0.5) !important; box-shadow: inset 3px 3px 6px #08090f, inset -3px -3px 6px #1a1c2e, 0 0 16px rgba(139, 92, 246, 0.25) !important; }
-        .search-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(139, 92, 246, 0.6) !important; }
-        .suggestion-item:hover { background: rgba(255,255,255,0.04); }
+        .dropdown-item:hover { background: rgba(255,255,255,0.06); }
+        .dropdown-item.logout:hover { background: rgba(239, 68, 68, 0.12); }
+        .search-form:focus-within { 
+          border-color: rgba(139, 92, 246, 0.6) !important; 
+          box-shadow: inset 3px 3px 7px #06070c, inset -3px -3px 7px #1c1f34, 0 0 18px rgba(139, 92, 246, 0.35) !important; 
+        }
+        .search-btn:hover { 
+          transform: scale(1.05); 
+          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.7) !important; 
+        }
+        .suggestion-item:hover { background: rgba(255,255,255,0.05); }
       `}</style>
     </header>
   );
