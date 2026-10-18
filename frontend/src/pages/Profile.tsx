@@ -114,7 +114,7 @@ export const Profile: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="app-container" style={{ padding: '30px 20px', color: 'var(--text-main)' }}>
+    <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
       
       {/* USER HERO PROFILE CARD */}
       <div
@@ -141,7 +141,7 @@ export const Profile: React.FC = () => {
               borderRadius: '50%',
               background: 'var(--bg-surface-elevated)',
               border: '3px solid rgba(139, 92, 246, 0.4)',
-              boxShadow: 'var(--nm-flat)',
+              boxShadow: '6px 6px 16px #08090f, -4px -4px 12px #20233b',
               padding: '4px'
             }}
           />
@@ -149,12 +149,12 @@ export const Profile: React.FC = () => {
 
         {/* Username/Meta */}
         <div style={{ flex: 1, minWidth: '250px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-display)', marginBottom: '8px', color: 'var(--text-main)' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'var(--font-display)', marginBottom: '8px', color: '#fff' }}>
             {user.username}
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={14} /> Role: <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{user.role}</span></span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> Registered: <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{new Date().toLocaleDateString()}</span></span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> Registered: <span style={{ color: '#fff', fontWeight: 600 }}>{new Date().toLocaleDateString()}</span></span>
           </div>
         </div>
 
@@ -163,8 +163,8 @@ export const Profile: React.FC = () => {
           <div
             style={{
               background: 'var(--bg-surface-elevated)',
-              boxShadow: 'var(--nm-flat)',
-              border: 'var(--border-nm)',
+              boxShadow: '4px 4px 10px #090a10, -3px -3px 8px #20233c',
+              border: '1px solid rgba(255,255,255,0.04)',
               padding: '14px 22px',
               borderRadius: '16px',
               textAlign: 'center'
@@ -176,8 +176,8 @@ export const Profile: React.FC = () => {
           <div
             style={{
               background: 'var(--bg-surface-elevated)',
-              boxShadow: 'var(--nm-flat)',
-              border: 'var(--border-nm)',
+              boxShadow: '4px 4px 10px #090a10, -3px -3px 8px #20233c',
+              border: '1px solid rgba(255,255,255,0.04)',
               padding: '14px 22px',
               borderRadius: '16px',
               textAlign: 'center'
@@ -195,7 +195,7 @@ export const Profile: React.FC = () => {
           display: 'inline-flex',
           background: 'var(--bg-surface-recessed)',
           boxShadow: 'var(--nm-inset)',
-          border: 'var(--border-nm)',
+          border: '1px solid rgba(255,255,255,0.03)',
           borderRadius: '9999px',
           padding: '5px',
           marginBottom: '30px',
@@ -280,7 +280,7 @@ export const Profile: React.FC = () => {
                 color: 'var(--text-muted)'
               }}
             >
-              <h3 style={{ color: 'var(--text-main)', fontSize: '18px', fontWeight: 800 }}>Your watchlist is empty under this category.</h3>
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800 }}>Your watchlist is empty under this category.</h3>
               <p style={{ marginTop: '8px', fontSize: '14px' }}>Add some titles to keep track of your progress.</p>
               <Link
                 to="/search"
@@ -339,7 +339,7 @@ export const Profile: React.FC = () => {
                 color: 'var(--text-muted)'
               }}
             >
-              <h3 style={{ color: 'var(--text-main)', fontSize: '18px', fontWeight: 800 }}>You have not watched any episodes yet.</h3>
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800 }}>You have not watched any episodes yet.</h3>
               <p style={{ marginTop: '8px', fontSize: '14px' }}>Stream anime episodes and your logs will appear here.</p>
               <Link
                 to="/"
@@ -370,8 +370,8 @@ export const Profile: React.FC = () => {
                     height: '76px',
                     borderRadius: '10px',
                     overflow: 'hidden',
-                    boxShadow: 'var(--nm-flat)',
-                    border: 'var(--border-nm)'
+                    boxShadow: '3px 3px 8px #090a10, -2px -2px 6px #1e2136',
+                    border: '1px solid rgba(255,255,255,0.06)'
                   }}
                 >
                   <img
@@ -388,7 +388,7 @@ export const Profile: React.FC = () => {
 
                 {/* Details */}
                 <div style={{ flex: 1, minWidth: '220px' }}>
-                  <h4 style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: 700, marginBottom: '6px' }}>
+                  <h4 style={{ fontSize: '16px', color: '#fff', fontWeight: 700, marginBottom: '6px' }}>
                     {item.anime.title}
                   </h4>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>
@@ -403,7 +403,7 @@ export const Profile: React.FC = () => {
                         maxWidth: '280px',
                         height: '6px',
                         background: 'var(--bg-surface-recessed)',
-                        boxShadow: 'var(--nm-inset)',
+                        boxShadow: 'inset 1px 1px 3px #08090f',
                         borderRadius: '9999px',
                         overflow: 'hidden'
                       }}

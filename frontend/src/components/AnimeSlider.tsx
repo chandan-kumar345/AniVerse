@@ -33,7 +33,7 @@ export const AnimeSlider: React.FC<AnimeSliderProps> = ({ title, animeList, show
       
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" />
           {title}
         </h2>

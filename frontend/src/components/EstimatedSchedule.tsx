@@ -217,14 +217,14 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
       
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center' }}>
           <span className="section-indicator" />
           Estimated Schedule <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '14px', marginLeft: '10px' }}>Now: {formatLiveTime(currentTime)}</span>
         </h2>
       </div>
 
       {/* DAYS SLIDER - Inset Neumorphic Track */}
-      <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-surface-recessed)', boxShadow: 'var(--nm-inset)', border: 'var(--border-nm)', borderRadius: '16px', padding: '10px 14px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '16px', padding: '10px 14px', marginBottom: '24px' }}>
         
         {/* Prev Arrow */}
         <button 
@@ -247,10 +247,10 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 key={day.offset}
                 onClick={() => setSelectedDayOffset(day.offset)}
                 style={{
-                  background: isActive ? 'var(--bg-surface-elevated)' : 'none',
-                  border: isActive ? 'var(--border-nm)' : '1px solid transparent',
+                  background: isActive ? '#1e2034' : 'none',
+                  border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
                   borderRadius: '12px',
-                  boxShadow: isActive ? 'var(--nm-convex-btn)' : 'none',
+                  boxShadow: isActive ? '4px 4px 10px #08090f, -3px -3px 8px #22253c' : 'none',
                   outline: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -258,7 +258,7 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                   alignItems: 'center',
                   gap: '4px',
                   padding: '8px 18px',
-                  color: isActive ? 'var(--color-primary)' : 'var(--text-muted)',
+                  color: isActive ? '#fff' : 'var(--text-muted)',
                   transition: 'var(--transition-fast)',
                   minWidth: '72px'
                 }}

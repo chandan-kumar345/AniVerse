@@ -156,7 +156,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
         
         {/* IMAGE - click to watch */}
         <Link to={watchUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div style={{ width: '100%', aspectRatio: '2/3', position: 'relative', overflow: 'hidden', borderRadius: '14px', border: 'var(--border-nm)', boxShadow: 'var(--nm-card)' }} className="card-image-wrap">
+          <div style={{ width: '100%', aspectRatio: '2/3', position: 'relative', overflow: 'hidden', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '4px 4px 12px #07080e, -3px -3px 8px #1c1e30' }} className="card-image-wrap">
             <img
               src={anime.posterImage || ''}
               alt={anime.title}
@@ -169,24 +169,24 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
               className="card-image"
             />
             {/* Play Button Overlay */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(2px)', opacity: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'var(--transition-smooth)', borderRadius: '14px' }} className="card-play-overlay">
-              <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--nm-primary-btn)' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(13, 15, 24, 0.45)', backdropFilter: 'blur(2px)', opacity: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'var(--transition-smooth)', borderRadius: '12px' }} className="card-play-overlay">
+              <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(139, 92, 246, 0.6)' }}>
                 <Play size={20} style={{ color: '#fff', fill: '#fff', marginLeft: '3px' }} />
               </div>
             </div>
             {/* Score Badge - Neumorphic convex capsule */}
-            <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'var(--bg-surface-elevated)', padding: '3px 8px', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, border: 'var(--border-nm)', color: '#facc15', boxShadow: 'var(--nm-convex-btn)' }}>
+            <div style={{ position: 'absolute', top: '8px', left: '8px', background: '#141624', padding: '3px 8px', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)', color: '#facc15', boxShadow: '2px 2px 6px #08090f, -2px -2px 6px #1c1e30' }}>
               <Star size={10} style={{ fill: '#facc15' }} />
               {anime.score.toFixed(1)}
             </div>
             {/* Episode Badge */}
             {anime.episodes && anime.episodes.length > 0 && (
-              <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', padding: '3px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.25)', boxShadow: 'var(--nm-primary-btn)' }}>
+              <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', padding: '3px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, color: '#fff', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 8px rgba(139, 92, 246, 0.5)' }}>
                 EP {anime.episodes[0].episodeNumber}
               </div>
             )}
             {/* Type Badge */}
-            <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'var(--bg-surface-recessed)', padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', border: 'var(--border-nm)', boxShadow: 'var(--nm-inset)' }}>
+            <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: '#161828', padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 1px 1px 3px #08090f' }}>
               {anime.type}
             </div>
           </div>
@@ -196,7 +196,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
         <Link to={detailUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <h4
-              style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '34px', lineHeight: '1.3', transition: 'var(--transition-fast)' }}
+              style={{ fontSize: '14px', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '34px', lineHeight: '1.3', transition: 'var(--transition-fast)' }}
               className="card-title"
             >
               {anime.title}
@@ -223,8 +223,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
       </div>
 
       {/* HOVER TOOLTIP DETAIL CARD */}
-      <div className="tooltip-card nm-card" style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: '16px', boxShadow: 'var(--nm-elevated)', border: 'var(--border-nm)' }}>
-        <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px', borderBottom: 'var(--border-nm)', paddingBottom: '6px' }}>
+      <div className="tooltip-card nm-card" style={{ background: '#141624', padding: '16px', borderRadius: '16px', boxShadow: 'var(--nm-elevated)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px' }}>
           {anime.title}
         </h4>
         {anime.englishTitle && (
@@ -235,7 +235,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
         <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginBottom: '12px', alignItems: 'center' }}>
           <span style={{ color: '#facc15', fontWeight: 700 }}>★ {anime.score.toFixed(2)}</span>
           <span style={{ color: 'var(--text-muted)' }}>|</span>
-          <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{anime.type}</span>
+          <span style={{ color: '#fff', fontWeight: 600 }}>{anime.type}</span>
           <span style={{ color: 'var(--text-muted)' }}>|</span>
           <span style={{ color: 'var(--text-muted)' }}>{anime.status}</span>
         </div>

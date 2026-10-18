@@ -288,32 +288,11 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
     return url;
   };
 
-  // Mobile Chrome Touch Swipe Support
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (diff > 45) {
-      goToNext(); // Swiped left -> next slide
-    } else if (diff < -45) {
-      goToPrev(); // Swiped right -> previous slide
-    }
-    setTouchStartX(null);
-  };
-
   return (
     <div
       className="hero-slider-container"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       {activeItems.map((anime, index) => {
         const isActive = index === activeIndex;
@@ -696,13 +675,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         .hero-slider-container {
           position: relative;
           width: 100%;
-          height: 560px;
+          height: 600px;
           overflow: hidden;
           border-radius: 28px;
-          border: 2px solid var(--border-color-active);
-          background-color: var(--bg-surface);
+          border: 2px solid rgba(139, 92, 246, 0.35);
+          background-color: #0d0f18;
           box-shadow: var(--nm-hero-frame);
-          transition: background-color 0.25s ease;
         }
 
         .hero-slide {
@@ -713,8 +691,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           height: 100%;
           opacity: 0;
           pointer-events: none;
-          transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-          transform: scale(1.02);
+          transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: scale(1.03);
         }
 
         .hero-slide.active {
@@ -729,7 +707,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-backdrop-banner {
-          width: 75%;
+          width: 72%;
           height: 100%;
           position: absolute;
           top: 0;
@@ -748,7 +726,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: var(--hero-overlay);
+          background: linear-gradient(90deg, #0d0f18 0%, #0d0f18 32%, rgba(13, 15, 24, 0.94) 46%, rgba(13, 15, 24, 0.45) 68%, rgba(13, 15, 24, 0) 95%);
           z-index: 2;
         }
 
@@ -757,16 +735,16 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 140px;
-          background: linear-gradient(0deg, var(--bg-main) 0%, transparent 100%);
+          height: 160px;
+          background: linear-gradient(0deg, #0d0f18 0%, rgba(13, 15, 24, 0) 100%);
           z-index: 2;
         }
 
         /* Staggered entrance animations for text elements */
         .hero-slide .hero-text-container > * {
           opacity: 0;
-          transform: translateY(16px);
-          transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transform: translateY(20px);
+          transition: opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .hero-slide.active .hero-text-container > * {
@@ -774,12 +752,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           transform: translateY(0);
         }
 
-        .hero-slide.active .hero-tag { transition-delay: 0.05s; }
-        .hero-slide.active .hero-title { transition-delay: 0.12s; }
-        .hero-slide.active .hero-info { transition-delay: 0.18s; }
-        .hero-slide.active .hero-desc { transition-delay: 0.24s; }
-        .hero-slide.active .hero-genres { transition-delay: 0.3s; }
-        .hero-slide.active .hero-btns { transition-delay: 0.36s; }
+        .hero-slide.active .hero-tag { transition-delay: 0.1s; }
+        .hero-slide.active .hero-title { transition-delay: 0.2s; }
+        .hero-slide.active .hero-info { transition-delay: 0.3s; }
+        .hero-slide.active .hero-desc { transition-delay: 0.4s; }
+        .hero-slide.active .hero-genres { transition-delay: 0.5s; }
+        .hero-slide.active .hero-btns { transition-delay: 0.6s; }
 
         /* Poster Card Fallback floating effect */
         .hero-poster-wrapper {
@@ -795,12 +773,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-poster-card {
-          width: 200px;
+          width: 210px;
           aspect-ratio: 2/3;
           border-radius: 16px;
           overflow: hidden;
-          border: 2px solid var(--border-color-active);
-          box-shadow: var(--nm-card);
+          border: 2px solid rgba(139, 92, 246, 0.4);
+          box-shadow: 6px 6px 20px #08090f, -4px -4px 14px #20233b, 0 0 24px rgba(139, 92, 246, 0.35);
           transform: rotate(2deg) translateY(-10px);
           animation: floatCard 6s ease-in-out infinite alternate;
         }
@@ -813,8 +791,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         /* Indicators styling */
         .hero-indicators {
           position: absolute;
-          bottom: 24px;
-          left: 48px;
+          bottom: 30px;
+          left: 50px;
           z-index: 10;
           display: flex;
           gap: 8px;
@@ -825,21 +803,21 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           width: 9px;
           height: 9px;
           border-radius: 50%;
-          background: var(--bg-surface-elevated);
-          box-shadow: var(--nm-inset);
-          border: var(--border-nm);
+          background: #181a2b;
+          box-shadow: inset 1px 1px 2px #07080e, inset -1px -1px 2px #22253c;
+          border: 1px solid rgba(255, 255, 255, 0.04);
           cursor: pointer;
           padding: 0;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .hero-dot.active {
-          background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-          width: 30px;
+          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+          width: 32px;
           height: 9px;
           border-radius: 9999px;
-          border-color: rgba(255, 255, 255, 0.3);
-          box-shadow: var(--nm-primary-btn);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 0 14px rgba(139, 92, 246, 0.65);
         }
 
         /* Autoplay Progress Bar */
@@ -849,36 +827,30 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           width: 100%;
           height: 4px;
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(255, 255, 255, 0.04);
           z-index: 10;
         }
 
         .hero-progress-bar {
           height: 100%;
-          background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+          background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%);
           width: 0%;
           transition: width 0.05s linear;
         }
 
-        .slider-arrow {
-          background: var(--bg-surface-elevated) !important;
-          box-shadow: var(--nm-convex-btn) !important;
-          border: var(--border-nm) !important;
-          color: var(--text-main) !important;
-        }
-
         .slider-arrow:hover { 
-          border-color: var(--border-color-active) !important; 
-          box-shadow: var(--nm-flat) !important; 
+          background: #1e2034 !important; 
+          border-color: rgba(139, 92, 246, 0.6) !important; 
+          box-shadow: 0 0 16px rgba(139, 92, 246, 0.5) !important; 
           transform: scale(1.06);
         }
 
         @media (max-width: 992px) {
-          .hero-slider-container {
-            height: 460px;
-          }
           .hero-backdrop-banner {
-            width: 85%;
+            width: 80%;
+          }
+          .hero-overlay-main {
+            background: linear-gradient(90deg, #0a090c 0%, #0a090c 20%, rgba(10, 9, 12, 0.9) 50%, rgba(10, 9, 12, 0.4) 100%);
           }
           .hero-poster-wrapper {
             display: none;
@@ -887,49 +859,30 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
 
         @media (max-width: 768px) {
           .hero-slider-container {
-            height: 380px !important;
-            border-radius: 20px !important;
+            height: 480px;
           }
           .hero-backdrop-banner {
-            width: 100% !important;
+            width: 100%;
           }
           .hero-overlay-main {
-            background: var(--hero-overlay-mobile) !important;
+            background: linear-gradient(90deg, #0a090c 0%, rgba(10, 9, 12, 0.95) 40%, rgba(10, 9, 12, 0.8) 100%);
           }
           .hero-text-container {
-            padding: 0 18px 24px 18px !important;
+            padding: 0 24px !important;
             max-width: 100% !important;
-            justify-content: flex-end !important;
           }
           .hero-title {
-            font-size: 24px !important;
-            margin-bottom: 8px !important;
-            line-height: 1.15 !important;
-          }
-          .hero-info {
-            font-size: 11px !important;
-            margin-bottom: 12px !important;
-            gap: 8px !important;
+            font-size: 30px !important;
           }
           .hero-arrows {
             display: none !important;
           }
           .hero-indicators {
-            left: 18px !important;
-            bottom: 14px !important;
+            left: 24px !important;
+            bottom: 20px !important;
           }
           .hero-desc {
             display: none !important;
-          }
-          .hero-genres {
-            display: none !important;
-          }
-          .hero-btns {
-            gap: 10px !important;
-          }
-          .hero-btns button {
-            padding: 9px 18px !important;
-            font-size: 13px !important;
           }
         }
       `}</style>

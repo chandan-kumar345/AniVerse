@@ -68,8 +68,8 @@ export const Auth: React.FC = () => {
         style={{
           borderRadius: '28px',
           padding: '36px',
-          border: 'var(--border-nm)',
-          boxShadow: 'var(--nm-card-hover)'
+          border: '1px solid rgba(139, 92, 246, 0.25)',
+          boxShadow: '12px 12px 30px #07080e, -8px -8px 24px #1d2036, 0 0 32px rgba(139, 92, 246, 0.15)'
         }}
       >
         
@@ -79,7 +79,7 @@ export const Auth: React.FC = () => {
             display: 'flex',
             background: 'var(--bg-surface-recessed)',
             boxShadow: 'var(--nm-inset)',
-            border: 'var(--border-nm)',
+            border: '1px solid rgba(255,255,255,0.03)',
             borderRadius: '9999px',
             padding: '5px',
             marginBottom: '26px'
@@ -150,7 +150,7 @@ export const Auth: React.FC = () => {
                   alignItems: 'center',
                   background: 'var(--bg-surface-recessed)',
                   boxShadow: 'var(--nm-inset)',
-                  border: 'var(--border-nm)',
+                  border: '1px solid rgba(255,255,255,0.04)',
                   borderRadius: '14px',
                   padding: '4px 14px'
                 }}
@@ -163,7 +163,7 @@ export const Auth: React.FC = () => {
                   value={emailOrUsername}
                   onChange={(e) => setEmailOrUsername(e.target.value)}
                   required
-                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: '#fff', outline: 'none', fontSize: '14px' }}
                 />
               </div>
             </div>
@@ -179,7 +179,7 @@ export const Auth: React.FC = () => {
                   alignItems: 'center',
                   background: 'var(--bg-surface-recessed)',
                   boxShadow: 'var(--nm-inset)',
-                  border: 'var(--border-nm)',
+                  border: '1px solid rgba(255,255,255,0.04)',
                   borderRadius: '14px',
                   padding: '4px 14px'
                 }}
@@ -192,7 +192,7 @@ export const Auth: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: '#fff', outline: 'none', fontSize: '14px' }}
                 />
               </div>
             </div>
@@ -208,7 +208,7 @@ export const Auth: React.FC = () => {
                   alignItems: 'center',
                   background: 'var(--bg-surface-recessed)',
                   boxShadow: 'var(--nm-inset)',
-                  border: 'var(--border-nm)',
+                  border: '1px solid rgba(255,255,255,0.04)',
                   borderRadius: '14px',
                   padding: '4px 14px'
                 }}
@@ -221,7 +221,7 @@ export const Auth: React.FC = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                  style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: '#fff', outline: 'none', fontSize: '14px' }}
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export const Auth: React.FC = () => {
                 alignItems: 'center',
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
-                border: 'var(--border-nm)',
+                border: '1px solid rgba(255,255,255,0.04)',
                 borderRadius: '14px',
                 padding: '4px 14px'
               }}
@@ -249,7 +249,7 @@ export const Auth: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', color: '#fff', outline: 'none', fontSize: '14px' }}
               />
             </div>
           </div>
