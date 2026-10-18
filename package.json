@@ -1,0 +1,11 @@
+{
+  "name": "aniverse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AniVerse Anime Streaming Platform Root Orchestrator",
+  "scripts": {
+    "postinstall": "cd backend && npm install",
+    "build": "cd backend && npm install && npm run build",
+    "start": "cd backend && npm start"
+  }
+}
