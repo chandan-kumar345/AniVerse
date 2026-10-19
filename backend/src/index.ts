@@ -6,6 +6,7 @@ import animeRoutes from './routes/anime.routes';
 import watchlistRoutes from './routes/watchlist.routes';
 import historyRoutes from './routes/history.routes';
 import commentRoutes from './routes/comment.routes';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -47,7 +48,18 @@ app.use(
   })
 );
 
-app.use(express.json());
+import * as path from 'path';
+import * as fs from 'fs';
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
 
 // Main API Routes
 app.use('/api/auth', authRoutes);
@@ -55,6 +67,7 @@ app.use('/api/anime', animeRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check and root routes for Render deployment
 app.get('/', (_req, res) => {

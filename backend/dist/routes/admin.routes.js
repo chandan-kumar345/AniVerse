@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const admin_controller_1 = require("../controllers/admin.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+// Secure all admin routes with admin authorization middleware
+router.use(auth_middleware_1.adminMiddleware);
+router.get('/stats', admin_controller_1.getAdminStats);
+router.get('/anime', admin_controller_1.getAdminAnime);
+router.post('/anime', admin_controller_1.createAnime);
+router.put('/anime/:id', admin_controller_1.updateAnime);
+router.get('/anime/:id/episodes', admin_controller_1.getAnimeEpisodes);
+router.put('/anime/:id/episodes', admin_controller_1.updateAnimeEpisodes);
+router.delete('/anime/:id/episodes/:epNum', admin_controller_1.deleteAnimeEpisode);
+router.post('/extract-video', admin_controller_1.extractVideo);
+router.post('/import/bulk', admin_controller_1.bulkImportAnime);
+router.post('/upload/image', admin_controller_1.uploadImage);
+router.post('/resolve-image', admin_controller_1.resolveImage);
+router.post('/media/batch', admin_controller_1.batchUpdateMedia);
+router.get('/providers', admin_controller_1.getVideoProviders);
+router.post('/mappings', admin_controller_1.saveVideoMapping);
+router.post('/verify/audit', admin_controller_1.runVerificationAudit);
+router.get('/export', admin_controller_1.exportCatalogData);
+exports.default = router;

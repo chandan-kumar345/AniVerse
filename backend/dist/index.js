@@ -44,6 +44,7 @@ const anime_routes_1 = __importDefault(require("./routes/anime.routes"));
 const watchlist_routes_1 = __importDefault(require("./routes/watchlist.routes"));
 const history_routes_1 = __importDefault(require("./routes/history.routes"));
 const comment_routes_1 = __importDefault(require("./routes/comment.routes"));
+const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 dotenv.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
@@ -75,13 +76,23 @@ app.use((0, cors_1.default)({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express_1.default.json());
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+app.use(express_1.default.json({ limit: '50mb' }));
+app.use(express_1.default.urlencoded({ extended: true, limit: '50mb' }));
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express_1.default.static(uploadsDir));
 // Main API Routes
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/anime', anime_routes_1.default);
 app.use('/api/watchlist', watchlist_routes_1.default);
 app.use('/api/history', history_routes_1.default);
 app.use('/api/comments', comment_routes_1.default);
+app.use('/api/admin', admin_routes_1.default);
 // Health check and root routes for Render deployment
 app.get('/', (_req, res) => {
     res.json({ message: 'Welcome to the AniVerse Anime Platform API!', status: 'running' });
