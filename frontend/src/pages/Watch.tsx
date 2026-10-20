@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Play, Lightbulb, AlertTriangle, Plus, Check, Info, Tv, RefreshCw } from 'lucide-react';
+import { Play, Lightbulb, AlertTriangle, Plus, Check, Info, Tv, RefreshCw, ShieldAlert, Shield, ShieldCheck, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CommentsSection } from '../components/CommentsSection';
+import { AgeVerificationModal } from '../components/AgeVerificationModal';
 import axios from 'axios';
+import { cleanAndNormalizeVideoUrl, isDirectMediaFile } from '../utils/videoUtils';
 
 const axiosInstance = axios;
 
@@ -23,12 +25,12 @@ export interface ServerSource {
 }
 
 const DEFAULT_FALLBACK_SERVERS: ServerSource[] = [
-  { id: 'vidsrc', name: 'HD-1: Ultra HD' },
-  { id: 'vidsrc_me', name: 'HD-2: VidSrc Pro' },
-  { id: 'vidsrc_io', name: 'HD-3: StreamCloud' },
-  { id: 'twoembed', name: 'HD-4: 2Embed Global' },
-  { id: 'autoembed', name: 'HD-5: AutoEmbed Multi' },
-  { id: 'videasy', name: 'HD-6: VidEasy Backup' }
+  { id: 'vidsrc', name: 'HD-1: AniVerse Multi' },
+  { id: 'aniwave', name: 'HD-2: AniVerse Prime' },
+  { id: 'autoembed', name: 'HD-3: AniVerse Auto' },
+  { id: 'vidsrc_me', name: 'HD-4: AniVerse Global' },
+  { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud' },
+  { id: 'twoembed', name: 'HD-6: AniVerse Cinema' }
 ];
 
 interface AnimeDetailData {
@@ -47,6 +49,7 @@ interface AnimeDetailData {
   releasedYear?: number | null;
   duration?: string | null;
   genres: string;
+  rating?: string | null;
   hasSub?: boolean | null;
   hasDub?: boolean | null;
   hasHindi?: boolean | null;
@@ -84,8 +87,25 @@ export const Watch: React.FC = () => {
   const [lightsOff, setLightsOff] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // High-performance streaming server states (Default to vidsrc / HD-1 Ultra HD)
-  const [activeServer, setActiveServer] = useState<string>('vidsrc');
+  // Age verification state for mature / 18+ titles
+  const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
+  const [isAgeVerified, setIsAgeVerified] = useState<boolean>(() => {
+    return localStorage.getItem('aniverse_age_verified') === 'true';
+  });
+
+  const handleAgeConfirm = () => {
+    localStorage.setItem('aniverse_age_verified', 'true');
+    setIsAgeVerified(true);
+    setIsAgeModalOpen(false);
+  };
+
+  const handleAgeDecline = () => {
+    setIsAgeModalOpen(false);
+    navigate('/genres');
+  };
+
+  // High-performance streaming server states (Default to autoembed / HD-1 AutoEmbed Multi)
+  const [activeServer, setActiveServer] = useState<string>('autoembed');
   const [availableServers, setAvailableServers] = useState<ServerSource[]>([]);
   const [serversByAudio, setServersByAudio] = useState<{
     sub?: ServerSource[];
@@ -104,6 +124,87 @@ export const Watch: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [embedUrl, setEmbedUrl] = useState('');
+  const [focusVideoOnly, setFocusVideoOnly] = useState<boolean>(false);
+  const [downloading, setDownloading] = useState(false);
+
+  // 18+ Anime Suggestions State & Carousel Ref (defaults to newly added 18+ anime)
+  const [adultAnimeList, setAdultAnimeList] = useState<any[]>([]);
+  const [adultSortMode, setAdultSortMode] = useState<'latest' | 'popular'>('latest');
+  const adultSliderRef = useRef<HTMLDivElement>(null);
+
+  const scrollAdultSlider = (direction: 'left' | 'right') => {
+    if (adultSliderRef.current) {
+      const scrollAmount = direction === 'left' ? -380 : 380;
+      adultSliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Ad-Shield & Anti-Sandbox Engine States
+  const [adShieldMode, setAdShieldMode] = useState<'smart' | 'strict' | 'relaxed'>(() => {
+    const saved = localStorage.getItem('aniverse_ad_shield');
+    return (saved === 'strict' || saved === 'relaxed' || saved === 'smart') ? saved : 'smart';
+  });
+  const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
+  const [shieldToast, setShieldToast] = useState<string | null>(null);
+
+  // Dynamic sandbox calculation across all servers
+  const activeSandboxValue = React.useMemo(() => {
+    // If user explicitly chooses Strict mode, enforce HTML sandbox attribute
+    if (adShieldMode === 'strict') {
+      return 'allow-scripts allow-same-origin allow-forms allow-presentation allow-downloads';
+    }
+    // Smart mode (default) & Relaxed mode:
+    // ALL third-party embed servers (AutoEmbed, 2Embed, VidSrc, StreamCloud, etc.)
+    // actively enforce anti-sandbox checks and display "Playback blocked" or "Sandbox not allowed"
+    // if ANY sandbox attribute is present on the iframe.
+    // Therefore, omit sandbox attribute across all servers so every mirror streams seamlessly!
+    // Ad & popup protection is handled natively at the parent layer via Navigation Lock & Focus Deflector.
+    return undefined;
+  }, [adShieldMode]);
+
+  // Protect parent window from external tab hijacking and deflect popups for ALL servers
+  useEffect(() => {
+    let internalClick = false;
+
+    const handleUserInteraction = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('a, button, input, [role="button"], select, textarea')) {
+        internalClick = true;
+        setTimeout(() => {
+          internalClick = false;
+        }, 2000);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // Whenever user interacts with or hovers over the player iframe and an embed triggers a popup/blur:
+      if (isHoveringPlayer || document.activeElement?.tagName === 'IFRAME') {
+        setTimeout(() => {
+          window.focus();
+        }, 120);
+        setShieldToast('AniVerse Ad-Shield: Pop-up deflected & parent tab protected');
+        setTimeout(() => setShieldToast(null), 3500);
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!internalClick) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('click', handleUserInteraction, true);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('click', handleUserInteraction, true);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isHoveringPlayer]);
 
   // Seamless server switcher that cycles through active working servers of the active audio
   const switchToNextServer = () => {
@@ -117,7 +218,7 @@ export const Watch: React.FC = () => {
         setEmbedUrl(nextServer.embedUrl);
       }
     } else {
-      const fallbackList = ['vidsrc', 'vidsrc_me', 'vidsrc_io', 'twoembed', 'autoembed', 'videasy'];
+      const fallbackList = ['autoembed', 'vidsrc', 'vidsrc_io', 'twoembed', 'vidsrc_me', 'videasy'];
       const currentIndex = fallbackList.indexOf(activeServer);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % fallbackList.length : 0;
       setActiveServer(fallbackList[nextIndex]);
@@ -228,14 +329,14 @@ export const Watch: React.FC = () => {
         setAnimeName(epRes.data.animeName);
         setHasPrev(epRes.data.hasPrev);
         setHasNext(epRes.data.hasNext);
-        const epHasDub = epRes.data.hasDub ?? true;
+        const epHasDub = Boolean(epRes.data.hasDub);
         setHasDub(epHasDub);
         const epHasSub = epRes.data.hasSub ?? true;
         setHasSub(epHasSub);
-        const epHasHindi = epRes.data.hasHindi ?? false;
+        const epHasHindi = Boolean(epRes.data.hasHindi);
         setHasHindi(epHasHindi);
         if (epRes.data.isMultiAudio !== undefined) {
-          setIsMultiAudio(Boolean(epRes.data.isMultiAudio));
+          setIsMultiAudio(Boolean(epRes.data.isMultiAudio && epHasDub));
         }
         if (epRes.data.availableAudios) {
           setAvailableAudios(epRes.data.availableAudios);
@@ -246,32 +347,48 @@ export const Watch: React.FC = () => {
         const animeData = detailRes.data.anime;
         setAnimeDetail(animeData);
 
+        const isMature = Boolean(
+          animeData.rating === 'TV-MA' ||
+          animeData.rating === 'R - 17+' ||
+          animeData.rating === 'R-17+' ||
+          animeData.rating === '18+' ||
+          animeData.rating === 'R+' ||
+          animeData.genres?.includes('18+')
+        );
+        if (isMature && localStorage.getItem('aniverse_age_verified') !== 'true') {
+          setIsAgeModalOpen(true);
+        }
+
+        const animeHasDub = Boolean(animeData.hasDub) && epHasDub;
+        setHasDub(animeHasDub);
         if (animeData.hasHindi !== undefined) {
           setHasHindi(Boolean(animeData.hasHindi));
-        }
-        if (animeData.hasDub !== undefined) {
-          setHasDub(Boolean(animeData.hasDub));
         }
         if (animeData.hasSub !== undefined) {
           setHasSub(Boolean(animeData.hasSub));
         }
-        if (animeData.isMultiAudio !== undefined) {
-          setIsMultiAudio(Boolean(animeData.isMultiAudio));
-        }
+        setIsMultiAudio(Boolean(animeData.isMultiAudio && animeHasDub));
+
         if (animeData.availableAudios) {
-          setAvailableAudios(animeData.availableAudios);
+          setAvailableAudios(animeData.availableAudios.filter((a: string) => a !== 'dub' || animeHasDub));
         }
 
+        const savedPref = localStorage.getItem('aniverse_preferred_audio');
         let defaultTranslation: 'sub' | 'dub' | 'hindi' = 'sub';
-        if (animeData.hasSub === false && animeData.hasDub) {
+        if (savedPref === 'dub' && animeHasDub) {
           defaultTranslation = 'dub';
+        } else if (savedPref === 'hindi' && (epHasHindi || animeData.hasHindi)) {
+          defaultTranslation = 'hindi';
+        } else {
+          defaultTranslation = 'sub';
         }
-        setActiveTranslation((prev) => {
-          if (prev === 'hindi' && (epHasHindi || animeData.hasHindi)) return 'hindi';
-          if (prev === 'dub' && (epHasDub && animeData.hasDub !== false)) return 'dub';
-          if (prev === 'sub' && (epHasSub && animeData.hasSub !== false)) return 'sub';
-          return defaultTranslation;
-        });
+
+        // If anime does not have dub, strictly force sub
+        if (!animeHasDub) {
+          defaultTranslation = 'sub';
+        }
+
+        setActiveTranslation(defaultTranslation);
         setEpisodesList(detailRes.data.anime.episodes || []);
         setRelatedList(detailRes.data.related || []);
         setSeasons(detailRes.data.seasons || []);
@@ -296,6 +413,27 @@ export const Watch: React.FC = () => {
     fetchWatchData();
   }, [slug, epNum]);
 
+  // Fetch 18+ Anime recommendations for the horizontal carousel (defaults to latest newly added)
+  useEffect(() => {
+    const fetchAdultSuggestions = async () => {
+      try {
+        const res = await axiosInstance.get('/api/anime', {
+          params: {
+            genre: '18+',
+            limit: 60,
+            sort: adultSortMode
+          }
+        });
+        if (res.data?.animeList && res.data.animeList.length > 0) {
+          setAdultAnimeList(res.data.animeList.filter((a: any) => a.slug !== slug));
+        }
+      } catch (err) {
+        console.error('Failed to load 18+ anime suggestions:', err);
+      }
+    };
+    fetchAdultSuggestions();
+  }, [slug, adultSortMode]);
+
   // Load streaming iframe source link dynamically from the backend scraping API
   useEffect(() => {
     const fetchEpisodeSource = async () => {
@@ -308,7 +446,7 @@ export const Watch: React.FC = () => {
           }
         });
         
-        let url = response.data.embedUrl || '';
+        let url = cleanAndNormalizeVideoUrl(response.data.embedUrl || '');
         if (response.data.servers && response.data.servers.length > 0) {
           setAvailableServers(response.data.servers);
         }
@@ -381,6 +519,74 @@ export const Watch: React.FC = () => {
       }
     } catch (err) {
       navigate('/auth'); // Redirect to login if unauthorized
+    }
+  };
+
+  const handleDownloadEpisode = async () => {
+    if (!slug || !epNum) return;
+    try {
+      setDownloading(true);
+      const res = await axiosInstance.get(`/api/anime/${slug}/episodes/${epNum}/download`, {
+        params: {
+          server: activeServer,
+          lang: activeTranslation
+        }
+      });
+
+      const { downloadUrl, directMediaUrl, filename, audioTrack, isDirect } = res.data;
+      if (!downloadUrl) {
+        alert('Download link not available for this episode.');
+        return;
+      }
+
+      if (isDirect) {
+        let blobSuccess = false;
+        if (directMediaUrl) {
+          try {
+            const blobRes = await fetch(directMediaUrl);
+            if (blobRes.ok) {
+              const blob = await blobRes.blob();
+              const objectUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = objectUrl;
+              a.download = filename || `Episode_${epNum}_${audioTrack}.mp4`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(objectUrl);
+              document.body.removeChild(a);
+              blobSuccess = true;
+            }
+          } catch (_) {
+            blobSuccess = false;
+          }
+        }
+
+        if (!blobSuccess) {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = downloadUrl;
+          document.body.appendChild(iframe);
+          setTimeout(() => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          }, 60000);
+        }
+
+        setShieldToast(`✓ Downloading Episode ${epNum} [${audioTrack} Audio]...`);
+        setTimeout(() => setShieldToast(null), 4000);
+      } else {
+        const newTab = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+        if (newTab) {
+          setShieldToast(`✓ Opening download stream mirror for Episode ${epNum} [${audioTrack}]...`);
+        } else {
+          window.location.href = downloadUrl;
+        }
+        setTimeout(() => setShieldToast(null), 5000);
+      }
+    } catch (err: any) {
+      console.error('Download error:', err);
+      alert('Failed to initiate episode download.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -476,13 +682,13 @@ export const Watch: React.FC = () => {
                     setActiveTranslationFilter(val);
                     if (val === 'hindi') {
                       setActiveTranslation('hindi');
-                      setActiveServer('vidsrc');
+                      setActiveServer('autoembed');
                     } else if (val === 'dub') {
                       setActiveTranslation('dub');
-                      setActiveServer('vidsrc');
+                      setActiveServer('autoembed');
                     } else if (val === 'sub') {
                       setActiveTranslation('sub');
-                      setActiveServer('vidsrc');
+                      setActiveServer('autoembed');
                     }
                   }}
                   style={{ background: '#10121d', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
@@ -578,14 +784,93 @@ export const Watch: React.FC = () => {
           {/* Video Player Container - Neumorphic Cinema Bezel with Header Bar */}
           <div className="nm-player-bezel">
             {/* Player Mini Top Control Bar */}
-            <div style={{ background: '#0e101a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: '#0e101a', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span style={{ color: '#ffffff', fontWeight: 800 }}>{animeName}</span>
                 <span style={{ color: '#c084fc', fontWeight: 700 }}>• Episode {epNum}</span>
+                {adShieldMode === 'smart' && (
+                  <span
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                      borderRadius: '9999px',
+                      padding: '2px 8px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Smart Stream Guard active: Zero sandbox playback errors on all servers, with real-time pop-up deflection and tab protection"
+                  >
+                    <ShieldCheck size={11} /> Safe Stream Active
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {/* Ad-Shield Control Toggle */}
+                <button
+                  onClick={() => {
+                    setAdShieldMode(prev => {
+                      const next = prev === 'smart' ? 'strict' : prev === 'strict' ? 'relaxed' : 'smart';
+                      localStorage.setItem('aniverse_ad_shield', next);
+                      return next;
+                    });
+                  }}
+                  className="nm-pill"
+                  style={{
+                    border: adShieldMode === 'smart' 
+                      ? '1px solid rgba(16, 185, 129, 0.5)' 
+                      : adShieldMode === 'strict' 
+                        ? '1px solid rgba(139, 92, 246, 0.6)' 
+                        : '1px solid rgba(239, 68, 68, 0.4)',
+                    background: adShieldMode === 'smart' 
+                      ? 'rgba(16, 185, 129, 0.15)' 
+                      : adShieldMode === 'strict' 
+                        ? 'rgba(139, 92, 246, 0.2)' 
+                        : 'rgba(239, 68, 68, 0.1)',
+                    color: adShieldMode === 'smart' 
+                      ? '#34d399' 
+                      : adShieldMode === 'strict' 
+                        ? '#c084fc' 
+                        : '#f87171',
+                    cursor: 'pointer',
+                    padding: '5px 11px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title={`Ad-Shield: ${adShieldMode === 'smart' ? 'Smart (Auto-Adapts to bypass player sandbox blocks while stopping ads)' : adShieldMode === 'strict' ? 'Strict (Always Sandboxed)' : 'Off (Unrestricted)'}. Click to switch mode.`}
+                >
+                  <Shield size={12} />
+                  <span>Shield: {adShieldMode === 'smart' ? 'Smart' : adShieldMode === 'strict' ? 'Strict' : 'Off'}</span>
+                </button>
+                {/* Focus Video Mode Toggle to crop out external website headers */}
+                <button
+                  onClick={() => setFocusVideoOnly(prev => !prev)}
+                  className="nm-pill"
+                  style={{
+                    border: focusVideoOnly ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
+                    background: focusVideoOnly ? 'rgba(139, 92, 246, 0.2)' : undefined,
+                    color: focusVideoOnly ? '#c084fc' : '#cbd5e1',
+                    cursor: 'pointer',
+                    padding: '5px 11px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Focus mode: hides surrounding website headers and banners"
+                >
+                  🎯 {focusVideoOnly ? 'Focus Mode ON' : 'Focus Video'}
+                </button>
+
                 <span style={{ fontSize: '11px', color: '#cbd5e1', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AnimeStream Ultra HD'}</strong>
+                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AniVerse Ultra HD'}</strong>
                 </span>
                 <button
                   onClick={switchToNextServer}
@@ -599,19 +884,105 @@ export const Watch: React.FC = () => {
             </div>
 
             <div style={{ width: '100%', aspectRatio: '16/9', position: 'relative', background: '#000' }}>
-              {embedUrl ? (
-                <iframe
-                  key={embedUrl}
-                  src={embedUrl}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  allowFullScreen
-                  title={`${activeServer} Player`}
-                  referrerPolicy="no-referrer"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  onError={() => {
-                    switchToNextServer();
-                  }}
-                />
+              {(Boolean(animeDetail?.genres?.includes('18+') || animeDetail?.genres?.includes('Ecchi')) && !['My Hero Academia', 'Dragon Ball', 'Naruto', 'One Piece'].some(t => animeDetail?.title?.includes(t))) && !isAgeVerified ? (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at center, #1e1320 0%, #0a0c14 100%)', padding: '30px', textAlign: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'rgba(225, 29, 72, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+                    <ShieldAlert size={36} color="#e11d48" />
+                  </div>
+                  <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '8px' }}>
+                    18+ Age Verification Required
+                  </h3>
+                  <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '440px', lineHeight: '1.6', marginBottom: '20px' }}>
+                    This anime is rated TV-MA / 18+ and contains mature themes. Please confirm that you are at least 18 years old to begin playback.
+                  </p>
+                  <button
+                    onClick={() => setIsAgeModalOpen(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                      color: '#fff',
+                      padding: '12px 28px',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 6px 20px rgba(225, 29, 72, 0.4)'
+                    }}
+                  >
+                    Verify You Are 18+ To Play
+                  </button>
+                </div>
+              ) : embedUrl ? (
+                isDirectMediaFile(embedUrl) ? (
+                  <video
+                    key={embedUrl}
+                    src={embedUrl}
+                    controls
+                    autoPlay={autoPlay}
+                    playsInline
+                    style={{ width: '100%', height: '100%', background: '#000', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <div
+                    onMouseEnter={() => setIsHoveringPlayer(true)}
+                    onMouseLeave={() => setIsHoveringPlayer(false)}
+                    style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative', background: '#000' }}
+                  >
+                    <iframe
+                      key={embedUrl}
+                      src={embedUrl}
+                      scrolling="no"
+                      style={
+                        (focusVideoOnly || embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave')
+                          ? {
+                              width: '100%',
+                              height: (embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave') ? 'calc(100% + 64px)' : '124%',
+                              marginTop: (embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave') ? '-64px' : '-56px',
+                              border: 'none',
+                              display: 'block',
+                              overflow: 'hidden'
+                            }
+                          : { width: '100%', height: '100%', border: 'none', display: 'block', overflow: 'hidden' }
+                      }
+                      allowFullScreen
+                      title={`${activeServer} Player`}
+                      referrerPolicy="no-referrer"
+                      sandbox={activeSandboxValue}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      onError={() => {
+                        switchToNextServer();
+                      }}
+                    />
+                    {shieldToast && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '16px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'rgba(15, 23, 42, 0.95)',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.2)',
+                          borderRadius: '30px',
+                          padding: '8px 18px',
+                          color: '#34d399',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          zIndex: 100,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          pointerEvents: 'none',
+                          backdropFilter: 'blur(8px)',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <ShieldCheck size={14} color="#34d399" />
+                        <span>{shieldToast}</span>
+                      </div>
+                    )}
+                  </div>
+                )
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: '14px', background: '#09080d' }}>
                   Loading stream sources...
@@ -695,6 +1066,28 @@ export const Watch: React.FC = () => {
                 </button>
               </div>
 
+              <button
+                onClick={handleDownloadEpisode}
+                disabled={downloading}
+                className="nm-pill"
+                style={{
+                  color: '#38bdf8',
+                  cursor: downloading ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                  padding: '7px 16px',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  background: 'rgba(56, 189, 248, 0.08)'
+                }}
+                title={`Download Episode ${epNum} in ${activeTranslation === 'dub' ? 'English Dubbed' : activeTranslation === 'hindi' ? 'Hindi Dubbed' : 'Japanese (Sub)'} Audio`}
+              >
+                <Download size={14} style={{ color: '#38bdf8' }} />
+                {downloading ? 'Preparing...' : `Download (${activeTranslation.toUpperCase()})`}
+              </button>
+
               <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
 
               <button 
@@ -733,13 +1126,13 @@ export const Watch: React.FC = () => {
                 }}>
                   {activeTranslation === 'hindi' ? '🇮🇳 Hindi Dubbed' : activeTranslation === 'dub' ? '🎙️ English Dubbed' : '🇯🇵 Japanese (CC SUB)'}
                 </span>
-                {isMultiAudio ? (
+                {isMultiAudio && hasDub ? (
                   <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
                     Multi-Audio ({availableAudios.map(a => a.toUpperCase()).join(' / ')})
                   </span>
                 ) : (
                   <span style={{ fontSize: '11px', color: '#818cf8', background: 'rgba(129, 140, 248, 0.12)', border: '1px solid rgba(129, 140, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                    Single Audio ({availableAudios[0]?.toUpperCase() || 'SUB'})
+                    Single Audio ({hasDub && !hasSub ? 'DUB' : 'SUB'})
                   </span>
                 )}
               </div>
@@ -749,7 +1142,7 @@ export const Watch: React.FC = () => {
             </div>
 
             {/* If Single Audio Anime: Show clean single audio server list only */}
-            {!isMultiAudio ? (
+            {(!isMultiAudio || !hasDub) ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
@@ -809,6 +1202,7 @@ export const Watch: React.FC = () => {
                     <button
                       onClick={() => {
                         setActiveTranslation('sub');
+                        localStorage.setItem('aniverse_preferred_audio', 'sub');
                         const subList: ServerSource[] = serversByAudio.sub || availableServers;
                         if (subList.length > 0) {
                           const targetServer = subList.find(s => s.id === activeServer) || subList[0];
@@ -846,6 +1240,7 @@ export const Watch: React.FC = () => {
                             key={s.id}
                             onClick={() => {
                               setActiveTranslation('sub');
+                              localStorage.setItem('aniverse_preferred_audio', 'sub');
                               setActiveServer(s.id);
                               if (s.embedUrl) setEmbedUrl(s.embedUrl);
                             }}
@@ -863,12 +1258,13 @@ export const Watch: React.FC = () => {
                 )}
 
                 {/* DUB servers group - ONLY rendered if anime has English dub */}
-                {hasDub && (
+                {Boolean(hasDub && serversByAudio.dub && serversByAudio.dub.length > 0) && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
                     <button
                       onClick={() => {
                         setActiveTranslation('dub');
-                        const dubList: ServerSource[] = serversByAudio.dub || availableServers;
+                        localStorage.setItem('aniverse_preferred_audio', 'dub');
+                        const dubList: ServerSource[] = serversByAudio.dub || [];
                         if (dubList.length > 0) {
                           const targetServer = dubList.find(s => s.id === activeServer) || dubList[0];
                           setActiveServer(targetServer.id);
@@ -898,13 +1294,14 @@ export const Watch: React.FC = () => {
                     </button>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {(serversByAudio.dub || (activeTranslation === 'dub' && availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS)).map((s: ServerSource) => {
+                      {(serversByAudio.dub || []).map((s: ServerSource) => {
                         const isSelected = activeTranslation === 'dub' && activeServer === s.id;
                         return (
                           <button
                             key={s.id}
                             onClick={() => {
                               setActiveTranslation('dub');
+                              localStorage.setItem('aniverse_preferred_audio', 'dub');
                               setActiveServer(s.id);
                               if (s.embedUrl) setEmbedUrl(s.embedUrl);
                             }}
@@ -1101,6 +1498,313 @@ export const Watch: React.FC = () => {
         </div>
       </div>
 
+      {/* 18+ ANIME SUGGESTIONS HORIZONTAL SLIDE - DOWN SIDE OF STREAMING SCREEN */}
+      {adultAnimeList.length > 0 && (
+        <div
+          className="nm-card"
+          style={{
+            borderRadius: '24px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            border: '1px solid rgba(225, 29, 72, 0.25)',
+            background: 'linear-gradient(180deg, rgba(225, 29, 72, 0.05) 0%, rgba(15, 17, 26, 0.85) 100%)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          {/* Header with Title and Scroll Controls */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                  color: '#fff',
+                  fontWeight: 900,
+                  fontSize: '13px',
+                  boxShadow: '0 4px 14px rgba(225, 29, 72, 0.45)'
+                }}
+              >
+                18+
+              </span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px', margin: 0 }}>
+                    {adultSortMode === 'latest' ? 'Newly Added 18+ Anime' : '18+ Mature Anime Suggestions'}
+                  </h3>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      background: 'rgba(225, 29, 72, 0.15)',
+                      border: '1px solid rgba(225, 29, 72, 0.4)',
+                      color: '#f43f5e',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    🔞 18+ Only
+                  </span>
+                </div>
+                <p style={{ color: '#94a3b8', fontSize: '12px', margin: '3px 0 0 0' }}>
+                  {adultSortMode === 'latest' ? 'Freshly added uncensored & mature 18+ releases' : 'Handpicked popular 18+ uncensored & mature anime series'}
+                </p>
+              </div>
+            </div>
+
+            {/* Carousel Navigation Buttons & Quick Sort Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '6px', background: 'rgba(0, 0, 0, 0.35)', padding: '3px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <button
+                  type="button"
+                  onClick={() => setAdultSortMode('latest')}
+                  style={{
+                    background: adultSortMode === 'latest' ? 'linear-gradient(135deg, #e11d48, #be123c)' : 'transparent',
+                    color: adultSortMode === 'latest' ? '#fff' : '#94a3b8',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '5px 12px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: adultSortMode === 'latest' ? '0 2px 8px rgba(225, 29, 72, 0.4)' : 'none'
+                  }}
+                >
+                  ⚡ Newly Added
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdultSortMode('popular')}
+                  style={{
+                    background: adultSortMode === 'popular' ? 'linear-gradient(135deg, #e11d48, #be123c)' : 'transparent',
+                    color: adultSortMode === 'popular' ? '#fff' : '#94a3b8',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '5px 12px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: adultSortMode === 'popular' ? '0 2px 8px rgba(225, 29, 72, 0.4)' : 'none'
+                  }}
+                >
+                  ⭐ Most Popular
+                </button>
+              </div>
+
+              <button
+                onClick={() => scrollAdultSlider('left')}
+                className="nm-pill"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+                title="Scroll left"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => scrollAdultSlider('right')}
+                className="nm-pill"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+                title="Scroll right"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Horizontal Slide Container */}
+          <div
+            ref={adultSliderRef}
+            style={{
+              display: 'flex',
+              gap: '16px',
+              overflowX: 'auto',
+              padding: '6px 2px 14px 2px',
+              scrollBehavior: 'smooth'
+            }}
+            className="no-scrollbar"
+          >
+            {adultAnimeList.map((item) => (
+              <Link
+                key={item.id}
+                to={`/watch/${item.slug}/episode/1`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  width: '145px',
+                  flexShrink: 0
+                }}
+                className="adult-anime-card"
+              >
+                <div
+                  style={{
+                    width: '145px',
+                    height: '205px',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(225, 29, 72, 0.25)',
+                    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.6)',
+                    position: 'relative',
+                    background: '#121422'
+                  }}
+                >
+                  <img
+                    src={item.posterImage}
+                    alt={item.title}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
+                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }}
+                  />
+
+                  {/* 18+ Crimson Tag */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      left: '8px',
+                      background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                      boxShadow: '0 2px 8px rgba(225, 29, 72, 0.5)',
+                      padding: '2px 7px',
+                      borderRadius: '6px',
+                      fontSize: '10px',
+                      fontWeight: 900,
+                      color: '#fff',
+                      letterSpacing: '0.3px'
+                    }}
+                  >
+                    18+
+                  </div>
+
+                  {/* Rating Pill */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      padding: '2px 6px',
+                      borderRadius: '9999px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#fbbf24',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px'
+                    }}
+                  >
+                    ⭐ {item.score ? item.score.toFixed(1) : '7.8'}
+                  </div>
+
+                  {/* Bottom Play Overlay */}
+                  <div
+                    className="adult-card-overlay"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%)',
+                      padding: '20px 8px 8px 8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#f43f5e'
+                    }}
+                  >
+                    <span style={{ color: '#e2e8f0', fontSize: '10px' }}>
+                      {item.type || 'TV'}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <Play size={10} style={{ fill: '#f43f5e', color: '#f43f5e' }} />
+                      <span>Watch</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title & Info */}
+                <div>
+                  <h4
+                    style={{
+                      fontSize: '13px',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: '1.3',
+                      minHeight: '34px',
+                      margin: 0,
+                      transition: 'color 0.2s ease'
+                    }}
+                    className="adult-anime-title"
+                  >
+                    {item.title}
+                  </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>
+                      {item.releasedYear || ''}
+                    </span>
+                    {item.genres && (
+                      <span style={{ fontSize: '10px', color: '#fb7185', background: 'rgba(244, 63, 94, 0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                        {item.genres.split(',')[0]}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* LOWER SECTION: FULL-WIDTH ANIME DETAILS & COMMENTS FEED (ELIMINATES EMPTY SPACES) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -1285,6 +1989,10 @@ export const Watch: React.FC = () => {
         .related-item-card:hover .related-title-text { color: var(--color-primary) !important; }
         .related-item-card:hover img { transform: scale(1.05); }
 
+        .adult-anime-card:hover .adult-anime-title { color: #f43f5e !important; }
+        .adult-anime-card:hover img { transform: scale(1.08) !important; }
+        .adult-anime-card:hover > div { border-color: rgba(225, 29, 72, 0.6) !important; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.4) !important; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -1294,6 +2002,12 @@ export const Watch: React.FC = () => {
           .details-mini-card > div { width: 100% !important; }
         }
       `}</style>
+
+      <AgeVerificationModal
+        isOpen={isAgeModalOpen}
+        onConfirm={handleAgeConfirm}
+        onDecline={handleAgeDecline}
+      />
     </div>
   );
 };

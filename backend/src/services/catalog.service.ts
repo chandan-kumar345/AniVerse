@@ -230,9 +230,23 @@ export class CatalogService {
 
     let anime;
     if (existing) {
+      // PERMANENT PROTECTION: If the anime already has a custom/uploaded poster,
+      // preserve it permanently so catalog sync never removes it!
+      const finalPoster = (existing.posterImage && (existing.posterImage.startsWith('/uploads/') || !existing.posterImage.includes('unsplash')))
+        ? existing.posterImage
+        : (poster || existing.posterImage);
+
+      const finalBanner = (existing.bannerImage && (existing.bannerImage.startsWith('/uploads/') || !existing.bannerImage.includes('unsplash')))
+        ? existing.bannerImage
+        : (banner || existing.bannerImage);
+
       anime = await prisma.anime.update({
         where: { id: existing.id },
-        data: animeData
+        data: {
+          ...animeData,
+          posterImage: finalPoster,
+          bannerImage: finalBanner
+        }
       });
     } else {
       anime = await prisma.anime.create({

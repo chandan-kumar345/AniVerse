@@ -1,6 +1,9 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SUB_ONLY_SLUGS = exports.SUB_ONLY_MAL_IDS = exports.HINDI_KEYWORD_REGEX = exports.HINDI_DUBBED_MAL_IDS = void 0;
+exports.SUB_ONLY_SLUGS = exports.SUB_ONLY_MAL_IDS = exports.ANIWAVE_SLUG_MAP = exports.HINDI_KEYWORD_REGEX = exports.HINDI_DUBBED_MAL_IDS = void 0;
 exports.checkIfAnimeHasHindi = checkIfAnimeHasHindi;
 exports.checkIfAnimeHasDub = checkIfAnimeHasDub;
 exports.getAllAnime = getAllAnime;
@@ -12,7 +15,12 @@ exports.getEpisodeDetail = getEpisodeDetail;
 exports.getAutocompleteSuggestions = getAutocompleteSuggestions;
 exports.getAllGenres = getAllGenres;
 exports.getEpisodeSources = getEpisodeSources;
+exports.downloadEpisode = downloadEpisode;
+exports.downloadFileProxy = downloadFileProxy;
 const client_1 = require("@prisma/client");
+const axios_1 = __importDefault(require("axios"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 const videoExtractor_service_1 = require("../services/videoExtractor.service");
 const prisma = new client_1.PrismaClient();
 exports.HINDI_DUBBED_MAL_IDS = new Set([
@@ -38,6 +46,44 @@ exports.HINDI_DUBBED_MAL_IDS = new Set([
     52742, // Haikyu!!
 ]);
 exports.HINDI_KEYWORD_REGEX = /\b(jujutsu|demon slayer|kimetsu|solo leveling|chainsaw man|my hero academia|boku no hero|dragon ball|naruto|boruto|one piece|death note|kaiju|spy x family|blue lock|black clover|bleach|suzume|weathering with you|your name|dandadan|dan da dan|wind breaker|dr\.?\s*stone|slime)\b/i;
+exports.ANIWAVE_SLUG_MAP = {
+    'solo-leveling': 'ore-dake-level-up-na-ken-76040',
+    'solo-leveling-season-2': 'ore-dake-level-up-na-ken-season-2-arise-from-the-shadow-82064',
+    'jujutsu-kaisen': 'jujutsu-kaisen-tv-534',
+    'jujutsu-kaisen-season-2': 'jujutsu-kaisen-2nd-season-80674',
+    'demon-slayer': 'kimetsu-no-yaiba-47',
+    'demon-slayer-kimetsu-no-yaiba': 'kimetsu-no-yaiba-47',
+    'attack-on-titan': 'shingeki-no-kyojin-4',
+    'shingeki-no-kyojin': 'shingeki-no-kyojin-4',
+    'one-piece': 'one-piece-100',
+    'naruto': 'naruto-677',
+    'naruto-shippuden': 'naruto-shippuuden-676',
+    'bleach': 'bleach-140',
+    'bleach-thousand-year-blood-war': 'bleach-sennen-kessen-hen-80126',
+    'chainsaw-man': 'chainsaw-man-80327',
+    'my-hero-academia': 'boku-no-hero-academia-38',
+    'boku-no-hero-academia': 'boku-no-hero-academia-38',
+    'death-note': 'death-note-60',
+    'hunter-x-hunter': 'hunter-x-hunter-2011-82',
+    'frieren-beyond-journeys-end': 'sousou-no-frieren-81338',
+    'sousou-no-frieren': 'sousou-no-frieren-81338',
+    'blue-lock': 'blue-lock-80414',
+    'blue-lock-season-2': 'blue-lock-vs-u-20-japan-82084',
+    'dandadan': 'dandadan-82411',
+    'kaiju-no-8': 'kaijuu-8-gou-81822',
+    'kaiju-8': 'kaijuu-8-gou-81822',
+    'wind-breaker': 'wind-breaker-81781',
+    'tower-of-god': 'kami-no-tou-1111',
+    'dr-stone': 'dr-stone-103',
+    'vinland-saga': 'vinland-saga-104',
+    'tokyo-ghoul': 'tokyo-ghoul-76',
+    'spy-x-family': 'spy-x-family-80108',
+    'grand-blue-dreaming': 'grand-blue-802',
+    'grand-blue': 'grand-blue-802',
+    'aoashi': 'ao-ashi-80164',
+    'ao-ashi': 'ao-ashi-80164',
+    'aoashi-season-2': 'ao-ashi-80164'
+};
 function checkIfAnimeHasHindi(anime) {
     if (!anime)
         return false;
@@ -60,11 +106,19 @@ function checkIfAnimeHasDub(anime) {
         return false;
     if (anime.hasDub === false)
         return false;
+    // 18+ and Mature titles are strictly Japanese Sub only (no licensed English dub)
+    const isMature = anime.rating === '18+' ||
+        anime.rating === 'Rx' ||
+        anime.rating === 'R+' ||
+        Boolean(anime.genres && (anime.genres.includes('18+') ||
+            /hentai|mature/i.test(anime.genres)));
+    if (isMature)
+        return false;
     if (anime.malId && exports.SUB_ONLY_MAL_IDS.has(anime.malId))
         return false;
     if (anime.slug && exports.SUB_ONLY_SLUGS.has(anime.slug))
         return false;
-    return true;
+    return Boolean(anime.hasDub ?? true);
 }
 function slugify(text) {
     return text
@@ -525,22 +579,136 @@ async function getAiredEpisodeCountFromAniList(malId) {
         return null;
     }
 }
+const EPISODE_COUNT_CACHE = new Map();
+const KNOWN_EPISODE_COUNTS = {
+    19: 74, // Monster
+    269: 366, // Bleach
+    41467: 13, // Bleach: Thousand-Year Blood War
+    53998: 13, // Bleach TYBW Part 2
+    57495: 13, // Bleach TYBW Part 3
+    20: 220, // Naruto
+    1735: 500, // Naruto Shippuden
+    34566: 293, // Boruto: Naruto Next Generations
+    11061: 148, // Hunter x Hunter (2011)
+    136: 62, // Hunter x Hunter (1999)
+    5114: 64, // Fullmetal Alchemist: Brotherhood
+    121: 51, // Fullmetal Alchemist (2003)
+    1535: 37, // Death Note
+    16498: 25, // Attack on Titan Season 1
+    25777: 12, // Attack on Titan Season 2
+    35760: 22, // Attack on Titan Season 3
+    40028: 16, // Attack on Titan Final Season Part 1
+    48583: 12, // Attack on Titan Final Season Part 2
+    1575: 25, // Code Geass R1
+    2904: 25, // Code Geass R2
+    9253: 24, // Steins;Gate
+    30484: 23, // Steins;Gate 0
+    1: 26, // Cowboy Bebop
+    37521: 24, // Vinland Saga Season 1
+    49387: 24, // Vinland Saga Season 2
+    33: 25, // Berserk (1997)
+    32379: 12, // Berserk (2016)
+    34055: 12, // Berserk (2017)
+    31339: 12, // Drifters
+    30: 26, // Neon Genesis Evangelion
+    245: 43, // Great Teacher Onizuka
+    877: 47, // Nana
+    777: 10, // Hellsing Ultimate
+    42310: 10, // Cyberpunk: Edgerunners
+    44511: 12, // Chainsaw Man
+    40748: 24, // Jujutsu Kaisen Season 1
+    51009: 23, // Jujutsu Kaisen Season 2
+    38000: 26, // Demon Slayer Season 1
+    47778: 11, // Demon Slayer: Entertainment District
+    51019: 11, // Demon Slayer: Swordsmith Village
+    55701: 8, // Demon Slayer: Hashira Training
+    31964: 13, // My Hero Academia Season 1
+    33486: 25, // My Hero Academia Season 2
+    36456: 25, // My Hero Academia Season 3
+    38408: 25, // My Hero Academia Season 4
+    41587: 25, // My Hero Academia Season 5
+    49918: 25, // My Hero Academia Season 6
+    53580: 21, // My Hero Academia Season 7
+    20583: 25, // Haikyuu!! Season 1
+    28891: 25, // Haikyuu!! Season 2
+    32935: 10, // Haikyuu!! Season 3
+    38883: 25, // Haikyuu!! Season 4
+    32182: 12, // Mob Psycho 100
+    37510: 13, // Mob Psycho 100 II
+    50172: 12, // Mob Psycho 100 III
+    30276: 12, // One Punch Man
+    34134: 12, // One Punch Man Season 2
+    22319: 12, // Tokyo Ghoul
+    27899: 12, // Tokyo Ghoul Root A
+    36511: 12, // Tokyo Ghoul:re
+    37806: 12, // Tokyo Ghoul:re 2nd
+    22535: 24, // Parasyte -the maxim-
+    13601: 22, // Psycho-Pass
+    31043: 12, // Erased
+    4224: 25, // Toradora!
+    23273: 22, // Your Lie in April
+    2167: 23, // Clannad
+    4181: 24, // Clannad: After Story
+    33352: 13, // Violet Evergarden
+    29803: 13, // Overlord
+    31240: 25, // Re:Zero
+    11757: 25, // Sword Art Online
+    30831: 10, // KonoSuba
+    48316: 20, // The Eminence in Shadow
+    39535: 11, // Mushoku Tensei
+    52991: 28, // Frieren: Beyond Journey's End
+    52299: 12, // Solo Leveling
+    52588: 12, // Kaiju No. 8
+    57334: 12, // Dandadan
+    49596: 24, // Blue Lock
+    38671: 12, // Dr. Stone
+    34572: 170, // Black Clover
+    12696: 153, // Dragon Ball
+    813: 291, // Dragon Ball Z
+    30694: 131, // Dragon Ball Super
+    223: 64, // Dragon Ball GT
+    6702: 175, // Fairy Tail
+    918: 201, // Gintama
+    14719: 26, // JoJo Season 1
+    20899: 48, // JoJo Stardust Crusaders
+    31478: 39, // JoJo Diamond is Unbreakable
+    37991: 39, // JoJo Golden Wind
+    48661: 38, // JoJo Stone Ocean
+    39551: 24, // Slime Isekai Season 2
+    34599: 12, // Made in Abyss
+    37105: 12, // Grand Blue Dreaming
+    49052: 24, // Aoashi Season 1
+    61603: 12 // Aoashi Season 2
+};
 async function getDynamicEpisodeCount(title, malId, dbCount, type) {
     if (type && (type.toUpperCase() === 'MOVIE' || type.toUpperCase() === 'SPECIAL')) {
         return 1;
     }
-    const titleLower = title.toLowerCase();
+    const titleLower = title.toLowerCase().trim();
     if (titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban')) {
         return 1;
     }
-    // 1. Fetch exact aired count from AniList if malId exists
+    // 1. Check in-memory cache first
+    if (malId && EPISODE_COUNT_CACHE.has(malId)) {
+        return EPISODE_COUNT_CACHE.get(malId);
+    }
+    if (EPISODE_COUNT_CACHE.has(titleLower)) {
+        return EPISODE_COUNT_CACHE.get(titleLower);
+    }
+    // 2. Exact check in known completed series dictionary
+    if (malId && KNOWN_EPISODE_COUNTS[malId]) {
+        EPISODE_COUNT_CACHE.set(malId, KNOWN_EPISODE_COUNTS[malId]);
+        return KNOWN_EPISODE_COUNTS[malId];
+    }
+    // 3. Fetch exact aired count from AniList if malId exists
     if (malId) {
         const aniListCount = await getAiredEpisodeCountFromAniList(malId);
-        if (aniListCount !== null) {
+        if (aniListCount !== null && aniListCount > 0) {
+            EPISODE_COUNT_CACHE.set(malId, aniListCount);
             return aniListCount;
         }
     }
-    // 2. Mathematical fallbacks if AniList fails or malId is not set
+    // 4. Mathematical fallbacks for ongoing franchises
     if (titleLower.includes('one piece') || malId === 21) {
         const startDate = new Date('2024-07-14');
         const startEp = 1112;
@@ -552,16 +720,20 @@ async function getDynamicEpisodeCount(title, malId, dbCount, type) {
         }
         return startEp;
     }
-    // Fallbacks for completed shows
-    if (malId === 1735 || titleLower === 'naruto shippuden')
+    // 5. Popular title name matches
+    if (titleLower === 'monster' || titleLower.startsWith('monster ('))
+        return 74;
+    if (titleLower.includes('drifters'))
+        return 12;
+    if (titleLower === 'naruto shippuden')
         return 500;
-    if (malId === 20 || titleLower === 'naruto')
+    if (titleLower === 'naruto')
         return 220;
     if (titleLower.includes('boruto'))
         return 293;
-    if (malId === 269 || (titleLower === 'bleach' && !titleLower.includes('thousand')))
+    if (titleLower === 'bleach')
         return 366;
-    if (malId === 11061 || titleLower.includes('hunter x hunter'))
+    if (titleLower.includes('hunter x hunter'))
         return 148;
     if (titleLower.includes('fullmetal alchemist'))
         return 64;
@@ -569,21 +741,28 @@ async function getDynamicEpisodeCount(title, malId, dbCount, type) {
         return 37;
     if (titleLower.includes('code geass'))
         return 25;
-    if (titleLower.includes('my hero academia') && !titleLower.includes('season'))
-        return 25;
-    if (titleLower.includes('demon slayer') && titleLower.includes('entertainment'))
-        return 11;
-    if (titleLower.includes('demon slayer') && titleLower.includes('swordsmith'))
-        return 11;
-    if (titleLower.includes('demon slayer') && !titleLower.includes('mugen') && !titleLower.includes('hashira'))
+    if (titleLower.includes('cowboy bebop'))
         return 26;
-    if (titleLower.includes('jujutsu kaisen') && !titleLower.includes('0'))
+    if (titleLower.includes('steins;gate') || titleLower.includes('steins gate'))
         return 24;
-    // If this anime has episodes in the database, respect the exact count!
-    if (dbCount > 0) {
+    if (titleLower.includes('vinland saga'))
+        return 24;
+    if (titleLower.includes('berserk'))
+        return 25;
+    if (titleLower.includes('jojos bizarre adventure') || titleLower.includes("jojo's bizarre adventure"))
+        return 26;
+    if (titleLower.includes('black clover'))
+        return 170;
+    if (titleLower.includes('fairy tail'))
+        return 175;
+    if (titleLower.includes('gintama'))
+        return 201;
+    // 6. If this anime has more than 1 episode in the database, respect that count
+    if (dbCount > 1) {
         return dbCount;
     }
-    return 1;
+    // 7. Standard anime season fallback (at least 12 episodes for TV series, never just 1!)
+    return 12;
 }
 async function getAllAnime(req, res) {
     try {
@@ -607,6 +786,7 @@ async function getAllAnime(req, res) {
                 andConditions.push({
                     OR: [
                         { genres: { contains: '18+' } },
+                        { rating: '18+' },
                         { genres: { contains: 'Ecchi' } }
                     ]
                 });
@@ -616,7 +796,35 @@ async function getAllAnime(req, res) {
             }
         }
         if (type) {
-            where.type = type.toUpperCase();
+            const t = type.trim().toLowerCase();
+            if (t === 'movie') {
+                andConditions.push({
+                    OR: [
+                        { type: 'Movie' },
+                        { type: 'MOVIE' },
+                        { type: 'movie' },
+                        { contentType: 'movie' }
+                    ]
+                });
+            }
+            else if (t === 'tv') {
+                andConditions.push({
+                    OR: [
+                        { type: 'TV' },
+                        { type: 'tv' },
+                        { type: 'Tv' },
+                        { contentType: 'series' }
+                    ]
+                });
+            }
+            else {
+                andConditions.push({
+                    OR: [
+                        { type: type.toUpperCase() },
+                        { type: type }
+                    ]
+                });
+            }
         }
         if (contentType) {
             const ct = contentType.toLowerCase();
@@ -624,7 +832,9 @@ async function getAllAnime(req, res) {
                 andConditions.push({
                     OR: [
                         { contentType: 'movie' },
-                        { type: 'Movie' }
+                        { type: 'Movie' },
+                        { type: 'MOVIE' },
+                        { type: 'movie' }
                     ]
                 });
             }
@@ -632,7 +842,7 @@ async function getAllAnime(req, res) {
                 andConditions.push({
                     OR: [
                         { contentType: 'series' },
-                        { type: { in: ['TV', 'OVA', 'ONA', 'Special'] } }
+                        { type: { in: ['TV', 'OVA', 'ONA', 'Special', 'tv', 'Tv'] } }
                     ]
                 });
             }
@@ -804,10 +1014,8 @@ async function getAnimeDetail(req, res) {
         if (!anime) {
             return res.status(404).json({ error: 'Anime not found' });
         }
-        const hasCustomStreams = anime.episodes.some((e) => e.videoUrl && !e.videoUrl.includes('BigBuckBunny') && !e.videoUrl.includes('commondatastorage.googleapis.com'));
-        const isMature = Boolean(anime.rating === '18+' || anime.genres?.includes('18+'));
         const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length, anime.type);
-        if (!hasCustomStreams && !isMature && anime.episodes.length < targetEpCount) {
+        if (anime.episodes.length < targetEpCount) {
             const sampleVideos = [
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -838,8 +1046,9 @@ async function getAnimeDetail(req, res) {
                 }
             }
             const isAiring = anime.status === 'Currently Airing';
+            const animeHasDub = checkIfAnimeHasDub(anime);
             const episodesWithDub = newEpisodes.map(ep => {
-                let epHasDub = true;
+                let epHasDub = animeHasDub;
                 if (isAiring && ep.episodeNumber >= targetEpCount - 1) {
                     epHasDub = false;
                 }
@@ -853,8 +1062,9 @@ async function getAnimeDetail(req, res) {
         }
         else {
             const isAiring = anime.status === 'Currently Airing';
+            const animeHasDub = checkIfAnimeHasDub(anime);
             const episodesWithDub = anime.episodes.map((ep) => {
-                let epHasDub = true;
+                let epHasDub = animeHasDub;
                 if (isAiring && ep.episodeNumber >= targetEpCount - 1) {
                     epHasDub = false;
                 }
@@ -1042,6 +1252,8 @@ async function getEpisodeDetail(req, res) {
                 synopsis: null,
                 releaseDate: null,
                 videoUrl: videoUrl,
+                dubVideoUrl: anime.hasDub ? videoUrl : null,
+                hindiVideoUrl: anime.hasHindi ? videoUrl : null,
                 thumbnail: anime.bannerImage || anime.posterImage,
                 duration: '24 min',
                 status: 'AVAILABLE',
@@ -1181,9 +1393,18 @@ async function getEpisodeSources(req, res) {
         if (!availableAudios.includes(activeTranslation)) {
             activeTranslation = availableAudios[0] || 'sub';
         }
-        // Check if the episode in local DB has a custom direct embed/stream URL
+        // Check if the episode in local DB has a custom direct embed/stream URL for the active translation
         const currentEp = anime.episodes?.find((e) => e.episodeNumber === episodeNumber);
-        let customEmbedUrl = currentEp?.videoUrl || '';
+        let customEmbedUrl = '';
+        if (activeTranslation === 'dub') {
+            customEmbedUrl = currentEp?.dubVideoUrl || '';
+        }
+        else if (activeTranslation === 'hindi') {
+            customEmbedUrl = currentEp?.hindiVideoUrl || '';
+        }
+        else {
+            customEmbedUrl = currentEp?.videoUrl || '';
+        }
         if (customEmbedUrl &&
             customEmbedUrl.startsWith('http') &&
             !customEmbedUrl.includes('/new_player/') &&
@@ -1199,21 +1420,24 @@ async function getEpisodeSources(req, res) {
             catch (_) { }
         }
         const hasCustomVideoUrl = Boolean(customEmbedUrl &&
-            !customEmbedUrl.includes('sample/BigBuckBunny') &&
-            !customEmbedUrl.includes('commondatastorage.googleapis.com'));
+            customEmbedUrl.trim().length > 0 &&
+            !customEmbedUrl.includes('sample/BigBuckBunny'));
+        // Auto-heal MAL ID if not present
+        let animeMalId = anime.malId;
+        if (!animeMalId) {
+            animeMalId = await autoHealMalId(anime.id, anime.title);
+        }
         // Prioritize high-performance, verified working servers:
         // If a custom stream or embed URL exists, default to that!
-        const defaultWorkingServer = hasCustomVideoUrl ? 'custom_source' : 'autoembed';
+        // For DUB & HINDI, default to VidSrc Anime which has dedicated multi-audio stream support!
+        const defaultWorkingServer = hasCustomVideoUrl
+            ? 'custom_source'
+            : ((activeTranslation === 'dub' || activeTranslation === 'hindi') ? 'vidsrc' : (animeMalId ? 'vidsrc' : 'autoembed'));
         let activeServer = requestedServer;
         // Auto-heal dead servers or deprecated defaults to the primary working server
         const deadOrDeprecated = ['vidplay', 'dghg', 'raretoon', 'byfms', 'datsav'];
         if (!activeServer || deadOrDeprecated.includes(activeServer)) {
             activeServer = defaultWorkingServer;
-        }
-        // Auto-heal MAL ID if not present
-        let animeMalId = anime.malId;
-        if (!animeMalId) {
-            animeMalId = await autoHealMalId(anime.id, anime.title);
         }
         // ==========================================
         // 1. MOVIE TMDB MAPPINGS & DETECTION
@@ -1275,9 +1499,28 @@ async function getEpisodeSources(req, res) {
             5681: 26519, // Summer Wars
             12355: 110420, // Wolf Children
             2236: 14069, // The Girl Who Leapt Through Time
-            58272: 1244857 // Look Back
+            58272: 1244857, // Look Back
+            48897: 826909, // Overlord: The Sacred Kingdom
+            49994: 1011985, // Mobile Suit Gundam SEED FREEDOM
+            55357: 1131438, // Bocchi the Rock! Re:
+            52410: 1160164, // Mononoke the Movie: Phantom in the Rain
+            53820: 1058694, // The Colors Within
+            37348: 581389, // DanMachi: Arrow of the Orion
+            54938: 1184918, // Given: Hiiragi mix
+            57321: 1214484, // Trapezium
+            59193: 1311134 // Demon Slayer: Infinity Castle
         };
         const MOVIE_SLUG_TMDB_MAP = {
+            'chainsaw-man-the-movie-reze-arc': 1219685,
+            'overlord-the-sacred-kingdom': 826909,
+            'mobile-suit-gundam-seed-freedom': 1011985,
+            'bocchi-the-rock-re': 1131438,
+            'mononoke-the-movie-phantom-in-the-rain': 1160164,
+            'the-colors-within': 1058694,
+            'danmachi-arrow-of-the-orion': 581389,
+            'given-hiiragi-mix': 1184918,
+            'trapezium': 1214484,
+            'demon-slayer-infinity-castle-movie': 1311134,
             'jujutsu-kaisen-0': 810693,
             'demon-slayer-kimetsu-no-yaiba-the-movie-mugen-train': 635302,
             'demon-slayer-mugen-train-movie': 635302,
@@ -1350,36 +1593,37 @@ async function getEpisodeSources(req, res) {
                     movieTmdbId = found[1];
                 }
             }
+            const movieAniwaveSlug = exports.ANIWAVE_SLUG_MAP[slug] || '';
             const subServers = [
-                ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: Direct Stream / Embed', embedUrl: customEmbedUrl }] : []),
-                { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : '') },
-                { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : '') },
-                { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : '') },
-                { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : '') },
-                { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` : '') },
-                { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: movieTmdbId ? `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : '') }
+                ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
+                { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
+                { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || ''))) },
+                { id: 'autoembed', name: 'HD-3: AniVerse Auto (Sub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
+                { id: 'vidsrc_me', name: 'HD-4: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` : (customEmbedUrl || '')) },
+                { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
+                { id: 'twoembed', name: 'HD-6: AniVerse Cinema (Sub)', embedUrl: movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) }
             ];
             const dubServers = hasDub ? [
-                ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: Direct Stream / Embed', embedUrl: customEmbedUrl }] : []),
-                { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : '') },
-                { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=en` : '') },
-                { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : '') },
-                { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : '') },
-                { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&dub=1` : '') },
-                { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: movieTmdbId ? `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : '') }
+                ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
+                { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=en` : (customEmbedUrl || '')) },
+                { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&dub=1` : (customEmbedUrl || '')) },
+                { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || ''))) },
+                { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
+                { id: 'twoembed', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (customEmbedUrl || '')) },
+                { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) }
             ] : [];
             const hindiServers = hasHindi ? [
-                { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : '') },
-                { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : '') },
-                { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : '') },
-                { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : '') },
-                { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` : '') },
-                { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: movieTmdbId ? `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : '') }
+                ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
+                { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
+                { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` : (customEmbedUrl || '')) },
+                { id: 'autoembed', name: 'HD-3: AniVerse Hindi (Auto)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
+                { id: 'vidsrc_io', name: 'HD-4: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
+                { id: 'videasy', name: 'HD-5: AniVerse Hindi (Cinema)', embedUrl: movieTmdbId ? `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) }
             ] : [];
             const serversByAudio = {
                 sub: subServers,
-                dub: dubServers,
-                hindi: hindiServers
+                ...(hasDub && dubServers.length > 0 ? { dub: dubServers } : {}),
+                ...(hasHindi && hindiServers.length > 0 ? { hindi: hindiServers } : {})
             };
             const serverSources = serversByAudio[activeTranslation] || subServers;
             const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
@@ -1485,7 +1729,22 @@ async function getEpisodeSources(req, res) {
             'black-clover': 73223,
             'dragon-ball-z': 12971,
             'dragon-ball-super': 62710,
-            'dragon-ball': 12696,
+            'dragon-ball-gt': 12697,
+            'dragon-ball': 12609,
+            'inuyasha': 35610,
+            'detective-conan': 30983,
+            'case-closed': 30983,
+            'monster': 1919,
+            'yu-yu-hakusho': 32626,
+            'slam-dunk': 46263,
+            'katekyo-hitman-reborn': 31057,
+            'soul-eater': 32174,
+            'dgray-man': 31393,
+            'sailor-moon': 36173,
+            'toriko': 40381,
+            'rurouni-kenshin': 2490,
+            'hajime-no-ippo': 46300,
+            'jojos-bizarre-adventure': 45790,
             'chainsaw-man': 114410,
             'tokyo-ghoul': 61374,
             'spy-x-family': 120089,
@@ -1515,6 +1774,17 @@ async function getEpisodeSources(req, res) {
             'haikyuu': 60863,
             'fairy-tail': 46261,
             'blue-lock': 135898,
+            'blue-lock-season-2': 135898,
+            'aoashi': 123490,
+            'ao-ashi': 123490,
+            'aoashi-season-2': 123490,
+            'grand-blue': 80894,
+            'grand-blue-dreaming': 80894,
+            'blue-box': 207347,
+            'blue-box-season-2': 207347,
+            'ao-no-hako': 207347,
+            'kamui-hes-behind-you': 285552,
+            'kamui': 285552,
             'hells-paradise': 157059,
             'oshi-no-ko': 203737,
             'overlord': 64196,
@@ -1524,6 +1794,305 @@ async function getEpisodeSources(req, res) {
             'wind-breaker': 222666,
             'shangri-la-frontier': 205424,
             'konosuba': 65947
+        };
+        let aniwaveSlug = exports.ANIWAVE_SLUG_MAP[slug] || '';
+        if (!aniwaveSlug) {
+            const matchedKey = Object.keys(exports.ANIWAVE_SLUG_MAP).find(k => slug.includes(k) || k.includes(slug));
+            if (matchedKey)
+                aniwaveSlug = exports.ANIWAVE_SLUG_MAP[matchedKey];
+        }
+        const LONG_SERIES_TMDB_MAP = {
+            // 1. One Piece (MAL 21 / TMDB 37854) - 21+ Seasons
+            21: {
+                tmdbId: 37854,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 61 },
+                    { seasonNumber: 2, startEp: 62, endEp: 77 },
+                    { seasonNumber: 3, startEp: 78, endEp: 92 },
+                    { seasonNumber: 4, startEp: 93, endEp: 130 },
+                    { seasonNumber: 5, startEp: 131, endEp: 143 },
+                    { seasonNumber: 6, startEp: 144, endEp: 195 },
+                    { seasonNumber: 7, startEp: 196, endEp: 228 },
+                    { seasonNumber: 8, startEp: 229, endEp: 263 },
+                    { seasonNumber: 9, startEp: 264, endEp: 336 },
+                    { seasonNumber: 10, startEp: 337, endEp: 381 },
+                    { seasonNumber: 11, startEp: 382, endEp: 407 },
+                    { seasonNumber: 12, startEp: 408, endEp: 421 },
+                    { seasonNumber: 13, startEp: 422, endEp: 456 },
+                    { seasonNumber: 14, startEp: 457, endEp: 516 },
+                    { seasonNumber: 15, startEp: 517, endEp: 578 },
+                    { seasonNumber: 16, startEp: 579, endEp: 628 },
+                    { seasonNumber: 17, startEp: 629, endEp: 746 },
+                    { seasonNumber: 18, startEp: 747, endEp: 782 },
+                    { seasonNumber: 19, startEp: 783, endEp: 891 },
+                    { seasonNumber: 20, startEp: 892, endEp: 1088 },
+                    { seasonNumber: 21, startEp: 1089, endEp: 2000 },
+                ]
+            },
+            // 2. Naruto (MAL 20 / TMDB 46260) - 4 Seasons (220 eps)
+            20: {
+                tmdbId: 46260,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 52 },
+                    { seasonNumber: 2, startEp: 53, endEp: 104 },
+                    { seasonNumber: 3, startEp: 105, endEp: 158 },
+                    { seasonNumber: 4, startEp: 159, endEp: 220 },
+                ]
+            },
+            // 3. Naruto Shippuden (MAL 1735 / TMDB 31910) - 20 Seasons (500 eps)
+            1735: {
+                tmdbId: 31910,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 32 },
+                    { seasonNumber: 2, startEp: 33, endEp: 53 },
+                    { seasonNumber: 3, startEp: 54, endEp: 71 },
+                    { seasonNumber: 4, startEp: 72, endEp: 95 },
+                    { seasonNumber: 5, startEp: 96, endEp: 126 },
+                    { seasonNumber: 6, startEp: 127, endEp: 156 },
+                    { seasonNumber: 7, startEp: 157, endEp: 163 },
+                    { seasonNumber: 8, startEp: 164, endEp: 187 },
+                    { seasonNumber: 9, startEp: 188, endEp: 208 },
+                    { seasonNumber: 10, startEp: 209, endEp: 233 },
+                    { seasonNumber: 11, startEp: 234, endEp: 254 },
+                    { seasonNumber: 12, startEp: 255, endEp: 287 },
+                    { seasonNumber: 13, startEp: 288, endEp: 301 },
+                    { seasonNumber: 14, startEp: 302, endEp: 321 },
+                    { seasonNumber: 15, startEp: 322, endEp: 350 },
+                    { seasonNumber: 16, startEp: 351, endEp: 371 },
+                    { seasonNumber: 17, startEp: 372, endEp: 384 },
+                    { seasonNumber: 18, startEp: 385, endEp: 439 },
+                    { seasonNumber: 19, startEp: 440, endEp: 460 },
+                    { seasonNumber: 20, startEp: 461, endEp: 500 },
+                ]
+            },
+            // 4. Hunter x Hunter 2011 (MAL 11061 / TMDB 46298) - 3 Seasons (148 eps)
+            11061: {
+                tmdbId: 46298,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 62 },
+                    { seasonNumber: 2, startEp: 63, endEp: 136 },
+                    { seasonNumber: 3, startEp: 137, endEp: 148 },
+                ]
+            },
+            // 5. Hunter x Hunter 1999 (MAL 136 / TMDB 46297) - 62 eps
+            136: {
+                tmdbId: 46297,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 62 }
+                ]
+            },
+            // 6. Fairy Tail (MAL 6702 / TMDB 46261) - 8 Seasons (328 eps)
+            6702: {
+                tmdbId: 46261,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 48 },
+                    { seasonNumber: 2, startEp: 49, endEp: 96 },
+                    { seasonNumber: 3, startEp: 97, endEp: 150 },
+                    { seasonNumber: 4, startEp: 151, endEp: 175 },
+                    { seasonNumber: 5, startEp: 176, endEp: 226 },
+                    { seasonNumber: 6, startEp: 227, endEp: 265 },
+                    { seasonNumber: 7, startEp: 266, endEp: 277 },
+                    { seasonNumber: 8, startEp: 278, endEp: 328 },
+                ]
+            },
+            // 7. Gintama (MAL 918 / TMDB 46299) - 11 Seasons (367 eps)
+            918: {
+                tmdbId: 46299,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 49 },
+                    { seasonNumber: 2, startEp: 50, endEp: 99 },
+                    { seasonNumber: 3, startEp: 100, endEp: 150 },
+                    { seasonNumber: 4, startEp: 151, endEp: 201 },
+                    { seasonNumber: 5, startEp: 202, endEp: 252 },
+                    { seasonNumber: 6, startEp: 253, endEp: 265 },
+                    { seasonNumber: 7, startEp: 266, endEp: 316 },
+                    { seasonNumber: 8, startEp: 317, endEp: 328 },
+                    { seasonNumber: 9, startEp: 329, endEp: 341 },
+                    { seasonNumber: 10, startEp: 342, endEp: 353 },
+                    { seasonNumber: 11, startEp: 354, endEp: 367 },
+                ]
+            },
+            // 8. Bleach Original (MAL 269 / TMDB 30984) - Season 1 (366 eps)
+            269: {
+                tmdbId: 30984,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 366 }
+                ]
+            },
+            // 9. Dragon Ball Z (MAL 813 / TMDB 12971) - Season 1 (291 eps)
+            813: {
+                tmdbId: 12971,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 291 }
+                ]
+            },
+            // 10. Dragon Ball (MAL 223 / TMDB 12609) - Season 1 (153 eps)
+            223: {
+                tmdbId: 12609,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 153 }
+                ]
+            },
+            // 11. Dragon Ball Super (MAL 30694 / TMDB 62710) - Season 1 (131 eps)
+            30694: {
+                tmdbId: 62710,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 131 }
+                ]
+            },
+            // 12. Dragon Ball GT (MAL 225 / TMDB 12697) - Season 1 (64 eps)
+            225: {
+                tmdbId: 12697,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 64 }
+                ]
+            },
+            // 13. Black Clover (MAL 34572 / TMDB 73223) - Season 1 (170 eps)
+            34572: {
+                tmdbId: 73223,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 170 }
+                ]
+            },
+            // 14. InuYasha (MAL 249 / TMDB 35610) - Season 1 (167 eps)
+            249: {
+                tmdbId: 35610,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 167 }
+                ]
+            },
+            // 15. Detective Conan / Case Closed (MAL 235 / TMDB 30983)
+            235: {
+                tmdbId: 30983,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 2000 }
+                ]
+            },
+            // 16. Boruto: Naruto Next Generations (MAL 34566 / TMDB 70881) - 293 eps
+            34566: {
+                tmdbId: 70881,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 293 }
+                ]
+            },
+            // 17. Monster (MAL 19 / TMDB 1919) - 74 eps
+            19: {
+                tmdbId: 1919,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 74 }
+                ]
+            },
+            // 18. Yu Yu Hakusho (MAL 392 / TMDB 32626) - 112 eps
+            392: {
+                tmdbId: 32626,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 112 }
+                ]
+            },
+            // 19. JoJo's Bizarre Adventure (MAL 14719 / TMDB 45790) - 5 Seasons (190 eps)
+            14719: {
+                tmdbId: 45790,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 26 },
+                    { seasonNumber: 2, startEp: 27, endEp: 74 },
+                    { seasonNumber: 3, startEp: 75, endEp: 113 },
+                    { seasonNumber: 4, startEp: 114, endEp: 152 },
+                    { seasonNumber: 5, startEp: 153, endEp: 190 },
+                ]
+            },
+            // 20. Slam Dunk (MAL 170 / TMDB 46263) - 101 eps
+            170: {
+                tmdbId: 46263,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 101 }
+                ]
+            },
+            // 21. Katekyo Hitman Reborn! (MAL 1604 / TMDB 31057) - 203 eps
+            1604: {
+                tmdbId: 31057,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 203 }
+                ]
+            },
+            // 22. Soul Eater (MAL 3588 / TMDB 32174) - 51 eps
+            3588: {
+                tmdbId: 32174,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 51 }
+                ]
+            },
+            // 23. D.Gray-man (MAL 1482 / TMDB 31393) - 103 eps
+            1482: {
+                tmdbId: 31393,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 103 }
+                ]
+            },
+            // 24. Sailor Moon (MAL 530 / TMDB 36173) - 5 Seasons (200 eps)
+            530: {
+                tmdbId: 36173,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 46 },
+                    { seasonNumber: 2, startEp: 47, endEp: 89 },
+                    { seasonNumber: 3, startEp: 90, endEp: 127 },
+                    { seasonNumber: 4, startEp: 128, endEp: 166 },
+                    { seasonNumber: 5, startEp: 167, endEp: 200 },
+                ]
+            },
+            // 25. Toriko (MAL 10033 / TMDB 40381) - 147 eps
+            10033: {
+                tmdbId: 40381,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 147 }
+                ]
+            },
+            // 26. Rurouni Kenshin (MAL 45 / TMDB 2490) - 3 Seasons (95 eps)
+            45: {
+                tmdbId: 2490,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 27 },
+                    { seasonNumber: 2, startEp: 28, endEp: 62 },
+                    { seasonNumber: 3, startEp: 63, endEp: 95 },
+                ]
+            },
+            // 27. Hajime no Ippo (MAL 263 / TMDB 46300) - 75 eps
+            263: {
+                tmdbId: 46300,
+                seasons: [
+                    { seasonNumber: 1, startEp: 1, endEp: 75 }
+                ]
+            }
+        };
+        const LONG_SERIES_SLUG_MAP = {
+            'one-piece': 21,
+            'naruto-shippuden': 1735,
+            'naruto': 20,
+            'hunter-x-hunter-2011': 11061,
+            'hunter-x-hunter': 11061,
+            'fairy-tail': 6702,
+            'gintama': 918,
+            'bleach': 269,
+            'dragon-ball-z': 813,
+            'dragon-ball-super': 30694,
+            'dragon-ball-gt': 225,
+            'dragon-ball': 223,
+            'black-clover': 34572,
+            'inuyasha': 249,
+            'detective-conan': 235,
+            'case-closed': 235,
+            'boruto-naruto-next-generations': 34566,
+            'boruto': 34566,
+            'monster': 19,
+            'yu-yu-hakusho': 392,
+            'jojos-bizarre-adventure': 14719,
+            'slam-dunk': 170,
+            'katekyo-hitman-reborn': 1604,
+            'soul-eater': 3588,
+            'dgray-man': 1482,
+            'sailor-moon': 530,
+            'toriko': 10033,
+            'rurouni-kenshin': 45,
+            'hajime-no-ippo': 263
         };
         const MAL_TO_SEASON_INFO = {
             // Jujutsu Kaisen
@@ -1557,14 +2126,6 @@ async function getEpisodeSources(req, res) {
             56784: { tmdbId: 30984, seasonNumber: 2, epOffset: 26 }, // Part 3 - The Conflict
             56206: { tmdbId: 30984, seasonNumber: 2, epOffset: 26 }, // Part 3 - The Conflict
             60636: { tmdbId: 30984, seasonNumber: 2, epOffset: 39 }, // Part 4 - The Calamity
-            // Bleach Original (TMDB 30984, Season 1)
-            269: { tmdbId: 30984, seasonNumber: 1 },
-            // Naruto / Naruto Shippuden / Boruto
-            20: { tmdbId: 46260, seasonNumber: 1 },
-            1735: { tmdbId: 31910, seasonNumber: 1 },
-            34566: { tmdbId: 70881, seasonNumber: 1 },
-            // One Piece
-            21: { tmdbId: 37854, seasonNumber: 1 },
             // Chainsaw Man
             44511: { tmdbId: 114410, seasonNumber: 1 },
             // Cyberpunk Edgerunners
@@ -1575,8 +2136,6 @@ async function getEpisodeSources(req, res) {
             1535: { tmdbId: 13916, seasonNumber: 1 },
             // Fullmetal Alchemist: Brotherhood
             5114: { tmdbId: 31911, seasonNumber: 1 },
-            // Hunter x Hunter 2011
-            11061: { tmdbId: 46298, seasonNumber: 1 },
             // One Punch Man
             30276: { tmdbId: 63926, seasonNumber: 1 },
             34134: { tmdbId: 63926, seasonNumber: 2 },
@@ -1643,15 +2202,11 @@ async function getEpisodeSources(req, res) {
             52588: { tmdbId: 207396, seasonNumber: 1 },
             59489: { tmdbId: 207396, seasonNumber: 1 },
             54492: { tmdbId: 207396, seasonNumber: 1 },
-            // Black Clover
-            34572: { tmdbId: 73223, seasonNumber: 1 },
             // Haikyuu!!
             20583: { tmdbId: 60863, seasonNumber: 1 },
             28891: { tmdbId: 60863, seasonNumber: 2 },
             32935: { tmdbId: 60863, seasonNumber: 3 },
             38883: { tmdbId: 60863, seasonNumber: 4 },
-            // Fairy Tail
-            6702: { tmdbId: 46261, seasonNumber: 1 },
             // Tokyo Ghoul
             22319: { tmdbId: 61374, seasonNumber: 1 },
             // Cowboy Bebop
@@ -1667,11 +2222,52 @@ async function getEpisodeSources(req, res) {
             36474: { tmdbId: 45782, seasonNumber: 3 },
             // Hell's Paradise
             46569: { tmdbId: 157059, seasonNumber: 1 },
+            // Aoashi
+            49052: { tmdbId: 123490, seasonNumber: 1 },
+            61603: { tmdbId: 123490, seasonNumber: 1 },
+            // Grand Blue Dreaming
+            37105: { tmdbId: 80894, seasonNumber: 1 },
             // Wind Breaker
-            54900: { tmdbId: 222666, seasonNumber: 1 }
+            54900: { tmdbId: 222666, seasonNumber: 1 },
+            // Blue Box
+            57181: { tmdbId: 207347, seasonNumber: 1 },
+            61323: { tmdbId: 207347, seasonNumber: 2 },
+            // Kamui
+            63468: { tmdbId: 285552, seasonNumber: 1 }
         };
         let tmdbId = anime.tmdbId || null;
-        if (animeMalId && MAL_TO_SEASON_INFO[animeMalId]) {
+        // Check long continuous anime series first (One Piece, Naruto, Shippuden, Bleach, HxH, Fairy Tail, etc.)
+        let longSeriesConfig;
+        if (animeMalId && LONG_SERIES_TMDB_MAP[animeMalId]) {
+            longSeriesConfig = LONG_SERIES_TMDB_MAP[animeMalId];
+        }
+        else {
+            const cleanSlug = slug.toLowerCase();
+            for (const [slugKey, malIdVal] of Object.entries(LONG_SERIES_SLUG_MAP)) {
+                if (cleanSlug.includes(slugKey)) {
+                    if (slugKey === 'naruto' && cleanSlug.includes('naruto-shippuden'))
+                        continue;
+                    longSeriesConfig = LONG_SERIES_TMDB_MAP[malIdVal];
+                    if (!animeMalId)
+                        animeMalId = malIdVal;
+                    break;
+                }
+            }
+        }
+        if (longSeriesConfig) {
+            tmdbId = longSeriesConfig.tmdbId;
+            const matched = longSeriesConfig.seasons.find((s) => episodeNumber >= s.startEp && episodeNumber <= s.endEp);
+            if (matched) {
+                seasonNumber = matched.seasonNumber;
+                epNumToUse = episodeNumber - matched.startEp + 1;
+            }
+            else {
+                const last = longSeriesConfig.seasons[longSeriesConfig.seasons.length - 1];
+                seasonNumber = last.seasonNumber;
+                epNumToUse = Math.max(1, episodeNumber - last.startEp + 1);
+            }
+        }
+        else if (animeMalId && MAL_TO_SEASON_INFO[animeMalId]) {
             const mapping = MAL_TO_SEASON_INFO[animeMalId];
             tmdbId = anime.tmdbId || mapping.tmdbId;
             seasonNumber = mapping.seasonNumber;
@@ -1718,35 +2314,35 @@ async function getEpisodeSources(req, res) {
             }
         }
         const subServers = [
-            ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: Direct Stream / Embed', embedUrl: customEmbedUrl }] : []),
-            { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : '') },
-            { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : '') },
-            { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : '') },
-            { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : '') },
-            { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : '') },
-            { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: tmdbId ? `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : '') }
+            ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
+            { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+            { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || ''))) },
+            { id: 'autoembed', name: 'HD-3: AniVerse Auto (Sub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+            { id: 'vidsrc_me', name: 'HD-4: AniVerse Global (Sub)', embedUrl: tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+            { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+            { id: 'twoembed', name: 'HD-6: AniVerse Cinema (Sub)', embedUrl: tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) }
         ];
         const dubServers = hasDub ? [
-            ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: Direct Stream / Embed', embedUrl: customEmbedUrl }] : []),
-            { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : '') },
-            { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : '') },
-            { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : '') },
-            { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : '') },
-            { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : '') },
-            { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: tmdbId ? `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : '') }
+            ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
+            { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
+            { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
+            { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || ''))) },
+            { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
+            { id: 'twoembed', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
+            { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) }
         ] : [];
         const hindiServers = hasHindi ? [
-            { id: 'autoembed', name: 'HD-1: AutoEmbed Multi', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : '') },
-            { id: 'vidsrc', name: 'HD-2: Ultra HD', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : '') },
-            { id: 'vidsrc_io', name: 'HD-3: StreamCloud', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : '') },
-            { id: 'twoembed', name: 'HD-4: 2Embed Global', embedUrl: tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : '') },
-            { id: 'vidsrc_me', name: 'HD-5: VidSrc Pro', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` : '') },
-            { id: 'videasy', name: 'HD-6: VidEasy Backup', embedUrl: tmdbId ? `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : '') }
+            ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
+            { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+            { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` : (customEmbedUrl || '')) },
+            { id: 'autoembed', name: 'HD-3: AniVerse Hindi (Auto)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) },
+            { id: 'vidsrc_io', name: 'HD-4: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+            { id: 'videasy', name: 'HD-5: AniVerse Hindi (Cinema)', embedUrl: tmdbId ? `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) }
         ] : [];
         const serversByAudio = {
             sub: subServers,
-            dub: dubServers,
-            hindi: hindiServers
+            ...(hasDub && dubServers.length > 0 ? { dub: dubServers } : {}),
+            ...(hasHindi && hindiServers.length > 0 ? { hindi: hindiServers } : {})
         };
         const serverSources = serversByAudio[activeTranslation] || subServers;
         const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
@@ -1767,5 +2363,142 @@ async function getEpisodeSources(req, res) {
     catch (error) {
         console.error('Error fetching episode sources:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+/**
+ * Resolves direct downloadable stream link or clean mirror for the selected episode & audio track
+ */
+async function downloadEpisode(req, res) {
+    try {
+        const { id, epNum } = req.params;
+        const { lang } = req.query;
+        const episodeNumber = parseInt(epNum, 10) || 1;
+        const anime = await findOrCreateAnimeBySlugOrId(id);
+        if (!anime) {
+            return res.status(404).json({ error: 'Anime not found' });
+        }
+        const title = anime.title || 'Anime';
+        const hasDub = checkIfAnimeHasDub(anime);
+        const hasHindi = checkIfAnimeHasHindi(anime);
+        let audioTrack = 'SUB';
+        if (lang?.toLowerCase() === 'dub' && hasDub) {
+            audioTrack = 'DUB';
+        }
+        else if (lang?.toLowerCase() === 'hindi' && hasHindi) {
+            audioTrack = 'HINDI';
+        }
+        const cleanTitle = title.replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '_');
+        const filename = `${cleanTitle}_Ep${episodeNumber}_[${audioTrack}].mp4`;
+        // 1. Check if DB episode has custom direct video URL for requested audio
+        const currentEp = anime.episodes?.find((e) => e.episodeNumber === episodeNumber);
+        let directUrl = '';
+        if (audioTrack === 'DUB') {
+            directUrl = currentEp?.dubVideoUrl || currentEp?.videoUrl || '';
+        }
+        else if (audioTrack === 'HINDI') {
+            directUrl = currentEp?.hindiVideoUrl || '';
+        }
+        else {
+            directUrl = currentEp?.videoUrl || '';
+        }
+        // If custom URL is a direct media file (mp4, webm, m3u8), local upload, or sample video:
+        if (directUrl && (/\.(mp4|webm|m3u8)(\?|$)/i.test(directUrl) || directUrl.includes('commondatastorage.googleapis.com') || directUrl.startsWith('/uploads/'))) {
+            const proxyDownloadUrl = `/api/anime/download-file?url=${encodeURIComponent(directUrl)}&filename=${encodeURIComponent(filename)}`;
+            return res.status(200).json({
+                success: true,
+                downloadUrl: proxyDownloadUrl,
+                directMediaUrl: directUrl,
+                filename,
+                audioTrack,
+                isDirect: true
+            });
+        }
+        // 2. Build download source based on requested audio track & Aniwave mirror
+        let aniwaveSlug = exports.ANIWAVE_SLUG_MAP[anime.slug] || '';
+        if (!aniwaveSlug) {
+            const matchKey = Object.keys(exports.ANIWAVE_SLUG_MAP).find(k => anime.slug.includes(k) || k.includes(anime.slug));
+            if (matchKey)
+                aniwaveSlug = exports.ANIWAVE_SLUG_MAP[matchKey];
+        }
+        let resolvedDownloadUrl = '';
+        if (audioTrack === 'DUB') {
+            resolvedDownloadUrl = aniwaveSlug
+                ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub`
+                : (anime.malId ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&dub=1` : directUrl);
+        }
+        else if (audioTrack === 'HINDI') {
+            resolvedDownloadUrl = anime.malId
+                ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&lang=hi`
+                : directUrl;
+        }
+        else {
+            resolvedDownloadUrl = aniwaveSlug
+                ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub`
+                : (anime.malId ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&sub=1` : directUrl);
+        }
+        if (!resolvedDownloadUrl) {
+            resolvedDownloadUrl = `https://autoembed.co/anime/${anime.slug}/${episodeNumber}`;
+        }
+        return res.status(200).json({
+            success: true,
+            downloadUrl: resolvedDownloadUrl,
+            filename,
+            audioTrack,
+            isDirect: false
+        });
+    }
+    catch (error) {
+        console.error('Error in downloadEpisode:', error);
+        return res.status(500).json({ error: 'Failed to generate episode download' });
+    }
+}
+/**
+ * Proxy streaming download endpoint: Forces immediate browser file download with proper Content-Disposition
+ */
+async function downloadFileProxy(req, res) {
+    try {
+        const { url, filename } = req.query;
+        if (!url || typeof url !== 'string') {
+            return res.status(400).json({ error: 'URL parameter is required' });
+        }
+        const cleanFilename = typeof filename === 'string' && filename.trim()
+            ? filename.trim().replace(/[^\w\s\.-]/gi, '_')
+            : 'anime_episode.mp4';
+        // Local uploads check
+        if (url.startsWith('/uploads/')) {
+            const filePath = path_1.default.join(__dirname, '..', '..', url.replace(/^\//, ''));
+            if (fs_1.default.existsSync(filePath)) {
+                return res.download(filePath, cleanFilename);
+            }
+        }
+        // Stream remote video file with attachment headers
+        const remoteStream = await (0, axios_1.default)({
+            method: 'GET',
+            url,
+            responseType: 'stream',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            timeout: 30000
+        });
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+        const cType = remoteStream.headers['content-type'];
+        if (cType) {
+            res.setHeader('Content-Type', String(cType));
+        }
+        else {
+            res.setHeader('Content-Type', 'video/mp4');
+        }
+        const cLen = remoteStream.headers['content-length'];
+        if (cLen) {
+            res.setHeader('Content-Length', String(cLen));
+        }
+        remoteStream.data.pipe(res);
+    }
+    catch (err) {
+        console.error('Error in downloadFileProxy:', err.message);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: 'Failed to download file stream' });
+        }
     }
 }

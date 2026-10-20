@@ -97,6 +97,24 @@ async function main() {
         const rating = item.rating || '18+';
         const availabilityStatus = item.availabilityStatus || (item.episodes && item.episodes.length > 0 ? 'AVAILABLE' : 'MAPPING_PENDING');
         try {
+            const existing = await prisma.anime.findUnique({ where: { slug } });
+            // Determine posterImage safely to PERMANENTLY protect uploaded / custom posters
+            let finalPoster;
+            if (item.posterImage && item.posterImage.trim() && !item.posterImage.includes('unsplash')) {
+                // Explicit non-placeholder poster provided in input
+                finalPoster = item.posterImage.trim();
+            }
+            else if (existing?.posterImage && !existing.posterImage.includes('unsplash')) {
+                // Keep existing custom / uploaded poster permanently!
+                finalPoster = existing.posterImage;
+            }
+            else if (existing?.posterImage) {
+                finalPoster = existing.posterImage;
+            }
+            else {
+                finalPoster = item.posterImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80';
+            }
+            const finalBanner = (item.bannerImage && item.bannerImage.trim()) || existing?.bannerImage || null;
             const anime = await prisma.anime.upsert({
                 where: { slug },
                 update: {
@@ -112,8 +130,8 @@ async function main() {
                     releasedYear: item.releasedYear || new Date().getFullYear(),
                     duration: item.duration || (contentType === 'movie' ? '90 min' : '25 min'),
                     description: item.description || `Mature anime release: ${title}.`,
-                    posterImage: item.posterImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
-                    bannerImage: item.bannerImage || null,
+                    posterImage: finalPoster,
+                    bannerImage: finalBanner,
                     availabilityStatus,
                     hasSub: item.hasSub !== false,
                     hasDub: Boolean(item.hasDub),
@@ -133,8 +151,8 @@ async function main() {
                     releasedYear: item.releasedYear || new Date().getFullYear(),
                     duration: item.duration || (contentType === 'movie' ? '90 min' : '25 min'),
                     description: item.description || `Mature anime release: ${title}.`,
-                    posterImage: item.posterImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
-                    bannerImage: item.bannerImage || null,
+                    posterImage: finalPoster,
+                    bannerImage: finalBanner,
                     availabilityStatus,
                     hasSub: item.hasSub !== false,
                     hasDub: Boolean(item.hasDub),

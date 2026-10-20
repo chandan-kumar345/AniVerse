@@ -178,12 +178,30 @@ export const Header: React.FC = () => {
 
         {/* NAVIGATION LINKS & AUTH */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Link 
               to="/" 
               className={`nav-pill ${location === '/' ? 'active' : ''}`}
             >
               Home
+            </Link>
+            <Link 
+              to="/series" 
+              className={`nav-pill ${location.startsWith('/series') ? 'active' : ''}`}
+            >
+              Series
+            </Link>
+            <Link 
+              to="/movies" 
+              className={`nav-pill ${location.startsWith('/movies') ? 'active' : ''}`}
+            >
+              Movies
+            </Link>
+            <Link 
+              to="/genres" 
+              className={`nav-pill ${location.startsWith('/genres') ? 'active' : ''}`}
+            >
+              Genres
             </Link>
             <Link 
               to="/search" 
@@ -302,6 +320,9 @@ export const Header: React.FC = () => {
           </form>
 
            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Home</Link>
+          <Link to="/series" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Anime Series</Link>
+          <Link to="/movies" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Anime Movies</Link>
+          <Link to="/genres" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Genres</Link>
           <Link to="/search" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Catalog</Link>
           {isAuthenticated && (
             <>

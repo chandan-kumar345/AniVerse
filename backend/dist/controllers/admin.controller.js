@@ -215,7 +215,7 @@ async function getAdminAnime(req, res) {
                 include: {
                     episodes: {
                         orderBy: { episodeNumber: 'asc' },
-                        select: { id: true, episodeNumber: true, title: true, videoUrl: true, duration: true }
+                        select: { id: true, episodeNumber: true, title: true, videoUrl: true, dubVideoUrl: true, hindiVideoUrl: true, duration: true }
                     },
                     _count: {
                         select: {
@@ -230,6 +230,8 @@ async function getAdminAnime(req, res) {
         const animeList = rawAnimeList.map((a) => ({
             ...a,
             videoUrl: a.episodes?.[0]?.videoUrl || null,
+            dubVideoUrl: a.episodes?.[0]?.dubVideoUrl || null,
+            hindiVideoUrl: a.episodes?.[0]?.hindiVideoUrl || null,
             episodes: a.episodes || []
         }));
         return res.status(200).json({
@@ -252,7 +254,7 @@ async function getAdminAnime(req, res) {
  */
 async function createAnime(req, res) {
     try {
-        const { title, contentType = 'series', type, englishTitle, description, genres, score, releasedYear, posterImage, bannerImage, hasDub, hasHindi, rating, videoUrl } = req.body;
+        const { title, contentType = 'series', type, englishTitle, description, genres, score, releasedYear, posterImage, bannerImage, hasDub, hasHindi, rating, videoUrl, dubVideoUrl, hindiVideoUrl } = req.body;
         if (!title || !title.trim()) {
             return res.status(400).json({ error: 'Anime title is required' });
         }
@@ -290,8 +292,13 @@ async function createAnime(req, res) {
                 data: updateData
             });
         }
-        if (typeof videoUrl === 'string' && videoUrl.trim()) {
-            const cleanUrl = (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(videoUrl.trim());
+        const hasAnyVideo = Boolean((typeof videoUrl === 'string' && videoUrl.trim()) ||
+            (typeof dubVideoUrl === 'string' && dubVideoUrl.trim()) ||
+            (typeof hindiVideoUrl === 'string' && hindiVideoUrl.trim()));
+        if (hasAnyVideo) {
+            const cleanUrl = typeof videoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(videoUrl.trim()) : '';
+            const cleanDubUrl = typeof dubVideoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(dubVideoUrl.trim()) : null;
+            const cleanHindiUrl = typeof hindiVideoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(hindiVideoUrl.trim()) : null;
             await prisma.episode.upsert({
                 where: {
                     animeId_episodeNumber: {
@@ -299,12 +306,19 @@ async function createAnime(req, res) {
                         episodeNumber: 1
                     }
                 },
-                update: { videoUrl: cleanUrl, status: 'AVAILABLE' },
+                update: {
+                    videoUrl: cleanUrl,
+                    dubVideoUrl: cleanDubUrl,
+                    hindiVideoUrl: cleanHindiUrl,
+                    status: 'AVAILABLE'
+                },
                 create: {
                     animeId: anime.id,
                     episodeNumber: 1,
                     title: 'Episode 1',
                     videoUrl: cleanUrl,
+                    dubVideoUrl: cleanDubUrl,
+                    hindiVideoUrl: cleanHindiUrl,
                     status: 'AVAILABLE'
                 }
             });
@@ -357,8 +371,13 @@ async function updateAnime(req, res) {
                     resolvedPosterImage = rawPoster;
                 }
             }
-            else {
+            else if (data.clearPoster === true) {
+                // Only clear poster when explicitly commanded by the admin
                 resolvedPosterImage = null;
+            }
+            else {
+                // Prevent accidental wiping of existing poster image!
+                resolvedPosterImage = undefined;
             }
         }
         await prisma.anime.update({
@@ -383,8 +402,21 @@ async function updateAnime(req, res) {
                 lastVerifiedAt: new Date()
             }
         });
-        if (typeof data.videoUrl === 'string' && data.videoUrl.trim().length > 0) {
-            const cleanUrl = (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(data.videoUrl.trim());
+        const hasEp1Update = Boolean((typeof data.videoUrl === 'string' && data.videoUrl.trim().length > 0) ||
+            (typeof data.dubVideoUrl === 'string' && data.dubVideoUrl.trim().length > 0) ||
+            (typeof data.hindiVideoUrl === 'string' && data.hindiVideoUrl.trim().length > 0));
+        if (hasEp1Update) {
+            const cleanUrl = typeof data.videoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(data.videoUrl.trim()) : undefined;
+            const cleanDubUrl = typeof data.dubVideoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(data.dubVideoUrl.trim()) : undefined;
+            const cleanHindiUrl = typeof data.hindiVideoUrl === 'string' ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(data.hindiVideoUrl.trim()) : undefined;
+            const ep1UpdateData = {};
+            if (cleanUrl !== undefined)
+                ep1UpdateData.videoUrl = cleanUrl;
+            if (cleanDubUrl !== undefined)
+                ep1UpdateData.dubVideoUrl = cleanDubUrl;
+            if (cleanHindiUrl !== undefined)
+                ep1UpdateData.hindiVideoUrl = cleanHindiUrl;
+            ep1UpdateData.status = 'AVAILABLE';
             await prisma.episode.upsert({
                 where: {
                     animeId_episodeNumber: {
@@ -392,16 +424,15 @@ async function updateAnime(req, res) {
                         episodeNumber: 1
                     }
                 },
-                update: {
-                    videoUrl: cleanUrl,
-                    status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
-                },
+                update: ep1UpdateData,
                 create: {
                     animeId: id,
                     episodeNumber: 1,
                     title: 'Episode 1',
-                    videoUrl: cleanUrl,
-                    status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+                    videoUrl: cleanUrl || '',
+                    dubVideoUrl: cleanDubUrl || null,
+                    hindiVideoUrl: cleanHindiUrl || null,
+                    status: 'AVAILABLE'
                 }
             });
             await prisma.anime.update({
@@ -415,6 +446,8 @@ async function updateAnime(req, res) {
                     continue;
                 const rawEpUrl = typeof ep.videoUrl === 'string' ? ep.videoUrl : '';
                 const cleanUrl = (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(rawEpUrl.trim());
+                const cleanDubUrl = typeof ep.dubVideoUrl === 'string' && ep.dubVideoUrl.trim() ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(ep.dubVideoUrl.trim()) : null;
+                const cleanHindiUrl = typeof ep.hindiVideoUrl === 'string' && ep.hindiVideoUrl.trim() ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)(ep.hindiVideoUrl.trim()) : null;
                 await prisma.episode.upsert({
                     where: {
                         animeId_episodeNumber: {
@@ -425,16 +458,20 @@ async function updateAnime(req, res) {
                     update: {
                         title: ep.title || `Episode ${ep.episodeNumber}`,
                         videoUrl: cleanUrl,
+                        dubVideoUrl: cleanDubUrl,
+                        hindiVideoUrl: cleanHindiUrl,
                         duration: ep.duration || '24 min',
-                        status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+                        status: (cleanUrl || cleanDubUrl || cleanHindiUrl) ? 'AVAILABLE' : 'DRAFT'
                     },
                     create: {
                         animeId: id,
                         episodeNumber: Number(ep.episodeNumber),
                         title: ep.title || `Episode ${ep.episodeNumber}`,
                         videoUrl: cleanUrl,
+                        dubVideoUrl: cleanDubUrl,
+                        hindiVideoUrl: cleanHindiUrl,
                         duration: ep.duration || '24 min',
-                        status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+                        status: (cleanUrl || cleanDubUrl || cleanHindiUrl) ? 'AVAILABLE' : 'DRAFT'
                     }
                 });
             }
@@ -455,6 +492,27 @@ async function updateAnime(req, res) {
                 }
             }
         });
+        if (resolvedPosterImage && fullAnime) {
+            try {
+                const customJsonPath = path.join(__dirname, '..', 'data', 'custom_18plus_anime.json');
+                if (fs.existsSync(customJsonPath)) {
+                    const list = JSON.parse(fs.readFileSync(customJsonPath, 'utf8'));
+                    let modified = false;
+                    list.forEach((item) => {
+                        if (item.title === fullAnime.title || (fullAnime.slug && item.slug === fullAnime.slug)) {
+                            item.posterImage = resolvedPosterImage;
+                            modified = true;
+                        }
+                    });
+                    if (modified) {
+                        fs.writeFileSync(customJsonPath, JSON.stringify(list, null, 2), 'utf8');
+                    }
+                }
+            }
+            catch (syncErr) {
+                console.warn('Auto-sync to custom_18plus_anime.json skipped:', syncErr);
+            }
+        }
         return res.status(200).json({ message: 'Anime updated successfully', anime: fullAnime });
     }
     catch (error) {
@@ -502,8 +560,12 @@ async function bulkImportAnime(req, res) {
                 if (itemRating) {
                     updateData.rating = itemRating;
                 }
-                if (typeof item === 'object' && item.posterImage) {
-                    updateData.posterImage = item.posterImage;
+                if (typeof item === 'object' && item.posterImage && String(item.posterImage).trim()) {
+                    const newPoster = String(item.posterImage).trim();
+                    const hasCustomPoster = imported.posterImage && (imported.posterImage.startsWith('/uploads/') || !imported.posterImage.includes('unsplash'));
+                    if (!hasCustomPoster || !newPoster.includes('unsplash')) {
+                        updateData.posterImage = newPoster;
+                    }
                 }
                 if (typeof item === 'object' && item.description) {
                     updateData.description = item.description;
@@ -844,7 +906,11 @@ async function batchUpdateMedia(req, res) {
                 continue;
             const updateData = {};
             if (typeof item.posterImage === 'string' && item.posterImage.trim()) {
-                updateData.posterImage = item.posterImage.trim();
+                const newPoster = item.posterImage.trim();
+                const hasCustomPoster = anime.posterImage && (anime.posterImage.startsWith('/uploads/') || !anime.posterImage.includes('unsplash'));
+                if (!hasCustomPoster || !newPoster.includes('unsplash')) {
+                    updateData.posterImage = newPoster;
+                }
             }
             if (typeof item.bannerImage === 'string' && item.bannerImage.trim()) {
                 updateData.bannerImage = item.bannerImage.trim();
@@ -989,6 +1055,27 @@ async function updateAnimeEpisodes(req, res) {
                 }
                 catch (_) { }
             }
+            let cleanDubUrl = (ep.dubVideoUrl || '').trim() ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)((ep.dubVideoUrl || '').trim()) : null;
+            if (cleanDubUrl && cleanDubUrl.startsWith('http') && !cleanDubUrl.includes('/new_player/') && !cleanDubUrl.includes('/embed/') && !cleanDubUrl.includes('/e/')) {
+                try {
+                    const extracted = await (0, videoExtractor_service_1.extractCleanEmbedFromWebPage)(cleanDubUrl);
+                    if (extracted.cleanUrl) {
+                        cleanDubUrl = extracted.cleanUrl;
+                    }
+                }
+                catch (_) { }
+            }
+            let cleanHindiUrl = (ep.hindiVideoUrl || '').trim() ? (0, videoExtractor_service_1.cleanAndNormalizeVideoUrl)((ep.hindiVideoUrl || '').trim()) : null;
+            if (cleanHindiUrl && cleanHindiUrl.startsWith('http') && !cleanHindiUrl.includes('/new_player/') && !cleanHindiUrl.includes('/embed/') && !cleanHindiUrl.includes('/e/')) {
+                try {
+                    const extracted = await (0, videoExtractor_service_1.extractCleanEmbedFromWebPage)(cleanHindiUrl);
+                    if (extracted.cleanUrl) {
+                        cleanHindiUrl = extracted.cleanUrl;
+                    }
+                }
+                catch (_) { }
+            }
+            const isPlayable = Boolean(cleanUrl || cleanDubUrl || cleanHindiUrl);
             await prisma.episode.upsert({
                 where: {
                     animeId_episodeNumber: {
@@ -999,16 +1086,20 @@ async function updateAnimeEpisodes(req, res) {
                 update: {
                     title: ep.title || `Episode ${ep.episodeNumber}`,
                     videoUrl: cleanUrl,
+                    dubVideoUrl: cleanDubUrl,
+                    hindiVideoUrl: cleanHindiUrl,
                     duration: ep.duration || '24 min',
-                    status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+                    status: isPlayable ? 'AVAILABLE' : 'DRAFT'
                 },
                 create: {
                     animeId: id,
                     episodeNumber: Number(ep.episodeNumber),
                     title: ep.title || `Episode ${ep.episodeNumber}`,
                     videoUrl: cleanUrl,
+                    dubVideoUrl: cleanDubUrl,
+                    hindiVideoUrl: cleanHindiUrl,
                     duration: ep.duration || '24 min',
-                    status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+                    status: isPlayable ? 'AVAILABLE' : 'DRAFT'
                 }
             });
         }
@@ -1016,7 +1107,9 @@ async function updateAnimeEpisodes(req, res) {
             where: { animeId: id },
             orderBy: { episodeNumber: 'asc' }
         });
-        const hasPlayable = allEpisodes.some((e) => e.videoUrl && e.videoUrl.trim().length > 0);
+        const hasPlayable = allEpisodes.some((e) => (e.videoUrl && e.videoUrl.trim().length > 0) ||
+            (e.dubVideoUrl && e.dubVideoUrl.trim().length > 0) ||
+            (e.hindiVideoUrl && e.hindiVideoUrl.trim().length > 0));
         await prisma.anime.update({
             where: { id },
             data: {

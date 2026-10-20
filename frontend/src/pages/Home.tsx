@@ -39,7 +39,7 @@ export const Home: React.FC = () => {
           axios.get('/api/anime/trending'),
           axios.get('/api/anime/popular'),
           axios.get('/api/anime/top-ten'),
-          axios.get('/api/anime?type=MOVIE&limit=12'),
+          axios.get('/api/anime?contentType=movie&limit=16'),
           axios.get('/api/anime/genres'),
           axios.get('/api/anime?status=Currently Airing&limit=5'),
           axios.get('/api/anime?sort=latest&limit=5'),

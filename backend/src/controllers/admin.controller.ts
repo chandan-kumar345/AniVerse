@@ -182,7 +182,7 @@ export async function getAdminAnime(req: Request, res: Response) {
         include: {
           episodes: {
             orderBy: { episodeNumber: 'asc' },
-            select: { id: true, episodeNumber: true, title: true, videoUrl: true, duration: true }
+            select: { id: true, episodeNumber: true, title: true, videoUrl: true, dubVideoUrl: true, hindiVideoUrl: true, duration: true }
           },
           _count: {
             select: {
@@ -198,6 +198,8 @@ export async function getAdminAnime(req: Request, res: Response) {
     const animeList = rawAnimeList.map((a: any) => ({
       ...a,
       videoUrl: a.episodes?.[0]?.videoUrl || null,
+      dubVideoUrl: a.episodes?.[0]?.dubVideoUrl || null,
+      hindiVideoUrl: a.episodes?.[0]?.hindiVideoUrl || null,
       episodes: a.episodes || []
     }));
 
@@ -235,7 +237,9 @@ export async function createAnime(req: Request, res: Response) {
       hasDub,
       hasHindi,
       rating,
-      videoUrl
+      videoUrl,
+      dubVideoUrl,
+      hindiVideoUrl
     } = req.body;
 
     if (!title || !title.trim()) {
@@ -274,8 +278,17 @@ export async function createAnime(req: Request, res: Response) {
       });
     }
 
-    if (typeof videoUrl === 'string' && videoUrl.trim()) {
-      const cleanUrl = cleanAndNormalizeVideoUrl(videoUrl.trim());
+    const hasAnyVideo = Boolean(
+      (typeof videoUrl === 'string' && videoUrl.trim()) ||
+      (typeof dubVideoUrl === 'string' && dubVideoUrl.trim()) ||
+      (typeof hindiVideoUrl === 'string' && hindiVideoUrl.trim())
+    );
+
+    if (hasAnyVideo) {
+      const cleanUrl = typeof videoUrl === 'string' ? cleanAndNormalizeVideoUrl(videoUrl.trim()) : '';
+      const cleanDubUrl = typeof dubVideoUrl === 'string' ? cleanAndNormalizeVideoUrl(dubVideoUrl.trim()) : null;
+      const cleanHindiUrl = typeof hindiVideoUrl === 'string' ? cleanAndNormalizeVideoUrl(hindiVideoUrl.trim()) : null;
+
       await prisma.episode.upsert({
         where: {
           animeId_episodeNumber: {
@@ -283,12 +296,19 @@ export async function createAnime(req: Request, res: Response) {
             episodeNumber: 1
           }
         },
-        update: { videoUrl: cleanUrl, status: 'AVAILABLE' },
+        update: {
+          videoUrl: cleanUrl,
+          dubVideoUrl: cleanDubUrl,
+          hindiVideoUrl: cleanHindiUrl,
+          status: 'AVAILABLE'
+        },
         create: {
           animeId: anime.id,
           episodeNumber: 1,
           title: 'Episode 1',
           videoUrl: cleanUrl,
+          dubVideoUrl: cleanDubUrl,
+          hindiVideoUrl: cleanHindiUrl,
           status: 'AVAILABLE'
         }
       });
@@ -342,8 +362,12 @@ export async function updateAnime(req: Request, res: Response) {
         } else {
           resolvedPosterImage = rawPoster;
         }
-      } else {
+      } else if (data.clearPoster === true) {
+        // Only clear poster when explicitly commanded by the admin
         resolvedPosterImage = null;
+      } else {
+        // Prevent accidental wiping of existing poster image!
+        resolvedPosterImage = undefined;
       }
     }
 
@@ -370,8 +394,23 @@ export async function updateAnime(req: Request, res: Response) {
       }
     });
 
-    if (typeof data.videoUrl === 'string' && data.videoUrl.trim().length > 0) {
-      const cleanUrl = cleanAndNormalizeVideoUrl(data.videoUrl.trim());
+    const hasEp1Update = Boolean(
+      (typeof data.videoUrl === 'string' && data.videoUrl.trim().length > 0) ||
+      (typeof data.dubVideoUrl === 'string' && data.dubVideoUrl.trim().length > 0) ||
+      (typeof data.hindiVideoUrl === 'string' && data.hindiVideoUrl.trim().length > 0)
+    );
+
+    if (hasEp1Update) {
+      const cleanUrl = typeof data.videoUrl === 'string' ? cleanAndNormalizeVideoUrl(data.videoUrl.trim()) : undefined;
+      const cleanDubUrl = typeof data.dubVideoUrl === 'string' ? cleanAndNormalizeVideoUrl(data.dubVideoUrl.trim()) : undefined;
+      const cleanHindiUrl = typeof data.hindiVideoUrl === 'string' ? cleanAndNormalizeVideoUrl(data.hindiVideoUrl.trim()) : undefined;
+
+      const ep1UpdateData: any = {};
+      if (cleanUrl !== undefined) ep1UpdateData.videoUrl = cleanUrl;
+      if (cleanDubUrl !== undefined) ep1UpdateData.dubVideoUrl = cleanDubUrl;
+      if (cleanHindiUrl !== undefined) ep1UpdateData.hindiVideoUrl = cleanHindiUrl;
+      ep1UpdateData.status = 'AVAILABLE';
+
       await prisma.episode.upsert({
         where: {
           animeId_episodeNumber: {
@@ -379,16 +418,15 @@ export async function updateAnime(req: Request, res: Response) {
             episodeNumber: 1
           }
         },
-        update: {
-          videoUrl: cleanUrl,
-          status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
-        },
+        update: ep1UpdateData,
         create: {
           animeId: id,
           episodeNumber: 1,
           title: 'Episode 1',
-          videoUrl: cleanUrl,
-          status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+          videoUrl: cleanUrl || '',
+          dubVideoUrl: cleanDubUrl || null,
+          hindiVideoUrl: cleanHindiUrl || null,
+          status: 'AVAILABLE'
         }
       });
 
@@ -403,6 +441,9 @@ export async function updateAnime(req: Request, res: Response) {
         if (!ep.episodeNumber) continue;
         const rawEpUrl = typeof ep.videoUrl === 'string' ? ep.videoUrl : '';
         const cleanUrl = cleanAndNormalizeVideoUrl(rawEpUrl.trim());
+        const cleanDubUrl = typeof ep.dubVideoUrl === 'string' && ep.dubVideoUrl.trim() ? cleanAndNormalizeVideoUrl(ep.dubVideoUrl.trim()) : null;
+        const cleanHindiUrl = typeof ep.hindiVideoUrl === 'string' && ep.hindiVideoUrl.trim() ? cleanAndNormalizeVideoUrl(ep.hindiVideoUrl.trim()) : null;
+
         await prisma.episode.upsert({
           where: {
             animeId_episodeNumber: {
@@ -413,16 +454,20 @@ export async function updateAnime(req: Request, res: Response) {
           update: {
             title: ep.title || `Episode ${ep.episodeNumber}`,
             videoUrl: cleanUrl,
+            dubVideoUrl: cleanDubUrl,
+            hindiVideoUrl: cleanHindiUrl,
             duration: ep.duration || '24 min',
-            status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+            status: (cleanUrl || cleanDubUrl || cleanHindiUrl) ? 'AVAILABLE' : 'DRAFT'
           },
           create: {
             animeId: id,
             episodeNumber: Number(ep.episodeNumber),
             title: ep.title || `Episode ${ep.episodeNumber}`,
             videoUrl: cleanUrl,
+            dubVideoUrl: cleanDubUrl,
+            hindiVideoUrl: cleanHindiUrl,
             duration: ep.duration || '24 min',
-            status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+            status: (cleanUrl || cleanDubUrl || cleanHindiUrl) ? 'AVAILABLE' : 'DRAFT'
           }
         });
       }
@@ -445,6 +490,27 @@ export async function updateAnime(req: Request, res: Response) {
         }
       }
     });
+
+    if (resolvedPosterImage && fullAnime) {
+      try {
+        const customJsonPath = path.join(__dirname, '..', 'data', 'custom_18plus_anime.json');
+        if (fs.existsSync(customJsonPath)) {
+          const list = JSON.parse(fs.readFileSync(customJsonPath, 'utf8'));
+          let modified = false;
+          list.forEach((item: any) => {
+            if (item.title === fullAnime.title || (fullAnime.slug && item.slug === fullAnime.slug)) {
+              item.posterImage = resolvedPosterImage;
+              modified = true;
+            }
+          });
+          if (modified) {
+            fs.writeFileSync(customJsonPath, JSON.stringify(list, null, 2), 'utf8');
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Auto-sync to custom_18plus_anime.json skipped:', syncErr);
+      }
+    }
 
     return res.status(200).json({ message: 'Anime updated successfully', anime: fullAnime });
   } catch (error: any) {
@@ -506,8 +572,12 @@ export async function bulkImportAnime(req: Request, res: Response) {
         if (itemRating) {
           updateData.rating = itemRating;
         }
-        if (typeof item === 'object' && item.posterImage) {
-          updateData.posterImage = item.posterImage;
+        if (typeof item === 'object' && item.posterImage && String(item.posterImage).trim()) {
+          const newPoster = String(item.posterImage).trim();
+          const hasCustomPoster = imported.posterImage && (imported.posterImage.startsWith('/uploads/') || !imported.posterImage.includes('unsplash'));
+          if (!hasCustomPoster || !newPoster.includes('unsplash')) {
+            updateData.posterImage = newPoster;
+          }
         }
         if (typeof item === 'object' && item.description) {
           updateData.description = item.description;
@@ -870,7 +940,11 @@ export async function batchUpdateMedia(req: Request, res: Response) {
 
       const updateData: any = {};
       if (typeof item.posterImage === 'string' && item.posterImage.trim()) {
-        updateData.posterImage = item.posterImage.trim();
+        const newPoster = item.posterImage.trim();
+        const hasCustomPoster = anime.posterImage && (anime.posterImage.startsWith('/uploads/') || !anime.posterImage.includes('unsplash'));
+        if (!hasCustomPoster || !newPoster.includes('unsplash')) {
+          updateData.posterImage = newPoster;
+        }
       }
       if (typeof item.bannerImage === 'string' && item.bannerImage.trim()) {
         updateData.bannerImage = item.bannerImage.trim();
@@ -1025,6 +1099,28 @@ export async function updateAnimeEpisodes(req: Request, res: Response) {
         } catch (_) {}
       }
 
+      let cleanDubUrl: string | null = (ep.dubVideoUrl || '').trim() ? cleanAndNormalizeVideoUrl((ep.dubVideoUrl || '').trim()) : null;
+      if (cleanDubUrl && cleanDubUrl.startsWith('http') && !cleanDubUrl.includes('/new_player/') && !cleanDubUrl.includes('/embed/') && !cleanDubUrl.includes('/e/')) {
+        try {
+          const extracted = await extractCleanEmbedFromWebPage(cleanDubUrl);
+          if (extracted.cleanUrl) {
+            cleanDubUrl = extracted.cleanUrl;
+          }
+        } catch (_) {}
+      }
+
+      let cleanHindiUrl: string | null = (ep.hindiVideoUrl || '').trim() ? cleanAndNormalizeVideoUrl((ep.hindiVideoUrl || '').trim()) : null;
+      if (cleanHindiUrl && cleanHindiUrl.startsWith('http') && !cleanHindiUrl.includes('/new_player/') && !cleanHindiUrl.includes('/embed/') && !cleanHindiUrl.includes('/e/')) {
+        try {
+          const extracted = await extractCleanEmbedFromWebPage(cleanHindiUrl);
+          if (extracted.cleanUrl) {
+            cleanHindiUrl = extracted.cleanUrl;
+          }
+        } catch (_) {}
+      }
+
+      const isPlayable = Boolean(cleanUrl || cleanDubUrl || cleanHindiUrl);
+
       await prisma.episode.upsert({
         where: {
           animeId_episodeNumber: {
@@ -1035,16 +1131,20 @@ export async function updateAnimeEpisodes(req: Request, res: Response) {
         update: {
           title: ep.title || `Episode ${ep.episodeNumber}`,
           videoUrl: cleanUrl,
+          dubVideoUrl: cleanDubUrl,
+          hindiVideoUrl: cleanHindiUrl,
           duration: ep.duration || '24 min',
-          status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+          status: isPlayable ? 'AVAILABLE' : 'DRAFT'
         },
         create: {
           animeId: id,
           episodeNumber: Number(ep.episodeNumber),
           title: ep.title || `Episode ${ep.episodeNumber}`,
           videoUrl: cleanUrl,
+          dubVideoUrl: cleanDubUrl,
+          hindiVideoUrl: cleanHindiUrl,
           duration: ep.duration || '24 min',
-          status: cleanUrl ? 'AVAILABLE' : 'DRAFT'
+          status: isPlayable ? 'AVAILABLE' : 'DRAFT'
         }
       });
     }
@@ -1054,7 +1154,11 @@ export async function updateAnimeEpisodes(req: Request, res: Response) {
       orderBy: { episodeNumber: 'asc' }
     });
 
-    const hasPlayable = allEpisodes.some((e: any) => e.videoUrl && e.videoUrl.trim().length > 0);
+    const hasPlayable = allEpisodes.some((e: any) => 
+      (e.videoUrl && e.videoUrl.trim().length > 0) ||
+      (e.dubVideoUrl && e.dubVideoUrl.trim().length > 0) ||
+      (e.hindiVideoUrl && e.hindiVideoUrl.trim().length > 0)
+    );
     await prisma.anime.update({
       where: { id },
       data: {

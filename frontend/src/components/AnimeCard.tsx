@@ -20,6 +20,9 @@ export interface AnimeData {
   genres: string;
   hasSub?: boolean | null;
   hasDub?: boolean | null;
+  hasHindi?: boolean | null;
+  contentType?: string | null;
+  availabilityStatus?: string | null;
   episodes?: { id?: string; episodeNumber: number; title?: string; videoUrl?: string }[];
   nextAiringEpisode?: {
     airingAt: number;
@@ -149,6 +152,13 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
   const watchUrl = isMockSearch ? `/${anime.slug}` : `/watch/${anime.slug}/episode/1`;
   const detailUrl = isMockSearch ? `/${anime.slug}` : `/anime/${anime.slug}`;
 
+  // 18+ badge is ONLY shown on true uncensored / mature titles
+  const isUncensored18Plus = Boolean(
+    anime.genres?.includes('18+') ||
+    anime.rating === '18+' ||
+    (anime.genres?.includes('Ecchi') && !['My Hero Academia', 'Dragon Ball', 'Naruto', 'One Piece'].some(t => anime.title.includes(t)))
+  );
+
   return (
     <div className="anime-card-container" style={{ position: 'relative', flex: '0 0 auto', width: '100%' }}>
       {/* CARD WRAPPER */}
@@ -189,6 +199,27 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
             <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: '#161828', padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 1px 1px 3px #08090f' }}>
               {anime.type}
             </div>
+
+            {/* 18+ Uncensored Badge - ONLY on uncensored / mature titles */}
+            {isUncensored18Plus && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  boxShadow: '0 2px 8px rgba(225, 29, 72, 0.6)'
+                }}
+              >
+                18+
+              </div>
+            )}
           </div>
         </Link>
 
@@ -202,16 +233,42 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
               {anime.title}
             </h4>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <span>{anime.releasedYear} • {anime.duration || '24 min'}</span>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {anime.hasSub !== false && (
-                  <span style={{ background: 'rgba(139, 92, 246, 0.12)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', fontWeight: 700 }}>SUB</span>
-                )}
-                {anime.hasDub !== false && (
-                  <span style={{ background: 'rgba(6, 182, 212, 0.12)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '10px', fontWeight: 700 }}>DUB</span>
-                )}
-              </div>
+              <span>{anime.releasedYear} • {anime.duration || (anime.contentType === 'movie' ? '110 min' : '24 min')}</span>
+              {anime.availabilityStatus && (
+                <span style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  letterSpacing: '0.4px',
+                  color: anime.availabilityStatus === 'AVAILABLE' ? '#10b981' : '#38bdf8',
+                  background: anime.availabilityStatus === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(56, 189, 248, 0.12)',
+                  border: `1px solid ${anime.availabilityStatus === 'AVAILABLE' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+                  borderRadius: '4px',
+                  padding: '1px 5px'
+                }}>
+                  {anime.availabilityStatus === 'AVAILABLE' ? 'AVAILABLE' : 'VERIFIED'}
+                </span>
+              )}
             </div>
+
+            {/* VERIFIED AUDIO BADGES */}
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+              {anime.hasSub !== false && (
+                <span style={{ background: 'rgba(139, 92, 246, 0.12)', color: 'var(--color-primary)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '9px', fontWeight: 800 }}>
+                  JAPANESE
+                </span>
+              )}
+              {Boolean(anime.hasDub) && (
+                <span style={{ background: 'rgba(6, 182, 212, 0.12)', color: 'var(--color-teal)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: '4px', padding: '1px 5px', fontSize: '9px', fontWeight: 800 }}>
+                  ENGLISH DUB
+                </span>
+              )}
+              {anime.hasHindi && (
+                <span style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '4px', padding: '1px 5px', fontSize: '9px', fontWeight: 800 }}>
+                  HINDI DUB
+                </span>
+              )}
+            </div>
+
             {showCountdown && countdown && (
               <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span className="live-ping-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
@@ -238,6 +295,12 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showCountdown = tru
           <span style={{ color: '#fff', fontWeight: 600 }}>{anime.type}</span>
           <span style={{ color: 'var(--text-muted)' }}>|</span>
           <span style={{ color: 'var(--text-muted)' }}>{anime.status}</span>
+          {isUncensored18Plus && (
+            <>
+              <span style={{ color: 'var(--text-muted)' }}>|</span>
+              <span style={{ color: '#f43f5e', fontWeight: 800, fontSize: '10px', background: 'rgba(225, 29, 72, 0.15)', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>18+</span>
+            </>
+          )}
         </div>
         <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '12px' }}>
           {anime.description}

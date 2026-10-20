@@ -96,7 +96,9 @@ model Episode {
   title         String
   synopsis      String?
   releaseDate   String?
-  videoUrl      String    // Streaming file URL or primary playback identifier
+  videoUrl      String    // Primary / SUB streaming file URL or embed URL
+  dubVideoUrl   String?   // English DUB video stream or embed URL
+  hindiVideoUrl String?   // Hindi DUB video stream or embed URL
   thumbnail     String?
   duration      String?
   status        String    @default("AVAILABLE") // AVAILABLE, UNAVAILABLE, PENDING

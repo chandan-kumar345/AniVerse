@@ -191,7 +191,7 @@ export const AnimeDetail: React.FC = () => {
                   SUB
                 </span>
               )}
-              {anime.hasDub !== false && (
+              {Boolean(anime.hasDub) && (
                 <span className="nm-tag" style={{ color: 'var(--color-teal)', fontWeight: 800, padding: '3px 10px', fontSize: '11px' }}>
                   DUB
                 </span>

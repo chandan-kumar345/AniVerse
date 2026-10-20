@@ -1,50 +1,650 @@
 [
-  { "title": "Chimimonryou", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Kyonyuu ga Futari Inai to Bokki Shinai Otto no Tame ni Tomodachi wo Tsuretekita Tsuma", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Otaku no Boku ga Ichigun Gal to Tsukiaeru made no Hanashi", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Hebi to Kumo", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Anal Mania Otaku to Ananii Daisuki na Ojou-sama", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Phantom Alchemia", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Lamour fou de l automate", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Mou Ichido Shite Mitai", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Kenki Virgo", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Seikou Senki Pony Celes", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Seifuku wa Kita mama de", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Cool de M", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Seihou Shouka Saint Lime", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Kegareboshi", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Natsu to Hako", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Do S na Pet", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Oshikake! Bakunyuu Gyaru Harem Seikatsu", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Nagachichi Nagai-san", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Mesu o Karu Mura", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Seikon no Aria", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Choro Mesu Days", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Honey Blonde 2", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Reika wa Karei na Boku no Joou", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "H na Gishi Series", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Muramata-san no Aijou", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Mujikaku na Osananajimi to Kyoumi Honi de Yatte Mitara", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "NTR Kishi", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Netorareta Bakunyuu Tsuma-tachi 2", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Oushun Jogakuen no Danyuu", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Sare Tsuma wa Ubawaretai", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Hitozukiai Ga Nigate Na Miboujin No Yukionna-San To Noroi No Yubiwa", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Pure x Holic", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Kanojo Saimin", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Deco x Deco", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Harem Shima e Youkoso", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Juurin Oukoku", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Inaka ni wa Kore Kurai Shika G", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Kare no Shiranai Himitsu o Irete", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Hamehara", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Nuki Nuki Zupposism", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Cheat Item Kanrikyoku no Oshigoto EX", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Furachi", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Muchuu no Tou", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Paihame Kazoku", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Heart Mark Oome", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Seishidouin no Oshigoto", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Todo no Tsumari", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" },
-  { "title": "Love wa Gal kara Hajimaru Unmei", "contentType": "series", "type": "OVA", "genres": "Mature, 18+", "rating": "18+" }
+  {
+    "title": "Chimimonryou",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/5a9165e15e1d3dedd2890db0c4e6775d190785522482_webp-1792486778181.webp"
+  },
+  {
+    "title": "Kyonyuu ga Futari Inai to Bokki Shinai Otto no Tame ni Tomodachi wo Tsuretekita Tsuma",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/450cba2ccfade7e47fcd6faa275983d2888500244654_webp-1792486758615.webp"
+  },
+  {
+    "title": "Otaku no Boku ga Ichigun Gal to Tsukiaeru made no Hanashi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/c24800f22a19ffcedf4d5397689cfe95371626867873_webp-1792486746041.webp"
+  },
+  {
+    "title": "Hebi to Kumo",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/a209460ac5cccadff1164c3da9df12e8793591922363_webp-1792486727584.webp"
+  },
+  {
+    "title": "Anal Mania Otaku to Ananii Daisuki na Ojou-sama",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/d12f593a7acb4e87e6554ada36eeed3e131570701313_webp-1792486701418.webp"
+  },
+  {
+    "title": "Phantom Alchemia",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/a4b2455d9d31a5e3674ff8a5cf67189a952639265303_webp-1792486680887.webp"
+  },
+  {
+    "title": "Lamour fou de l automate",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/897a2036ed5edc14c48c5d090d309701124778076064_webp-1792486655622.webp"
+  },
+  {
+    "title": "Mou Ichido Shite Mitai",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/c9d91d1977247adf5b2f93975adb0f8b27562505722_webp-1792486642499.webp"
+  },
+  {
+    "title": "Kenki Virgo",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/d7da800934d1913b3335671769e386d0890116874553_webp-1792486591222.webp"
+  },
+  {
+    "title": "Seikou Senki Pony Celes",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486561039-3gmml.jpg"
+  },
+  {
+    "title": "Seifuku wa Kita mama de",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/cd3fd0bc66e00dbdc5be263fd4651862623244127173_webp-1792486487819.webp"
+  },
+  {
+    "title": "Cool de M",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/3661cadf97cd85ff4745fcedde9094cb425194109451_webp-1792486433724.webp"
+  },
+  {
+    "title": "Seihou Shouka Saint Lime",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/bca3678373423d7ba59c59a0adf5df50681438854018_webp-1792486402122.webp"
+  },
+  {
+    "title": "Kegareboshi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/d58b941d5ab0f3aecd8379a10f364e60159805407262_webp-1792486370875.webp"
+  },
+  {
+    "title": "Natsu to Hako",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486343996-sky4e.webp"
+  },
+  {
+    "title": "Do S na Pet",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/e57826137312756fb786a4994c07eda739806669557_webp-1792486299585.webp"
+  },
+  {
+    "title": "Oshikake! Bakunyuu Gyaru Harem Seikatsu",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486279770-27sbl.webp"
+  },
+  {
+    "title": "Nagachichi Nagai-san",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/26ba52b741fd4543c58b930f163e864d323182306911_webp-1792486125519.webp"
+  },
+  {
+    "title": "Mesu o Karu Mura",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486213625-3yl6x.webp"
+  },
+  {
+    "title": "Seikon no Aria",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/8360dc9153e1ffb2b35e3412e44e821e733258611874_webp-1792486253126.webp"
+  },
+  {
+    "title": "Choro Mesu Days",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/42f21bae903ee619a360a7a4bd0324f964853813258_webp-1792486184744.webp"
+  },
+  {
+    "title": "Honey Blonde 2",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/b80d1d1b8c3e8cbe7c8df8a3ac1dc3ca175446361427_webp-1792486164023.webp"
+  },
+  {
+    "title": "Reika wa Karei na Boku no Joou",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/51a8364f64eeadf4d0c6b0e05688c24c612040997328_webp-1792486075989.webp"
+  },
+  {
+    "title": "H na Gishi Series",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486047549-s19es.webp"
+  },
+  {
+    "title": "Muramata-san no Aijou",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792485948331-yousc.jpg"
+  },
+  {
+    "title": "Mujikaku na Osananajimi to Kyoumi Honi de Yatte Mitara",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/f14f0a61510a05e4730bbde5c178460a505475185727_webp-1792485982894.webp"
+  },
+  {
+    "title": "NTR Kishi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792485966479-o7641.jpg"
+  },
+  {
+    "title": "Netorareta Bakunyuu Tsuma-tachi 2",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792486617999-wa5pp.webp"
+  },
+  {
+    "title": "Oushun Jogakuen no Danyuu",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792485932712-a12so.jpg"
+  },
+  {
+    "title": "Sare Tsuma wa Ubawaretai",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/48d879ff41b88b4a3608204516578361_jpg-1792485860087.jpg"
+  },
+  {
+    "title": "Hitozukiai Ga Nigate Na Miboujin No Yukionna-San To Noroi No Yubiwa",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/20c2561a76e698cda7fd86857c99ce5d_jpg-1792485819951.jpg"
+  },
+  {
+    "title": "Pure x Holic",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/f2680a756cb57e0001a56e8f2c2937dd_jpg-1792485787524.jpg"
+  },
+  {
+    "title": "Kanojo Saimin",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/f10867bd4ccf95ab84300b89f4a9c25b_jpg-1792485762967.jpg"
+  },
+  {
+    "title": "Deco x Deco",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/060f565e06e1ba4b5253b4404ab07fbb_jpg-1792485730492.jpg"
+  },
+  {
+    "title": "Harem Shima e Youkoso",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/7b235238ff5bffa6f0fa03360efc62ed_jpg-1792485693815.jpg"
+  },
+  {
+    "title": "Juurin Oukoku",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792509043368-baga1.jpg"
+  },
+  {
+    "title": "Inaka ni wa Kore Kurai Shika G",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792509029334-11xkc.jpg"
+  },
+  {
+    "title": "Kare no Shiranai Himitsu o Irete",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792509053409-wy7wo.webp"
+  },
+  {
+    "title": "Hamehara",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792508928288-sslsf.webp"
+  },
+  {
+    "title": "Nuki Nuki Zupposism",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792509065202-5g3cr.webp"
+  },
+  {
+    "title": "Cheat Item Kanrikyoku no Oshigoto EX",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792508853331-9rv9y.webp"
+  },
+  {
+    "title": "Furachi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/3e943d3aa4c5a3008b87ec16daece417_jpg-1792485678375.jpg"
+  },
+  {
+    "title": "Muchuu no Tou",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/e53efde6e3c4e00214ea3289f7e6b288_jpg-1792485645854.jpg"
+  },
+  {
+    "title": "Paihame Kazoku",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/cca950be2d884bbf0cb0bb10125d2d83114049096637_webp-1792485628174.webp"
+  },
+  {
+    "title": "Heart Mark Oome",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/57a11904e7c4d61d4d0201018f2ee84f765830249838_webp-1792485581014.webp"
+  },
+  {
+    "title": "Seishidouin no Oshigoto",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/7e768972d1c95a1134316ef2832ef41c172633410398_webp-1792485524005.webp"
+  },
+  {
+    "title": "Todo no Tsumari",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/14502618e0c5714f159f79efa6641220242039966772_webp-1792485502675.webp"
+  },
+  {
+    "title": "Love wa Gal kara Hajimaru Unmei",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+",
+    "rating": "18+",
+    "posterImage": "/uploads/posters/poster-1792485380102-z5nql.webp"
+  },
+  {
+    "title": "Natsuzuma",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/natsuzuma/",
+    "posterImage": "/uploads/posters/26c8fbdd66313314e3974f75cd8888f9193114309367_webp-1792508400274.webp"
+  },
+  {
+    "title": "Kiken na Mori",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/kiken-na-mori/",
+    "posterImage": "/uploads/posters/poster-1792508377590-eaa5y.webp"
+  },
+  {
+    "title": "Korette Nani",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.3,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/korette-nani/",
+    "posterImage": "/uploads/posters/poster-1792508332862-13oir.webp"
+  },
+  {
+    "title": "Sister Breeder",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.6,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/sister-breeder/",
+    "posterImage": "/uploads/posters/poster-1792508282771-e9ppp.webp"
+  },
+  {
+    "title": "Netorareta Bakunyuu Tsuma-tachi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.7,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/netorareta-bakunyuu-tsuma-tachi/",
+    "posterImage": "/uploads/posters/57ce3a0d2fb0d78688b08b0458c32d3b423247791041_webp-1792508257842.webp"
+  },
+  {
+    "title": "Kakurenbo",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.2,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/kakurenbo/",
+    "posterImage": "/uploads/posters/9f75e6172c0e4b45d8f24ba849521f4a331709487168_webp-1792508240206.webp"
+  },
+  {
+    "title": "Shachiku Cinderella",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/shachiku-cinderella/",
+    "posterImage": "/uploads/posters/fb0e252e4b8d9ed4d4ed9f391e5b1f15941832353933_webp-1792508216304.webp"
+  },
+  {
+    "title": "Koushoku no Chuugi Kunoichi Botan",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/koushoku-no-chuugi-kunoichi-botan/",
+    "posterImage": "/uploads/posters/ddb815f47ba843451a251218217f779b572034647077_webp-1792508191380.webp"
+  },
+  {
+    "title": "Mujin Eki",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.3,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/mujin-eki/",
+    "posterImage": "/uploads/posters/poster-1792508162728-p34nd.webp"
+  },
+  {
+    "title": "Pure Pure Pero Pero Princess",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.6,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/pure-pure-pero-pero-princess/",
+    "posterImage": "/uploads/posters/poster-1792508135194-5j8yp.webp"
+  },
+  {
+    "title": "Futari no Yume Mochi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/futari-no-yume-mochi/",
+    "posterImage": "/uploads/posters/c65b466ba6abf39a9b81bfefd8591bd9485300329626_webp-1792508119855.webp"
+  },
+  {
+    "title": "Kyou wa Yubiwa o Hazusu kara",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/kyou-wa-yubiwa-o-hazusu-kara/",
+    "posterImage": "/uploads/posters/ad991ed4bd546fe73c38121146776660824551077112_webp-1792508094127.webp"
+  },
+  {
+    "title": "Immoral Game Master",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.3,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/immoral-game-master/",
+    "posterImage": "/uploads/posters/a2491632acfeac39da10f4f225a322e592519143265_webp-1792508076774.webp"
+  },
+  {
+    "title": "Hitozuma no Kuchibiru wa Kan Chuuhai no Aji ga Shite",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.7,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/hitozuma-no-kuchibiru-wa-kan-chuuhai-no-aji-ga-shite/",
+    "posterImage": "/uploads/posters/455792e85608ab532b46e0c7241f4223133534904925_webp-1792507980978.webp"
+  },
+  {
+    "title": "Princess Burst",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/princess-burst/",
+    "posterImage": "/uploads/posters/poster-1792507952319-ncera.webp"
+  },
+  {
+    "title": "Asa made Shiru Daku Haha Musume Donburi",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.8,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/asa-made-shiru-daku-haha-musume-donburi/",
+    "posterImage": "/uploads/posters/d53e101b39e514c89fb8ffb28c401ff8429412994368_webp-1792507928435.webp"
+  },
+  {
+    "title": "Kanojo ga Separate o Matou Riyuu",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/kanojo-ga-separate-o-matou-riyuu/",
+    "posterImage": "/uploads/posters/poster-1792507709364-u2dut.webp"
+  },
+  {
+    "title": "Motokare to wa Dekinakatta Sex Shitemo Ii desu ka",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.6,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/motokare-to-wa-dekinakatta-sex-shitemo-ii-desu-ka/",
+    "posterImage": "/uploads/posters/poster-1792507703782-dhjzz.webp"
+  },
+  {
+    "title": "Kuro Gal a La Carte",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/kuro-gal-a-la-carte/",
+    "posterImage": "/uploads/posters/poster-1792507701603-tztcq.webp"
+  },
+  {
+    "title": "Yogoreta Kanojo",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/yogoreta-kanojo/",
+    "posterImage": "/uploads/posters/poster-1792507644659-ojr20.webp"
+  },
+  {
+    "title": "Tonari Kanojo",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.5,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/tonari-kanojo/",
+    "posterImage": "/uploads/posters/poster-1792507640822-r5drx.webp"
+  },
+  {
+    "title": "Boku no Risou no Isekai Seikatsu",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.6,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/boku-no-risou-no-isekai-seikatsu/",
+    "posterImage": "/uploads/posters/poster-1792507635512-f2qgo.webp"
+  },
+  {
+    "title": "Inshoku Ou Demar",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.3,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/inshoku-ou-demar/",
+    "posterImage": "/uploads/posters/poster-1792507632808-y6q1r.webp"
+  },
+  {
+    "title": "Notto Sexaroid Eurie!",
+    "contentType": "series",
+    "type": "OVA",
+    "genres": "Mature, 18+, Ecchi",
+    "rating": "18+",
+    "score": 7.4,
+    "status": "Finished Airing",
+    "sourceUrl": "https://www.hentaitube.online/tvshows/notto-sexaroid-eurie/",
+    "posterImage": "/uploads/posters/poster-1792507610743-cm41h.webp"
+  }
 ]

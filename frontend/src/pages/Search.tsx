@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { AnimeCard } from '../components/AnimeCard';
 import type { AnimeData } from '../components/AnimeCard';
-import { Search as SearchIcon, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
+import { AgeVerificationModal } from '../components/AgeVerificationModal';
 
 export const Search: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -11,6 +12,12 @@ export const Search: React.FC = () => {
   const [animeList, setAnimeList] = useState<AnimeData[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Age verification state
+  const [isAgeModalOpen, setIsAgeModalOpen] = useState(false);
+  const [isAgeVerified, setIsAgeVerified] = useState<boolean>(() => {
+    return localStorage.getItem('aniverse_age_verified') === 'true';
+  });
 
   // Pagination states
   const [totalPages, setTotalPages] = useState(1);
@@ -20,6 +27,9 @@ export const Search: React.FC = () => {
   const qParam = searchParams.get('q') || '';
   const genreParam = searchParams.get('genre') || '';
   const typeParam = searchParams.get('type') || '';
+  const contentTypeParam = searchParams.get('contentType') || '';
+  const hasDubParam = searchParams.get('hasDub') === 'true';
+  const hasHindiParam = searchParams.get('hasHindi') === 'true';
   const statusParam = searchParams.get('status') || '';
   const yearParam = searchParams.get('year') || '';
   const letterParam = searchParams.get('letter') || '';
@@ -28,6 +38,9 @@ export const Search: React.FC = () => {
   const [searchField, setSearchField] = useState(qParam);
   const [selectedGenre, setSelectedGenre] = useState(genreParam);
   const [selectedType, setSelectedType] = useState(typeParam);
+  const [selectedContentType, setSelectedContentType] = useState(contentTypeParam);
+  const [filterDub, setFilterDub] = useState(hasDubParam);
+  const [filterHindi, setFilterHindi] = useState(hasHindiParam);
   const [selectedStatus, setSelectedStatus] = useState(statusParam);
   const [selectedYear, setSelectedYear] = useState(yearParam);
 
@@ -38,10 +51,13 @@ export const Search: React.FC = () => {
     setSearchField(qParam);
     setSelectedGenre(genreParam);
     setSelectedType(typeParam);
+    setSelectedContentType(contentTypeParam);
+    setFilterDub(hasDubParam);
+    setFilterHindi(hasHindiParam);
     setSelectedStatus(statusParam);
     setSelectedYear(yearParam);
     setCurrentPage(pageParam);
-  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam, letterParam]);
+  }, [qParam, genreParam, typeParam, contentTypeParam, hasDubParam, hasHindiParam, statusParam, yearParam, pageParam, letterParam]);
 
   useEffect(() => {
     const qText = qParam ? `for "${qParam}"` : letterParam ? `starting with "${letterParam}"` : 'Catalog';
@@ -65,15 +81,42 @@ export const Search: React.FC = () => {
     fetchGenres();
   }, []);
 
+  const handleAgeConfirm = () => {
+    localStorage.setItem('aniverse_age_verified', 'true');
+    setIsAgeVerified(true);
+    setIsAgeModalOpen(false);
+  };
+
+  const handleAgeDecline = () => {
+    setIsAgeModalOpen(false);
+    setSelectedGenre('');
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('genre');
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
+
   // Fetch results based on URL queries
   useEffect(() => {
     const fetchResults = async () => {
       try {
         setLoading(true);
+
+        // Intercept 18+ genre if age not verified
+        if (genreParam === '18+' && !isAgeVerified) {
+          setIsAgeModalOpen(true);
+          setAnimeList([]);
+          setLoading(false);
+          return;
+        }
+
         const queryParams = new URLSearchParams();
         if (qParam) queryParams.append('search', qParam);
         if (genreParam) queryParams.append('genre', genreParam);
         if (typeParam) queryParams.append('type', typeParam);
+        if (contentTypeParam) queryParams.append('contentType', contentTypeParam);
+        if (hasDubParam) queryParams.append('hasDub', 'true');
+        if (hasHindiParam) queryParams.append('hasHindi', 'true');
         if (statusParam) queryParams.append('status', statusParam);
         if (yearParam) queryParams.append('year', yearParam);
         if (letterParam) queryParams.append('letter', letterParam);
@@ -91,14 +134,22 @@ export const Search: React.FC = () => {
     };
 
     fetchResults();
-  }, [qParam, genreParam, typeParam, statusParam, yearParam, pageParam, letterParam]);
+  }, [qParam, genreParam, typeParam, contentTypeParam, hasDubParam, hasHindiParam, statusParam, yearParam, pageParam, letterParam, isAgeVerified]);
 
   // Apply filters
   const applyFilters = (updatedPage?: number) => {
+    if (selectedGenre === '18+' && !isAgeVerified) {
+      setIsAgeModalOpen(true);
+      return;
+    }
+
     const newParams: Record<string, string> = {};
     if (searchField) newParams.q = searchField;
     if (selectedGenre) newParams.genre = selectedGenre;
     if (selectedType) newParams.type = selectedType;
+    if (selectedContentType) newParams.contentType = selectedContentType;
+    if (filterDub) newParams.hasDub = 'true';
+    if (filterHindi) newParams.hasHindi = 'true';
     if (selectedStatus) newParams.status = selectedStatus;
     if (selectedYear) newParams.year = selectedYear;
 
@@ -120,6 +171,9 @@ export const Search: React.FC = () => {
     setSearchField('');
     setSelectedGenre('');
     setSelectedType('');
+    setSelectedContentType('');
+    setFilterDub(false);
+    setFilterHindi(false);
     setSelectedStatus('');
     setSelectedYear('');
     setSearchParams({});
@@ -205,7 +259,15 @@ export const Search: React.FC = () => {
             <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Genre</label>
             <select
               value={selectedGenre}
-              onChange={(e) => setSelectedGenre(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '18+' && !isAgeVerified) {
+                  setSelectedGenre(val);
+                  setIsAgeModalOpen(true);
+                  return;
+                }
+                setSelectedGenre(val);
+              }}
               style={{
                 background: 'var(--bg-surface-recessed)',
                 boxShadow: 'var(--nm-inset)',
@@ -293,6 +355,58 @@ export const Search: React.FC = () => {
             />
           </div>
 
+          {/* Content Type select (Series vs Movie) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Catalog Section</label>
+            <select
+              value={selectedContentType}
+              onChange={(e) => setSelectedContentType(e.target.value)}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
+            >
+              <option value="">All Catalog (Series & Movies)</option>
+              <option value="series">Anime Series (200 Series)</option>
+              <option value="movie">Anime Movies (200 Movies)</option>
+            </select>
+          </div>
+
+          {/* Audio Dub Language filters */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Audio Dubbing</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-surface-recessed)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#cbd5e1' }}>
+                <input
+                  type="checkbox"
+                  checked={filterDub}
+                  onChange={(e) => setFilterDub(e.target.checked)}
+                  style={{ accentColor: '#06b6d4', cursor: 'pointer' }}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎙️ English Dubbed
+                </span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#cbd5e1' }}>
+                <input
+                  type="checkbox"
+                  checked={filterHindi}
+                  onChange={(e) => setFilterHindi(e.target.checked)}
+                  style={{ accentColor: '#f59e0b', cursor: 'pointer' }}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🇮🇳 Hindi Dubbed
+                </span>
+              </label>
+            </div>
+          </div>
+
           {/* Filter action buttons */}
           <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
             <button
@@ -319,6 +433,44 @@ export const Search: React.FC = () => {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} style={{ height: '280px', width: '100%', borderRadius: '16px' }} className="shimmer" />
               ))}
+            </div>
+          ) : (genreParam === '18+' && !isAgeVerified) ? (
+            <div
+              className="nm-card"
+              style={{
+                borderRadius: '24px',
+                padding: '60px 24px',
+                textAlign: 'center',
+                background: 'linear-gradient(145deg, rgba(225, 29, 72, 0.08) 0%, rgba(18, 20, 36, 0.95) 100%)',
+                border: '1px solid rgba(225, 29, 72, 0.25)',
+                boxShadow: '0 12px 36px rgba(0,0,0,0.4)'
+              }}
+            >
+              <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '18px', background: 'rgba(225, 29, 72, 0.15)', color: '#e11d48', marginBottom: '16px' }}>
+                <ShieldAlert size={42} />
+              </div>
+              <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '8px' }}>
+                Age Verification Required (18+)
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '460px', margin: '0 auto 20px', lineHeight: '1.6' }}>
+                This section contains mature anime content rated TV-MA and R-17+. You must confirm you are at least 18 years old to view these titles.
+              </p>
+              <button
+                onClick={() => setIsAgeModalOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                  color: '#fff',
+                  padding: '12px 32px',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(225, 29, 72, 0.4)'
+                }}
+              >
+                Verify You Are 18+ To View
+              </button>
             </div>
           ) : animeList.length === 0 ? (
             <div
@@ -387,6 +539,12 @@ export const Search: React.FC = () => {
           )}
         </div>
       </div>
+
+      <AgeVerificationModal
+        isOpen={isAgeModalOpen}
+        onConfirm={handleAgeConfirm}
+        onDecline={handleAgeDecline}
+      />
 
       <style>{`
         @media (max-width: 768px) {
