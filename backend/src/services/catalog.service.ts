@@ -91,7 +91,7 @@ export class CatalogService {
       { name: 'Ultra HD Stream', code: 'vidsrc', baseUrl: 'https://vidsrc.pm/embed', providerType: 'EMBED', priority: 1 },
       { name: 'VidSrc Pro', code: 'vidsrc_me', baseUrl: 'https://vidsrc.me/embed', providerType: 'EMBED', priority: 2 },
       { name: 'StreamCloud HD', code: 'vidsrc_io', baseUrl: 'https://vidsrc.io/embed', providerType: 'EMBED', priority: 3 },
-      { name: '2Embed Global', code: 'twoembed', baseUrl: 'https://www.2embed.cc', providerType: 'EMBED', priority: 4 },
+      { name: 'VidSrc Stream', code: 'vidsrc_cc', baseUrl: 'https://vidsrc.cc', providerType: 'EMBED', priority: 4 },
       { name: 'AutoEmbed Multi', code: 'autoembed', baseUrl: 'https://autoembed.co', providerType: 'EMBED', priority: 5 },
       { name: 'Official Licensed Embed', code: 'official_embed', baseUrl: '', providerType: 'EMBED', priority: 6 },
       { name: 'Self-Hosted Licensed Asset', code: 'licensed_storage', baseUrl: '', providerType: 'DIRECT_HLS', priority: 7 },

@@ -68,7 +68,9 @@ export const ANIWAVE_SLUG_MAP: Record<string, string> = {
   'grand-blue': 'grand-blue-802',
   'aoashi': 'ao-ashi-80164',
   'ao-ashi': 'ao-ashi-80164',
-  'aoashi-season-2': 'ao-ashi-80164'
+  'aoashi-season-2': 'ao-ashi-80164',
+  'im-dating-a-dark-summoner': 'im-dating-a-dark-summoner',
+  'dark-summoner-to-dekiteiru': 'dark-summoner-to-dekiteiru'
 };
 
 export function checkIfAnimeHasHindi(anime: { malId?: number | null; slug?: string; title?: string } | null | undefined): boolean {
@@ -81,10 +83,13 @@ export function checkIfAnimeHasHindi(anime: { malId?: number | null; slug?: stri
 
 export const SUB_ONLY_MAL_IDS = new Set<number>([
   61578, // Even the Student Council Has Its Holes!
+  63509, // I'm Dating a Dark Summoner
 ]);
 
 export const SUB_ONLY_SLUGS = new Set<string>([
   'even-the-student-council-has-its-holes',
+  'im-dating-a-dark-summoner',
+  'dark-summoner-to-dekiteiru',
 ]);
 
 export function checkIfAnimeHasDub(anime: {
@@ -706,7 +711,8 @@ const KNOWN_EPISODE_COUNTS: Record<number, number> = {
   34599: 12,  // Made in Abyss
   37105: 12,  // Grand Blue Dreaming
   49052: 24,  // Aoashi Season 1
-  61603: 12   // Aoashi Season 2
+  61603: 12,  // Aoashi Season 2
+  63509: 12   // I'm Dating a Dark Summoner
 };
 
 async function getDynamicEpisodeCount(title: string, malId: number | null, dbCount: number, type?: string): Promise<number> {
@@ -1265,7 +1271,7 @@ export async function getEpisodeDetail(req: Request, res: Response) {
       return res.status(404).json({ error: 'Anime not found' });
     }
 
-    let episode = await prisma.episode.findUnique({
+    let episode: any = await prisma.episode.findUnique({
       where: {
         animeId_episodeNumber: {
           animeId: anime.id,
@@ -1496,7 +1502,7 @@ export async function getEpisodeSources(req: Request, res: Response) {
 
     let activeServer = requestedServer;
     // Auto-heal dead servers or deprecated defaults to the primary working server
-    const deadOrDeprecated = ['vidplay', 'dghg', 'raretoon', 'byfms', 'datsav'];
+    const deadOrDeprecated = ['vidplay', 'dghg', 'raretoon', 'byfms', 'datsav', 'twoembed'];
     if (!activeServer || deadOrDeprecated.includes(activeServer)) {
       activeServer = defaultWorkingServer;
     }
@@ -1663,10 +1669,10 @@ export async function getEpisodeSources(req: Request, res: Response) {
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
         { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
         { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || ''))) },
-        { id: 'autoembed', name: 'HD-3: AniVerse Auto (Sub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_me', name: 'HD-4: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'twoembed', name: 'HD-6: AniVerse Cinema (Sub)', embedUrl: movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_me', name: 'HD-3: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (Sub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-6: AniVerse Auto (Sub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (customEmbedUrl || '')) }
       ];
 
       const dubServers = hasDub ? [
@@ -1675,17 +1681,17 @@ export async function getEpisodeSources(req: Request, res: Response) {
         { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&dub=1` : (customEmbedUrl || '')) },
         { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || ''))) },
         { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
-        { id: 'twoembed', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://www.2embed.cc/embed/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1?dub=1` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) }
       ] : [];
 
       const hindiServers = hasHindi ? [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
         { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
         { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-3: AniVerse Hindi (Auto)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-4: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'videasy', name: 'HD-5: AniVerse Hindi (Cinema)', embedUrl: movieTmdbId ? `https://player.videasy.to/movie/${movieTmdbId}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_io', name: 'HD-3: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_cc', name: 'HD-4: AniVerse Hindi (Stream)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-5: AniVerse Hindi (Auto)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1&lang=hi` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) }
       ] : [];
 
       const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -1695,7 +1701,9 @@ export async function getEpisodeSources(req: Request, res: Response) {
       };
 
       const serverSources = serversByAudio[activeTranslation] || subServers;
-      const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
+      const currentServerObj = (hasCustomVideoUrl && (!animeMalId && !movieTmdbId))
+        ? (serverSources.find(s => s.id === 'custom_source') || serverSources[0])
+        : (serverSources.find(s => s.id === activeServer) || serverSources[0]);
 
       return res.status(200).json({
         embedUrl: currentServerObj.embedUrl,
@@ -2391,10 +2399,10 @@ export async function getEpisodeSources(req: Request, res: Response) {
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
       { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
       { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || ''))) },
-      { id: 'autoembed', name: 'HD-3: AniVerse Auto (Sub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_me', name: 'HD-4: AniVerse Global (Sub)', embedUrl: tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
-      { id: 'twoembed', name: 'HD-6: AniVerse Cinema (Sub)', embedUrl: tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_me', name: 'HD-3: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (Sub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-6: AniVerse Auto (Sub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (customEmbedUrl || '')) }
     ];
 
     const dubServers = hasDub ? [
@@ -2403,17 +2411,17 @@ export async function getEpisodeSources(req: Request, res: Response) {
       { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
       { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || ''))) },
       { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
-      { id: 'twoembed', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${seasonNumber}&e=${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}?dub=1` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (customEmbedUrl || '')) }
     ] : [];
 
     const hindiServers = hasHindi ? [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
       { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
       { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-3: AniVerse Hindi (Auto)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-4: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'videasy', name: 'HD-5: AniVerse Hindi (Cinema)', embedUrl: tmdbId ? `https://player.videasy.to/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?color=8B5CF6&autoplay=true&ds_lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_io', name: 'HD-3: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_cc', name: 'HD-4: AniVerse Hindi (Stream)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-5: AniVerse Hindi (Auto)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}&lang=hi` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (customEmbedUrl || '')) }
     ] : [];
 
     const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -2423,7 +2431,9 @@ export async function getEpisodeSources(req: Request, res: Response) {
     };
 
     const serverSources = serversByAudio[activeTranslation] || subServers;
-    const currentServerObj = serverSources.find(s => s.id === activeServer) || serverSources[0];
+    const currentServerObj = (hasCustomVideoUrl && (!animeMalId && !tmdbId))
+      ? (serverSources.find(s => s.id === 'custom_source') || serverSources[0])
+      : (serverSources.find(s => s.id === activeServer) || serverSources[0]);
 
     return res.status(200).json({
       embedUrl: currentServerObj.embedUrl,

@@ -27,10 +27,10 @@ export interface ServerSource {
 const DEFAULT_FALLBACK_SERVERS: ServerSource[] = [
   { id: 'vidsrc', name: 'HD-1: AniVerse Multi' },
   { id: 'aniwave', name: 'HD-2: AniVerse Prime' },
-  { id: 'autoembed', name: 'HD-3: AniVerse Auto' },
-  { id: 'vidsrc_me', name: 'HD-4: AniVerse Global' },
-  { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud' },
-  { id: 'twoembed', name: 'HD-6: AniVerse Cinema' }
+  { id: 'vidsrc_me', name: 'HD-3: AniVerse Global' },
+  { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud' },
+  { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema' },
+  { id: 'autoembed', name: 'HD-6: AniVerse Auto' }
 ];
 
 interface AnimeDetailData {
@@ -104,8 +104,8 @@ export const Watch: React.FC = () => {
     navigate('/genres');
   };
 
-  // High-performance streaming server states (Default to autoembed / HD-1 AutoEmbed Multi)
-  const [activeServer, setActiveServer] = useState<string>('autoembed');
+  // High-performance streaming server states (Default to HD-1: AniVerse Multi)
+  const [activeServer, setActiveServer] = useState<string>('vidsrc');
   const [availableServers, setAvailableServers] = useState<ServerSource[]>([]);
   const [serversByAudio, setServersByAudio] = useState<{
     sub?: ServerSource[];
@@ -206,19 +206,34 @@ export const Watch: React.FC = () => {
     };
   }, [isHoveringPlayer]);
 
+  // Helper to safely format and apply stream URL with user autoplay & autoskip preferences
+  const handleSelectServer = (serverId: string, rawEmbedUrl?: string) => {
+    setActiveServer(serverId);
+    if (rawEmbedUrl) {
+      let url = cleanAndNormalizeVideoUrl(rawEmbedUrl);
+      const params: string[] = [];
+      if (autoPlay) params.push('autoplay=1');
+      if (autoSkip) params.push('autoskip=1');
+      if (params.length > 0) {
+        url += (url.includes('?') ? '&' : '?') + params.join('&');
+      }
+      setEmbedUrl(url);
+    }
+  };
+
   // Seamless server switcher that cycles through active working servers of the active audio
   const switchToNextServer = () => {
-    const currentList = serversByAudio[activeTranslation] || availableServers;
-    if (currentList.length > 0) {
-      const currentIndex = currentList.findIndex(s => s.id === activeServer);
-      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % currentList.length : 0;
-      const nextServer = currentList[nextIndex];
-      setActiveServer(nextServer.id);
-      if (nextServer.embedUrl) {
-        setEmbedUrl(nextServer.embedUrl);
-      }
+    const rawList = serversByAudio[activeTranslation] || (availableServers.length > 0 ? availableServers : DEFAULT_FALLBACK_SERVERS);
+    const validList = rawList.filter(s => Boolean(s.embedUrl && s.embedUrl.trim() !== ''));
+    const listToUse = validList.length > 0 ? validList : rawList;
+
+    if (listToUse.length > 0) {
+      const currentIndex = listToUse.findIndex(s => s.id === activeServer);
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % listToUse.length : 0;
+      const nextServer = listToUse[nextIndex];
+      handleSelectServer(nextServer.id, nextServer.embedUrl);
     } else {
-      const fallbackList = ['autoembed', 'vidsrc', 'vidsrc_io', 'twoembed', 'vidsrc_me', 'videasy'];
+      const fallbackList = ['vidsrc', 'aniwave', 'vidsrc_me', 'vidsrc_io', 'vidsrc_cc', 'autoembed'];
       const currentIndex = fallbackList.indexOf(activeServer);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % fallbackList.length : 0;
       setActiveServer(fallbackList[nextIndex]);
@@ -984,8 +999,18 @@ export const Watch: React.FC = () => {
                   </div>
                 )
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', fontSize: '14px', background: '#09080d' }}>
-                  Loading stream sources...
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', color: '#cbd5e1', fontSize: '14px', background: '#09080d', padding: '20px', textAlign: 'center' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Play size={20} style={{ color: '#8b5cf6', marginLeft: '3px' }} />
+                  </div>
+                  <div style={{ fontWeight: 600 }}>Loading stream mirror...</div>
+                  <button
+                    onClick={switchToNextServer}
+                    className="nm-pill"
+                    style={{ fontSize: '12px', fontWeight: 700, padding: '8px 18px', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.1)', cursor: 'pointer' }}
+                  >
+                    ⚡ Switch to Alternate Mirror
+                  </button>
                 </div>
               )}
             </div>
@@ -1177,10 +1202,7 @@ export const Watch: React.FC = () => {
                       return (
                         <button
                           key={s.id}
-                          onClick={() => {
-                            setActiveServer(s.id);
-                            if (s.embedUrl) setEmbedUrl(s.embedUrl);
-                          }}
+                          onClick={() => handleSelectServer(s.id, s.embedUrl)}
                           className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                         >
                           <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1206,8 +1228,7 @@ export const Watch: React.FC = () => {
                         const subList: ServerSource[] = serversByAudio.sub || availableServers;
                         if (subList.length > 0) {
                           const targetServer = subList.find(s => s.id === activeServer) || subList[0];
-                          setActiveServer(targetServer.id);
-                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                          handleSelectServer(targetServer.id, targetServer.embedUrl);
                         }
                       }}
                       className="nm-pill"
@@ -1241,8 +1262,7 @@ export const Watch: React.FC = () => {
                             onClick={() => {
                               setActiveTranslation('sub');
                               localStorage.setItem('aniverse_preferred_audio', 'sub');
-                              setActiveServer(s.id);
-                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                              handleSelectServer(s.id, s.embedUrl);
                             }}
                             className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                           >
@@ -1267,8 +1287,7 @@ export const Watch: React.FC = () => {
                         const dubList: ServerSource[] = serversByAudio.dub || [];
                         if (dubList.length > 0) {
                           const targetServer = dubList.find(s => s.id === activeServer) || dubList[0];
-                          setActiveServer(targetServer.id);
-                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                          handleSelectServer(targetServer.id, targetServer.embedUrl);
                         }
                       }}
                       className="nm-pill"
@@ -1302,8 +1321,7 @@ export const Watch: React.FC = () => {
                             onClick={() => {
                               setActiveTranslation('dub');
                               localStorage.setItem('aniverse_preferred_audio', 'dub');
-                              setActiveServer(s.id);
-                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                              handleSelectServer(s.id, s.embedUrl);
                             }}
                             className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                             style={isSelected ? { background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', boxShadow: '0 4px 16px rgba(6, 182, 212, 0.65)' } : {}}
@@ -1328,8 +1346,7 @@ export const Watch: React.FC = () => {
                         const hindiList: ServerSource[] = serversByAudio.hindi || availableServers;
                         if (hindiList.length > 0) {
                           const targetServer = hindiList.find(s => s.id === activeServer) || hindiList[0];
-                          setActiveServer(targetServer.id);
-                          if (targetServer.embedUrl) setEmbedUrl(targetServer.embedUrl);
+                          handleSelectServer(targetServer.id, targetServer.embedUrl);
                         }
                       }}
                       className="nm-pill"
@@ -1362,8 +1379,7 @@ export const Watch: React.FC = () => {
                             key={s.id}
                             onClick={() => {
                               setActiveTranslation('hindi');
-                              setActiveServer(s.id);
-                              if (s.embedUrl) setEmbedUrl(s.embedUrl);
+                              handleSelectServer(s.id, s.embedUrl);
                             }}
                             className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                             style={isSelected ? { background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.65)' } : {}}
