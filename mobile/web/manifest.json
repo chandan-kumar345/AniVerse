@@ -1,11 +1,11 @@
 {
-    "name": "aniverse_mobile",
-    "short_name": "aniverse_mobile",
+    "name": "AniVerse",
+    "short_name": "AniVerse",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#09080D",
+    "theme_color": "#FF1E56",
+    "description": "AniVerse - Anime Beyond Borders Official Mobile App",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
