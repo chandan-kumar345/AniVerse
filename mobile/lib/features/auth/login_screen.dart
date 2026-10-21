@@ -1,32 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/safe_text.dart';
 import '../../core/widgets/neon_button.dart';
+import '../../core/providers/app_providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoginTab = true;
   bool _obscurePassword = true;
   final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (identifier.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: SafeText('Please enter your credentials'),
+          backgroundColor: AppColors.primaryNeon,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    // Simulating quick auth hand-off to home
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        context.go('/home');
-      }
-    });
+
+    final authRepo = ref.read(authRepositoryProvider);
+    Map<String, dynamic> result;
+
+    if (_isLoginTab) {
+      result = await authRepo.login(
+        emailOrUsername: identifier,
+        password: password,
+      );
+    } else {
+      final email = identifier.contains('@') ? identifier : '$identifier@aniverse.app';
+      final username = identifier.contains('@') ? identifier.split('@').first : identifier;
+      result = await authRepo.register(
+        email: email,
+        username: username,
+        password: password,
+      );
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      ref.invalidate(isLoggedInProvider);
+      ref.invalidate(currentUserProvider);
+      context.go('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: SafeText(result['message']?.toString() ?? 'Authentication failed'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleGuestLogin() async {
+    setState(() => _isLoading = true);
+    final authRepo = ref.read(authRepositoryProvider);
+    await authRepo.login(
+      emailOrUsername: 'guest_${DateTime.now().millisecondsSinceEpoch % 10000}',
+      password: 'guest_secure_pass',
+    );
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    ref.invalidate(isLoggedInProvider);
+    ref.invalidate(currentUserProvider);
+    context.go('/home');
   }
 
   @override
@@ -265,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Guest Skip Link
               TextButton(
-                onPressed: () => context.go('/home'),
+                onPressed: _handleGuestLogin,
                 child: const SafeText(
                   'Browse as Guest →',
                   style: TextStyle(

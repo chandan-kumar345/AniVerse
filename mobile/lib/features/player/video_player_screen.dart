@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/safe_text.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/providers/app_providers.dart';
 import '../../data/models/anime_model.dart';
 
@@ -23,65 +23,27 @@ class VideoPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
-  VideoPlayerController? _controller;
+  WebViewController? _webViewController;
+  VideoPlayerController? _videoPlayerController;
+
   EpisodeSourcesResponse? _sourcesResponse;
   bool _isLoading = true;
-  bool _isPlaying = true;
-  bool _showControls = true;
+  bool _isDirectVideo = false;
+  bool _isLandscape = false;
   String _activeServer = 'vidsrc';
   String _activeAudio = 'sub';
-  double _playbackSpeed = 1.0;
-  String _quality = '1080p';
+  late int _currentEpNum;
 
   @override
   void initState() {
     super.initState();
-    _fetchAndInitStream();
-  }
-
-  Future<void> _fetchAndInitStream() async {
-    setState(() => _isLoading = true);
-    try {
-      final repo = ref.read(animeRepositoryProvider);
-      final sources = await repo.getEpisodeSources(
-        widget.slug,
-        widget.epNum,
-        server: _activeServer,
-        lang: _activeAudio,
-      );
-
-      _sourcesResponse = sources;
-      _activeServer = sources.server;
-
-      // Initialize sample fallback or direct url with video player
-      final streamUrl = sources.embedUrl.isNotEmpty
-          ? sources.embedUrl
-          : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-
-      _controller?.dispose();
-      _controller = VideoPlayerController.networkUrl(Uri.parse(streamUrl))
-        ..initialize().then((_) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-              _controller?.play();
-            });
-          }
-        }).catchError((_) {
-          if (mounted) {
-            setState(() => _isLoading = false);
-          }
-        });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    _currentEpNum = widget.epNum;
+    _initStream();
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _videoPlayerController?.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -89,266 +51,509 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    if (_controller == null) return;
-    setState(() {
-      if (_controller!.value.isPlaying) {
-        _controller!.pause();
-        _isPlaying = false;
+  Future<void> _initStream() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = ref.read(animeRepositoryProvider);
+      final sources = await repo.getEpisodeSources(
+        widget.slug,
+        _currentEpNum,
+        server: _activeServer,
+        lang: _activeAudio,
+      );
+
+      _sourcesResponse = sources;
+      _activeServer = sources.server;
+
+      final url = sources.embedUrl;
+      final isDirect = url.isNotEmpty &&
+          (url.endsWith('.mp4') ||
+              url.endsWith('.m3u8') ||
+              url.contains('.mp4?') ||
+              url.contains('.m3u8?'));
+
+      if (isDirect) {
+        _isDirectVideo = true;
+        _initNativeVideoPlayer(url);
       } else {
-        _controller!.play();
-        _isPlaying = true;
+        _isDirectVideo = false;
+        _initWebViewPlayer(url.isNotEmpty ? url : 'https://vidsrc.pm/embed/anime?mal=52299&ep=$_currentEpNum');
       }
+    } catch (_) {
+      // Resilient fallback to auto-embed
+      _isDirectVideo = false;
+      _initWebViewPlayer('https://vidsrc.pm/embed/anime?mal=52299&ep=$_currentEpNum');
+    }
+  }
+
+  void _initNativeVideoPlayer(String directUrl) {
+    _videoPlayerController?.dispose();
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(directUrl))
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _videoPlayerController?.play();
+          });
+        }
+      }).catchError((_) {
+        // Fallback to webview player if direct media fails to decode
+        if (mounted) {
+          _isDirectVideo = false;
+          _initWebViewPlayer('https://vidsrc.pm/embed/anime?mal=52299&ep=$_currentEpNum');
+        }
+      });
+  }
+
+  void _initWebViewPlayer(String embedUrl) {
+    _videoPlayerController?.dispose();
+    _videoPlayerController = null;
+
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..setUserAgent(
+        'Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            final uri = Uri.tryParse(request.url);
+            if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+              final host = uri.host.toLowerCase();
+              // Prevent common popunder and intrusive ad domains
+              if (host.contains('doubleclick') ||
+                  host.contains('googleads') ||
+                  host.contains('adsterra') ||
+                  host.contains('popads') ||
+                  host.contains('bet') ||
+                  host.contains('casino') ||
+                  host.contains('exoclick') ||
+                  host.contains('onclick')) {
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            }
+            return NavigationDecision.prevent;
+          },
+          onPageStarted: (_) {
+            if (mounted) setState(() => _isLoading = true);
+          },
+          onPageFinished: (_) {
+            if (mounted) {
+              setState(() => _isLoading = false);
+              // Inject CSS to ensure player fits 100% viewport and removes background padding
+              _webViewController?.runJavaScript('''
+                (function() {
+                  var style = document.createElement('style');
+                  style.innerHTML = 'body, html { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; } iframe, video { width:100% !important; height:100% !important; border:none !important; }';
+                  document.head.appendChild(style);
+                })();
+              ''');
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(embedUrl));
+
+    setState(() {
+      _webViewController = controller;
     });
   }
 
-  void _seekBy(int seconds) {
-    if (_controller == null) return;
-    final current = _controller!.value.position;
-    final target = current + Duration(seconds: seconds);
-    _controller!.seekTo(target);
+  void _toggleOrientation() {
+    setState(() => _isLandscape = !_isLandscape);
+    if (_isLandscape) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+  }
+
+  void _changeEpisode(int newEp) {
+    if (newEp < 1) return;
+    setState(() {
+      _currentEpNum = newEp;
+    });
+    _initStream();
+  }
+
+  void _openServerPicker() {
+    final servers = _sourcesResponse?.servers ?? [];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF131524),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.dns_rounded, color: Color(0xFFFF1E56), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Select Streaming Mirror',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Color(0xFF1E2130), height: 1),
+              if (servers.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Primary Server active', style: TextStyle(color: Colors.white70)),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: servers.length,
+                    separatorBuilder: (_, _) => const Divider(color: Color(0xFF181A29), height: 1),
+                    itemBuilder: (context, index) {
+                      final s = servers[index];
+                      final isSelected = s.id == _activeServer;
+                      return ListTile(
+                        leading: Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: isSelected ? const Color(0xFFFF1E56) : const Color(0xFF64748B),
+                        ),
+                        title: Text(
+                          s.name,
+                          style: TextStyle(
+                            color: isSelected ? const Color(0xFFFF1E56) : Colors.white,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_rounded, color: Color(0xFFFF1E56), size: 20)
+                            : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          setState(() => _activeServer = s.id);
+                          _initStream();
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openAudioPicker() {
+    final audios = ['sub', 'dub', 'hindi'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF131524),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.graphic_eq_rounded, color: Color(0xFFFF1E56), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Audio Track & Subtitles',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Color(0xFF1E2130), height: 1),
+              ...audios.map((lang) {
+                final isSelected = _activeAudio == lang;
+                final label = lang == 'sub'
+                    ? 'Japanese (Subtitles)'
+                    : (lang == 'dub' ? 'English Dubbed' : 'Hindi Dubbed');
+                return ListTile(
+                  leading: Icon(
+                    Icons.audiotrack_rounded,
+                    color: isSelected ? const Color(0xFFFF1E56) : const Color(0xFF64748B),
+                  ),
+                  title: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFFF1E56) : Colors.white,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_rounded, color: Color(0xFFFF1E56), size: 20)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _activeAudio = lang);
+                    _initStream();
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.slug.replaceAll('-', ' ').toUpperCase();
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
-            // Video Player Viewport
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: GestureDetector(
-                onTap: () => setState(() => _showControls = !_showControls),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (_controller != null && _controller!.value.isInitialized)
-                      VideoPlayer(_controller!)
-                    else
-                      Container(
-                        color: Colors.black,
-                        child: Center(
-                          child: _isLoading
-                              ? const CircularProgressIndicator(color: AppColors.primaryNeon)
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.live_tv_rounded, color: AppColors.primaryNeon, size: 48),
-                                    const SizedBox(height: 12),
-                                    SafeText(
-                                      'Connecting to $_activeServer mirror...',
-                                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-
-                    // Controls Overlay (Matching Screen 9 in mockup)
-                    if (_showControls) ...[
-                      // Dark gradient tint
-                      Container(
-                        color: Colors.black.withOpacity(0.45),
-                      ),
-
-                      // Top Bar: Back, Title, PIP, Cast, Settings
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        right: 10,
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-                              onPressed: () => context.pop(),
-                            ),
-                            Expanded(
-                              child: SafeText(
-                                '${widget.slug.toUpperCase()} • Ep ${widget.epNum}',
-                                maxLines: 1,
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.cast_rounded, color: Colors.white, size: 20),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.picture_in_picture_alt_rounded, color: Colors.white, size: 20),
-                              onPressed: () {},
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Center Playback Triggers (-10s, Play/Pause, +10s)
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              iconSize: 36,
-                              icon: const Icon(Icons.replay_10_rounded, color: Colors.white),
-                              onPressed: () => _seekBy(-10),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: _togglePlayPause,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryNeon,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(color: AppColors.primaryGlow, blurRadius: 20),
-                                  ],
-                                ),
-                                child: Icon(
-                                  _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 36,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            IconButton(
-                              iconSize: 36,
-                              icon: const Icon(Icons.forward_10_rounded, color: Colors.white),
-                              onPressed: () => _seekBy(10),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Bottom Progress Slider & Timestamps
-                      Positioned(
-                        bottom: 0,
-                        left: 16,
-                        right: 16,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SafeText(
-                                  _formatDuration(_controller?.value.position ?? Duration.zero),
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                                ),
-                                SafeText(
-                                  _formatDuration(_controller?.value.duration ?? const Duration(minutes: 24)),
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                                ),
-                              ],
-                            ),
-                            if (_controller != null && _controller!.value.isInitialized)
-                              VideoProgressIndicator(
-                                _controller!,
-                                allowScrubbing: true,
-                                colors: VideoProgressColors(
-                                  playedColor: AppColors.primaryNeon,
-                                  bufferedColor: Colors.white.withOpacity(0.3),
-                                  backgroundColor: Colors.white.withOpacity(0.1),
-                                ),
-                              ),
-                            const SizedBox(height: 6),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-
-            // Secondary Controls Bar (Auto, 1x, 1080p, CC, Mirrors)
+            // Top App Bar Controls
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: AppColors.surfaceCard,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              color: const Color(0xFF0D0E15),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _controlBadge('Auto', () {}),
-                  _controlBadge('${_playbackSpeed}x', _changeSpeed),
-                  _controlBadge(_quality, _changeQuality),
-                  _controlBadge('CC ${_activeAudio.toUpperCase()}', _changeAudio),
-                  IconButton(
-                    icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
-                    onPressed: () {
-                      SystemChrome.setPreferredOrientations([
-                        DeviceOrientation.landscapeLeft,
-                        DeviceOrientation.landscapeRight,
-                      ]);
-                    },
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Title & Episode Badge
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Episode $_currentEpNum • ${_activeAudio.toUpperCase()}',
+                          style: const TextStyle(
+                            color: Color(0xFFFF1E56),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Server Selector Button
+                  GestureDetector(
+                    onTap: _openServerPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181A29),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.dns_rounded, color: Color(0xFFFF1E56), size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Server',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Audio Track Button
+                  GestureDetector(
+                    onTap: _openAudioPicker,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF181A29),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.subtitles_rounded, color: Colors.white70, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            _activeAudio.toUpperCase(),
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Fullscreen/Orientation Toggle
+                  GestureDetector(
+                    onTap: _toggleOrientation,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isLandscape ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // Server Mirror Switcher Section
+            // Video Player Viewport (Dual Engine: WebView or Native Video Player)
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  const SafeText(
-                    'Streaming Mirrors',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.white),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_sourcesResponse?.servers.isNotEmpty ?? false)
-                    ..._sourcesResponse!.servers.map((s) {
-                      final isSelected = _activeServer == s.id;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          tileColor: isSelected ? AppColors.surfaceElevated : AppColors.surfaceCard,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: isSelected ? AppColors.primaryNeon : AppColors.border,
-                            ),
-                          ),
-                          leading: Icon(
-                            Icons.play_circle_fill_rounded,
-                            color: isSelected ? AppColors.primaryNeon : AppColors.textMuted,
-                          ),
-                          title: SafeText(
-                            s.name,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                          trailing: isSelected
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryNeon.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const SafeText(
-                                    'ACTIVE',
-                                    style: TextStyle(color: AppColors.primaryNeon, fontSize: 10, fontWeight: FontWeight.w900),
-                                  ),
-                                )
-                              : null,
-                          onTap: () {
-                            setState(() => _activeServer = s.id);
-                            _fetchAndInitStream();
-                          },
-                        ),
-                      );
-                    })
+                  // Video Surface
+                  if (_isDirectVideo && _videoPlayerController != null && _videoPlayerController!.value.isInitialized)
+                    Center(
+                      child: AspectRatio(
+                        aspectRatio: _videoPlayerController!.value.aspectRatio,
+                        child: VideoPlayer(_videoPlayerController!),
+                      ),
+                    )
+                  else if (_webViewController != null)
+                    WebViewWidget(controller: _webViewController!)
                   else
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: SafeText('Loading available mirrors...', style: TextStyle(color: AppColors.textMuted)),
+                    Container(color: Colors.black),
+
+                  // Loading Shimmer Indicator
+                  if (_isLoading)
+                    Container(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(color: Color(0xFFFF1E56), strokeWidth: 3),
+                            SizedBox(height: 16),
+                            Text(
+                              'Connecting to High-Speed Anime Stream...',
+                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                ],
+              ),
+            ),
+
+            // Bottom Quick Episode Navigation Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: const Color(0xFF0D0E15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Previous Episode
+                  TextButton.icon(
+                    onPressed: _currentEpNum > 1 ? () => _changeEpisode(_currentEpNum - 1) : null,
+                    icon: const Icon(Icons.skip_previous_rounded, size: 20),
+                    label: const Text('Prev Ep'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _currentEpNum > 1 ? Colors.white : Colors.white24,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                    ),
+                  ),
+
+                  // Center Episode Counter Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF1E56), Color(0xFFBE123C)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF1E56).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Episode $_currentEpNum',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                    ),
+                  ),
+
+                  // Next Episode
+                  TextButton.icon(
+                    onPressed: () => _changeEpisode(_currentEpNum + 1),
+                    icon: const Icon(Icons.skip_next_rounded, size: 20),
+                    label: const Text('Next Ep'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -356,50 +561,5 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
         ),
       ),
     );
-  }
-
-  Widget _controlBadge(String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.borderLight, width: 0.5),
-        ),
-        child: SafeText(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
-        ),
-      ),
-    );
-  }
-
-  void _changeSpeed() {
-    final speeds = [0.5, 1.0, 1.25, 1.5, 2.0];
-    final nextIdx = (speeds.indexOf(_playbackSpeed) + 1) % speeds.length;
-    final nextSpeed = speeds[nextIdx];
-    setState(() => _playbackSpeed = nextSpeed);
-    _controller?.setPlaybackSpeed(nextSpeed);
-  }
-
-  void _changeQuality() {
-    final qualities = ['Auto', '1080p', '720p', '480p'];
-    final nextIdx = (qualities.indexOf(_quality) + 1) % qualities.length;
-    setState(() => _quality = qualities[nextIdx]);
-  }
-
-  void _changeAudio() {
-    final audios = ['sub', 'dub', 'hindi'];
-    final nextIdx = (audios.indexOf(_activeAudio) + 1) % audios.length;
-    setState(() => _activeAudio = audios[nextIdx]);
-    _fetchAndInitStream();
-  }
-
-  String _formatDuration(Duration d) {
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
   }
 }

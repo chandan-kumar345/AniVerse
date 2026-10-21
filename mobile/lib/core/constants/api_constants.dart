@@ -1,20 +1,18 @@
-import 'package:flutter/foundation.dart';
-import 'dart:io' show Platform;
-
 class ApiConstants {
-  // Automatically selects correct host based on device platform
+  // Live high-speed production backend deployed on Render
+  static const String liveBaseUrl = 'https://aniverse-k94k.onrender.com';
+
+  // Automatically selects correct host (allows --dart-define=API_BASE_URL override for local dev)
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000';
+    const custom = String.fromEnvironment('API_BASE_URL');
+    if (custom.isNotEmpty) {
+      return custom.replaceAll(RegExp(r'/+$'), '');
     }
-    try {
-      if (Platform.isAndroid) {
-        // Android Emulator loops back to development host via 10.0.2.2
-        return 'http://10.0.2.2:5000';
-      }
-    } catch (_) {}
-    return 'http://localhost:5000';
+    return liveBaseUrl;
   }
+
+  // Unified Batch Home Endpoint
+  static const String home = '/api/anime/home';
 
   // Auth Endpoints
   static const String login = '/api/auth/login';

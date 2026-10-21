@@ -39,6 +39,18 @@ final _router = GoRouter(
       builder: (context, state) => const MainNavigationScreen(),
     ),
     GoRoute(
+      path: '/explore',
+      builder: (context, state) => const MainNavigationScreen(),
+    ),
+    GoRoute(
+      path: '/watchlist',
+      builder: (context, state) => const MainNavigationScreen(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const MainNavigationScreen(),
+    ),
+    GoRoute(
       path: '/anime/:slug',
       builder: (context, state) {
         final slug = state.pathParameters['slug'] ?? '';
@@ -47,6 +59,14 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/watch/:slug/:epNum',
+      builder: (context, state) {
+        final slug = state.pathParameters['slug'] ?? '';
+        final epNum = int.tryParse(state.pathParameters['epNum'] ?? '1') ?? 1;
+        return VideoPlayerScreen(slug: slug, epNum: epNum);
+      },
+    ),
+    GoRoute(
+      path: '/anime/:slug/watch/:epNum',
       builder: (context, state) {
         final slug = state.pathParameters['slug'] ?? '';
         final epNum = int.tryParse(state.pathParameters['epNum'] ?? '1') ?? 1;

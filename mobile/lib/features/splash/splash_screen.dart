@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/safe_text.dart';
+import '../../core/providers/app_providers.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
 
   @override
@@ -21,11 +23,26 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
+    // Pre-warm home catalog and wake up backend in background
+    ref.read(animeRepositoryProvider).getHomeData();
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Give animation 1.8 seconds to display brand splash
+    await Future.delayed(const Duration(milliseconds: 1800));
+    if (!mounted) return;
+
+    final authRepo = ref.read(authRepositoryProvider);
+    final loggedIn = await authRepo.isLoggedIn();
+
+    if (mounted) {
+      if (loggedIn) {
+        context.go('/home');
+      } else {
         context.go('/onboarding');
       }
-    });
+    }
   }
 
   @override
@@ -53,14 +70,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryNeon.withOpacity(0.25 + (_pulseController.value * 0.15)),
+                        color: AppColors.primaryNeon.withValues(alpha: 0.25 + (_pulseController.value * 0.15)),
                         blurRadius: 100,
                         spreadRadius: 20,
                       ),
                     ],
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.primaryNeon.withOpacity(0.4),
+                        AppColors.primaryNeon.withValues(alpha: 0.4),
                         Colors.transparent,
                       ],
                     ),
