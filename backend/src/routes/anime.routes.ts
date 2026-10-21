@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getAllAnime,
+  getHomeData,
   getTrendingAnime,
   getPopularAnime,
   getTopTenAnime,
@@ -16,6 +17,7 @@ import {
 const router = Router();
 
 router.get('/', getAllAnime);
+router.get('/home', getHomeData);
 router.get('/trending', getTrendingAnime);
 router.get('/popular', getPopularAnime);
 router.get('/top-ten', getTopTenAnime);

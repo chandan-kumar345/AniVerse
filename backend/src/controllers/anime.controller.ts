@@ -7,6 +7,35 @@ import { extractCleanEmbedFromWebPage } from '../services/videoExtractor.service
 
 const prisma = new PrismaClient();
 
+// High-performance in-memory TTL query cache for ultra-fast anime loading
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+const queryCache = new Map<string, CacheEntry<any>>();
+
+export function getCached<T>(key: string): T | null {
+  const entry = queryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    queryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+export function setCached<T>(key: string, data: T, ttlMs = 60_000): void {
+  if (queryCache.size > 500) {
+    const firstKey = queryCache.keys().next().value;
+    if (firstKey) queryCache.delete(firstKey);
+  }
+  queryCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+export function clearAllCache(): void {
+  queryCache.clear();
+}
+
 export const HINDI_DUBBED_MAL_IDS = new Set<number>([
   51009, 40748, 48561, // JJK S2, S1, Movie 0
   38000, 47778, 49776, 51019, 55701, 40456, // Demon Slayer
@@ -793,6 +822,15 @@ export async function getAllAnime(req: Request, res: Response) {
   try {
     const { search, genre, type, contentType, status, year, limit, page, letter, sort, hasDub, hasHindi, availabilityStatus } = req.query;
 
+    const cacheKey = !search ? `anime:list:${JSON.stringify(req.query)}` : null;
+    if (cacheKey) {
+      const cached = getCached<any>(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+        return res.status(200).json(cached);
+      }
+    }
+
     const pageNumber = parseInt(page as string) || 1;
     const limitNumber = parseInt(limit as string) || 20;
     const skip = (pageNumber - 1) * limitNumber;
@@ -986,7 +1024,7 @@ export async function getAllAnime(req: Request, res: Response) {
       }
     }
 
-    return res.status(200).json({
+    const responsePayload = {
       animeList,
       pagination: {
         total,
@@ -994,20 +1032,138 @@ export async function getAllAnime(req: Request, res: Response) {
         limit: limitNumber,
         totalPages: Math.ceil(total / limitNumber),
       },
-    });
+    };
+    if (cacheKey) {
+      setCached(cacheKey, responsePayload, 60_000);
+    }
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    return res.status(200).json(responsePayload);
   } catch (error: any) {
     console.error('Error fetching anime list:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
+export async function getHomeData(_req: Request, res: Response) {
+  try {
+    const cached = getCached<any>('anime:home');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      return res.status(200).json(cached);
+    }
+
+    const [
+      trending,
+      popular,
+      topTen,
+      latestUpdates,
+      movies,
+      genresRows,
+      newRelease,
+      newAdded,
+      justCompleted,
+    ] = await Promise.all([
+      prisma.anime.findMany({
+        where: { isTrending: true },
+        take: 10,
+        orderBy: { score: 'desc' },
+      }),
+      prisma.anime.findMany({
+        where: { isPopular: true },
+        take: 10,
+        orderBy: { score: 'desc' },
+      }),
+      prisma.anime.findMany({
+        take: 30,
+        orderBy: { score: 'desc' },
+      }),
+      prisma.anime.findMany({
+        take: 35,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.anime.findMany({
+        where: {
+          OR: [
+            { contentType: 'movie' },
+            { type: 'Movie' },
+            { type: 'MOVIE' },
+          ],
+        },
+        take: 16,
+        orderBy: { score: 'desc' },
+      }),
+      prisma.anime.findMany({
+        select: { genres: true },
+      }),
+      prisma.anime.findMany({
+        where: { status: 'Currently Airing' },
+        take: 5,
+        orderBy: { score: 'desc' },
+      }),
+      prisma.anime.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.anime.findMany({
+        where: { status: 'Finished Airing' },
+        take: 5,
+        orderBy: { score: 'desc' },
+      }),
+    ]);
+
+    const genresSet = new Set<string>();
+    genresRows.forEach((a) => {
+      if (a.genres) {
+        a.genres.split(',').forEach((g) => {
+          const trimmed = g.trim();
+          if (trimmed) genresSet.add(trimmed);
+        });
+      }
+    });
+    genresSet.add('18+');
+    const genres = Array.from(genresSet).sort();
+
+    const homeData = {
+      trending,
+      popular,
+      topTen,
+      latestUpdates,
+      movies,
+      genres,
+      newRelease,
+      newAdded,
+      justCompleted,
+    };
+
+    setCached('anime:home', homeData, 60_000);
+    setCached('anime:trending', { trending }, 60_000);
+    setCached('anime:popular', { popular }, 60_000);
+    setCached('anime:topTen', { topTen }, 60_000);
+    setCached('anime:genres', { genres }, 300_000);
+
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    return res.status(200).json(homeData);
+  } catch (error: any) {
+    console.error('Error fetching home data:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 export async function getTrendingAnime(_req: Request, res: Response) {
   try {
+    const cached = getCached<{ trending: any[] }>('anime:trending');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      return res.status(200).json(cached);
+    }
+
     const trending = await prisma.anime.findMany({
       where: { isTrending: true },
       take: 10,
       orderBy: { score: 'desc' },
     });
+    setCached('anime:trending', { trending }, 60_000);
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
     return res.status(200).json({ trending });
   } catch (error: any) {
     console.error('Error fetching trending anime:', error);
@@ -1017,11 +1173,19 @@ export async function getTrendingAnime(_req: Request, res: Response) {
 
 export async function getPopularAnime(_req: Request, res: Response) {
   try {
+    const cached = getCached<{ popular: any[] }>('anime:popular');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      return res.status(200).json(cached);
+    }
+
     const popular = await prisma.anime.findMany({
       where: { isPopular: true },
       take: 10,
       orderBy: { score: 'desc' },
     });
+    setCached('anime:popular', { popular }, 60_000);
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
     return res.status(200).json({ popular });
   } catch (error: any) {
     console.error('Error fetching popular anime:', error);
@@ -1031,10 +1195,18 @@ export async function getPopularAnime(_req: Request, res: Response) {
 
 export async function getTopTenAnime(_req: Request, res: Response) {
   try {
+    const cached = getCached<{ topTen: any[] }>('anime:topTen');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      return res.status(200).json(cached);
+    }
+
     const topTen = await prisma.anime.findMany({
       take: 30,
       orderBy: { score: 'desc' },
     });
+    setCached('anime:topTen', { topTen }, 60_000);
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
     return res.status(200).json({ topTen });
   } catch (error: any) {
     console.error('Error fetching top ten anime:', error);
@@ -1386,16 +1558,27 @@ export async function getAutocompleteSuggestions(req: Request, res: Response) {
 
 export async function getAllGenres(_req: Request, res: Response) {
   try {
+    const cached = getCached<{ genres: string[] }>('anime:genres');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200');
+      return res.status(200).json(cached);
+    }
+
     const anime = await prisma.anime.findMany({ select: { genres: true } });
     const genresSet = new Set<string>();
     anime.forEach((a) => {
-      a.genres.split(',').forEach((g) => {
-        const trimmed = g.trim();
-        if (trimmed) genresSet.add(trimmed);
-      });
+      if (a.genres) {
+        a.genres.split(',').forEach((g) => {
+          const trimmed = g.trim();
+          if (trimmed) genresSet.add(trimmed);
+        });
+      }
     });
     genresSet.add('18+');
-    return res.status(200).json({ genres: Array.from(genresSet).sort() });
+    const result = { genres: Array.from(genresSet).sort() };
+    setCached('anime:genres', result, 300_000); // 5 min TTL
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200');
+    return res.status(200).json(result);
   } catch (error: any) {
     console.error('Error fetching genres list:', error);
     return res.status(500).json({ error: 'Internal Server Error' });

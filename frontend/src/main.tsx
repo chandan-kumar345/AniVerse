@@ -5,7 +5,9 @@ import './index.css'
 import App from './App.tsx'
 
 // Configure Axios baseURL for Production Deployment (Vercel -> Render backend)
-const apiBase = import.meta.env.VITE_API_URL;
+const apiBase =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://aniverse-k94k.onrender.com' : '');
 if (apiBase) {
   // Clean trailing slashes or duplicate /api segments so '/api/...' calls route cleanly
   const cleanBase = apiBase.replace(/\/+$/, '').replace(/\/api$/, '');

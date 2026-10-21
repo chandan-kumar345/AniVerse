@@ -20,12 +20,63 @@ export const Home: React.FC = () => {
   const [justCompleted, setJustCompleted] = useState<AnimeData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 1. Instant Cache Hydration: Render immediately from sessionStorage if available (0ms)
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('aniverse_home_cache');
+      if (cached) {
+        const d = JSON.parse(cached);
+        if (d && (d.trending?.length || d.topTen?.length)) {
+          if (d.trending) setTrending(d.trending);
+          if (d.popular) setPopular(d.popular);
+          if (d.topTen) setTopTen(d.topTen);
+          if (d.latestUpdates) setLatestUpdates(d.latestUpdates);
+          if (d.movies) setMovies(d.movies);
+          if (d.genres) setGenres(d.genres);
+          if (d.newRelease) setNewRelease(d.newRelease);
+          if (d.newAdded) setNewAdded(d.newAdded);
+          if (d.justCompleted) setJustCompleted(d.justCompleted);
+          setLoading(false);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  // 2. Fetch fresh home data through AniVerse API
   useEffect(() => {
     const fetchHomeData = async (showShimmer = false) => {
       try {
-        if (showShimmer) {
+        if (showShimmer && loading) {
           setLoading(true);
         }
+
+        // Fast Path: Call the unified and in-memory cached /api/anime/home endpoint
+        try {
+          const homeRes = await axios.get('/api/anime/home', { timeout: 10000 });
+          if (homeRes.data && (homeRes.data.trending || homeRes.data.topTen)) {
+            const d = homeRes.data;
+            setTrending(d.trending || []);
+            setPopular(d.popular || []);
+            setTopTen(d.topTen || []);
+            setLatestUpdates(d.latestUpdates || []);
+            setMovies(d.movies || []);
+            setGenres(d.genres || []);
+            setNewRelease(d.newRelease || []);
+            setNewAdded(d.newAdded || []);
+            setJustCompleted(d.justCompleted || []);
+
+            try {
+              sessionStorage.setItem('aniverse_home_cache', JSON.stringify(d));
+            } catch (_) {}
+
+            setLoading(false);
+            return;
+          }
+        } catch (unifiedErr) {
+          console.warn('/api/anime/home error, falling back to parallel endpoints:', unifiedErr);
+        }
+
+        // Fallback Path: Parallel queries with Promise.allSettled so no single error blocks the page
         const [
           trendingRes,
           popularRes,
@@ -34,8 +85,9 @@ export const Home: React.FC = () => {
           genresRes,
           newReleaseRes,
           newAddedRes,
-          justCompletedRes
-        ] = await Promise.all([
+          justCompletedRes,
+          latestUpdatesRes
+        ] = await Promise.allSettled([
           axios.get('/api/anime/trending'),
           axios.get('/api/anime/popular'),
           axios.get('/api/anime/top-ten'),
@@ -43,151 +95,60 @@ export const Home: React.FC = () => {
           axios.get('/api/anime/genres'),
           axios.get('/api/anime?status=Currently Airing&limit=5'),
           axios.get('/api/anime?sort=latest&limit=5'),
-          axios.get('/api/anime?status=Finished Airing&limit=5')
+          axios.get('/api/anime?status=Finished Airing&limit=5'),
+          axios.get('/api/anime?sort=latest&limit=35')
         ]);
 
-        // Query AniList for top 35 popular releasing shows (airing right now in market!)
-        let liveUpdatesList: AnimeData[] = [];
+        const getVal = (res: PromiseSettledResult<any>, key: string, fallback: any = []) => {
+          if (res.status === 'fulfilled' && res.value?.data) {
+            return res.value.data[key] || fallback;
+          }
+          return fallback;
+        };
+
+        const trendingData = getVal(trendingRes, 'trending');
+        const popularData = getVal(popularRes, 'popular');
+        const topTenData = getVal(topTenRes, 'topTen');
+        const moviesData = getVal(moviesRes, 'animeList');
+        const genresData = getVal(genresRes, 'genres');
+        const newReleaseData = getVal(newReleaseRes, 'animeList');
+        const newAddedData = getVal(newAddedRes, 'animeList');
+        const justCompletedData = getVal(justCompletedRes, 'animeList');
+        const latestUpdatesData = getVal(latestUpdatesRes, 'animeList');
+
+        setTrending(trendingData);
+        setPopular(popularData);
+        setTopTen(topTenData);
+        setMovies(moviesData);
+        setGenres(genresData);
+        setNewRelease(newReleaseData);
+        setNewAdded(newAddedData);
+        setJustCompleted(justCompletedData);
+        setLatestUpdates(latestUpdatesData.length > 0 ? latestUpdatesData : trendingData);
+
         try {
-          const aniListResponse = await fetch('https://graphql.anilist.co', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              query: `
-                query {
-                  Page(page: 1, perPage: 50) {
-                    media(status_in: [RELEASING, NOT_YET_RELEASED], type: ANIME, sort: POPULARITY_DESC) {
-                      id
-                      title {
-                        romaji
-                        english
-                        native
-                      }
-                      coverImage {
-                        extraLarge
-                        large
-                      }
-                      bannerImage
-                      description
-                      averageScore
-                      format
-                      status
-                      startDate {
-                        year
-                      }
-                      duration
-                      genres
-                      studios(isMain: true) {
-                        nodes {
-                          name
-                        }
-                      }
-                      nextAiringEpisode {
-                        airingAt
-                        episode
-                      }
-                    }
-                  }
-                }
-              `
-            })
-          });
-
-          const aniListJson = await aniListResponse.json();
-          const releasingMedia = aniListJson.data?.Page?.media || [];
-          
-          const now = Math.floor(Date.now() / 1000);
-          const filteredMedia = releasingMedia.filter((media: any) => {
-            if (media.status === 'RELEASING') return true;
-            if (media.status === 'NOT_YET_RELEASED') {
-              if (media.nextAiringEpisode) {
-                const diff = media.nextAiringEpisode.airingAt - now;
-                return diff > 0 && diff <= 7 * 24 * 60 * 60;
-              }
-            }
-            return false;
-          });
-
-          liveUpdatesList = filteredMedia.map((media: any) => {
-            const title = media.title.english || media.title.romaji || media.title.native;
-            const cleanTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
-            // Find local match in any of our local anime arrays
-            const localMatch = (trendingRes.data.trending || [])
-              .concat(popularRes.data.popular || [])
-              .concat(topTenRes.data.topTen || [])
-              .concat(moviesRes.data.animeList || [])
-              .concat(newReleaseRes.data.animeList || [])
-              .concat(newAddedRes.data.animeList || [])
-              .concat(justCompletedRes.data.animeList || [])
-              .find((local: any) => {
-                const localT = cleanTitle(local.title);
-                const romajiT = cleanTitle(media.title.romaji || '');
-                const englishT = cleanTitle(media.title.english || '');
-                return localT === romajiT || localT === englishT;
-              });
-
-            const slugify = (text: string) => {
-              return text
-                .toString()
-                .toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^\w\-]+/g, '')
-                .replace(/\-\-+/g, '-')
-                .replace(/^-+/, '')
-                .replace(/-+$/, '');
-            };
-
-            return {
-              id: localMatch ? localMatch.id : `anilist-${media.id}`,
-              slug: localMatch ? localMatch.slug : slugify(title),
-              title,
-              englishTitle: media.title.english,
-              description: media.description ? media.description.replace(/<[^>]*>/g, '') : 'No description available.',
-              posterImage: media.coverImage.extraLarge || media.coverImage.large,
-              bannerImage: media.bannerImage || media.coverImage.extraLarge,
-              score: media.averageScore ? media.averageScore / 10 : 7.5,
-              type: media.format || 'TV',
-              status: media.status === 'RELEASING' ? 'Currently Airing' : 'Airing Soon',
-              releasedYear: media.startDate?.year || 2026,
-              duration: media.duration ? `${media.duration} min` : '24 min',
-              genres: media.genres ? media.genres.join(', ') : 'Anime',
-              studio: media.studios?.nodes[0]?.name || 'Unknown',
-              nextAiringEpisode: media.nextAiringEpisode,
-              hasSub: localMatch ? localMatch.hasSub : true,
-              hasDub: localMatch ? localMatch.hasDub : false,
-            };
-          });
-        } catch (aniListErr) {
-          console.error('Error fetching live updates from AniList:', aniListErr);
-          // Fallback to local DB list if AniList fails
-          const fallbackRes = await axios.get('/api/anime?sort=latest&limit=35');
-          liveUpdatesList = fallbackRes.data.animeList || [];
-        }
-
-        setTrending(trendingRes.data.trending || []);
-        setPopular(popularRes.data.popular || []);
-        setTopTen(topTenRes.data.topTen || []);
-        setLatestUpdates(liveUpdatesList);
-        setMovies(moviesRes.data.animeList || []);
-        setGenres(genresRes.data.genres || []);
-        setNewRelease(newReleaseRes.data.animeList || []);
-        setNewAdded(newAddedRes.data.animeList || []);
-        setJustCompleted(justCompletedRes.data.animeList || []);
+          sessionStorage.setItem('aniverse_home_cache', JSON.stringify({
+            trending: trendingData,
+            popular: popularData,
+            topTen: topTenData,
+            latestUpdates: latestUpdatesData,
+            movies: moviesData,
+            genres: genresData,
+            newRelease: newReleaseData,
+            newAdded: newAddedData,
+            justCompleted: justCompletedData,
+          }));
+        } catch (_) {}
       } catch (err) {
         console.error('Error fetching home page data:', err);
       } finally {
-        if (showShimmer) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     fetchHomeData(true);
 
-    // Auto-update home data every 60 seconds
+    // Auto-update home data every 60 seconds quietly in the background
     const interval = setInterval(() => fetchHomeData(false), 60000);
     return () => clearInterval(interval);
   }, []);

@@ -6,6 +6,7 @@ import { cleanAndNormalizeVideoUrl, extractCleanEmbedFromWebPage } from '../serv
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
+import { clearAllCache } from './anime.controller';
 
 const prisma = new PrismaClient();
 
@@ -324,6 +325,7 @@ export async function createAnime(req: Request, res: Response) {
       include: { episodes: true }
     });
 
+    clearAllCache();
     return res.status(201).json({ message: 'Anime created successfully', anime: fullAnime });
   } catch (error: any) {
     console.error('Error creating anime:', error);
@@ -512,6 +514,7 @@ export async function updateAnime(req: Request, res: Response) {
       }
     }
 
+    clearAllCache();
     return res.status(200).json({ message: 'Anime updated successfully', anime: fullAnime });
   } catch (error: any) {
     console.error('Error updating anime:', error);

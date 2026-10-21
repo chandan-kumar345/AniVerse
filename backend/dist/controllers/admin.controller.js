@@ -60,6 +60,7 @@ const videoExtractor_service_1 = require("../services/videoExtractor.service");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const axios_1 = __importDefault(require("axios"));
+const anime_controller_1 = require("./anime.controller");
 const prisma = new client_1.PrismaClient();
 /**
  * Get comprehensive catalog statistics for the admin dashboard
@@ -331,6 +332,7 @@ async function createAnime(req, res) {
             where: { id: anime.id },
             include: { episodes: true }
         });
+        (0, anime_controller_1.clearAllCache)();
         return res.status(201).json({ message: 'Anime created successfully', anime: fullAnime });
     }
     catch (error) {
@@ -513,6 +515,7 @@ async function updateAnime(req, res) {
                 console.warn('Auto-sync to custom_18plus_anime.json skipped:', syncErr);
             }
         }
+        (0, anime_controller_1.clearAllCache)();
         return res.status(200).json({ message: 'Anime updated successfully', anime: fullAnime });
     }
     catch (error) {

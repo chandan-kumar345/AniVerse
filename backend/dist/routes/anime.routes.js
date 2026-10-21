@@ -4,6 +4,7 @@ const express_1 = require("express");
 const anime_controller_1 = require("../controllers/anime.controller");
 const router = (0, express_1.Router)();
 router.get('/', anime_controller_1.getAllAnime);
+router.get('/home', anime_controller_1.getHomeData);
 router.get('/trending', anime_controller_1.getTrendingAnime);
 router.get('/popular', anime_controller_1.getPopularAnime);
 router.get('/top-ten', anime_controller_1.getTopTenAnime);
