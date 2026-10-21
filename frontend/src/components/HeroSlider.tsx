@@ -461,13 +461,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               <div
                 className="hero-tag"
                 style={{
-                  background: '#181a2b',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                  background: 'rgba(243, 46, 53, 0.14)',
+                  border: '1px solid rgba(243, 46, 53, 0.4)',
                   borderRadius: '9999px',
                   padding: '6px 16px',
                   boxShadow: '3px 3px 8px #080910, -2px -2px 6px #20233a',
                   width: 'fit-content',
-                  color: 'var(--color-accent)',
+                  color: 'var(--color-primary)',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   fontSize: '12px',
@@ -479,7 +479,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                 }}
               >
                 <Star size={14} style={{ fill: 'var(--color-primary)', color: 'var(--color-primary)' }} />
-                #{index + 1} Spotlight
+                #{index + 1} TRENDING
               </div>
 
               {/* Title */}
@@ -512,8 +512,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               >
                 <span
                   style={{
-                    background: '#161828',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: '#12121A',
+                    border: '1px solid #292938',
                     boxShadow: 'inset 2px 2px 4px #08090f, inset -2px -2px 4px #1c1e30',
                     color: '#facc15',
                     fontWeight: 700,
@@ -613,9 +613,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            background: '#161828',
+            background: '#12121A',
             boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid #292938',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -634,9 +634,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            background: '#161828',
+            background: '#12121A',
             boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid #292938',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -812,12 +812,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .hero-dot.active {
-          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+          background: var(--color-primary);
           width: 32px;
           height: 9px;
           border-radius: 9999px;
           border-color: rgba(255, 255, 255, 0.2);
-          box-shadow: 0 0 14px rgba(139, 92, 246, 0.65);
+          box-shadow: 0 0 14px var(--color-primary-glow);
         }
 
         /* Autoplay Progress Bar */
@@ -833,7 +833,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
 
         .hero-progress-bar {
           height: 100%;
-          background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%);
+          background: var(--color-primary);
           width: 0%;
           transition: width 0.05s linear;
         }
@@ -841,7 +841,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         .slider-arrow:hover { 
           background: #1e2034 !important; 
           border-color: rgba(139, 92, 246, 0.6) !important; 
-          box-shadow: 0 0 16px rgba(139, 92, 246, 0.5) !important; 
+          box-shadow: 0 0 16px var(--color-primary-glow) !important; 
           transform: scale(1.06);
         }
 

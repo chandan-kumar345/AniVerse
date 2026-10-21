@@ -2,61 +2,67 @@
 
 :root {
   /* ==========================================================================
-     NEUMORPHIC LUXURY COLOR PALETTE (Obsidian Slate + Radiant Violet / Teal)
+     ANIVERSES BRAND DESIGN SYSTEM (DEEP_BLACK, NEON_RED, INDIGO)
+     Tagline: ANIME BEYOND BORDERS
      ========================================================================== */
-  --bg-main: #0c0e18;
-  --bg-surface: #141727;
-  --bg-surface-gradient: linear-gradient(145deg, #171b2d 0%, #111422 100%);
-  --bg-surface-elevated: #1a1e34;
-  --bg-surface-elevated-gradient: linear-gradient(145deg, #1e223a 0%, #16182a 100%);
-  --bg-surface-recessed: #0a0c14;
-  --bg-surface-recessed-gradient: linear-gradient(145deg, #07090f 0%, #0e101a 100%);
-  --bg-surface-glass: rgba(18, 21, 36, 0.85);
-  --bg-surface-glass-hover: rgba(25, 29, 48, 0.95);
+  --bg-main: #08070B; /* DEEP_BLACK */
+  --bg-surface: #12121A; /* DARK_SURFACE */
+  --bg-surface-gradient: linear-gradient(145deg, #161622 0%, #101017 100%);
+  --bg-surface-elevated: #181824;
+  --bg-surface-elevated-gradient: linear-gradient(145deg, #1c1c2a 0%, #13131c 100%);
+  --bg-surface-recessed: #0a0a10;
+  --bg-surface-recessed-gradient: linear-gradient(145deg, #060508 0%, #0c0b12 100%);
+  --bg-surface-glass: rgba(18, 18, 26, 0.88);
+  --bg-surface-glass-hover: rgba(26, 26, 38, 0.95);
   
   /* Primary & Accent Accents */
-  --color-primary: #8b5cf6; /* Vivid Royal Violet */
-  --color-primary-hover: #7c3aed;
-  --color-primary-dark: #6d28d9;
-  --color-accent: #c084fc; /* Lilac Neon */
-  --color-accent-hover: #a855f7;
-  --color-teal: #06b6d4; /* Cyber Cyan */
+  --color-primary: #F32E35; /* NEON_RED - primary actions & active nav */
+  --color-primary-hover: #ff474e;
+  --color-primary-dark: #d61f26;
+  --color-primary-glow: rgba(243, 46, 53, 0.45);
+  
+  /* Secondary Accent */
+  --color-indigo: #4E50DE; /* INDIGO - secondary actions & focus */
+  --color-indigo-hover: #6366f1;
+  --color-indigo-glow: rgba(78, 80, 222, 0.45);
+  
+  --color-accent: #F32E35;
+  --color-accent-hover: #ff474e;
+  --color-teal: #06b6d4;
   --color-emerald: #10b981;
   --color-amber: #f59e0b;
   
   /* High-Contrast Crisp Typography */
-  --text-main: #ffffff;
-  --text-muted: #cbd5e1; /* Clear readable silver-slate */
-  --text-subtle: #94a3b8;
-  --text-dark: #818cf8; /* Tinted violet metadata */
+  --text-main: #F5F5F7; /* PRIMARY_TEXT */
+  --text-muted: #A3A3B5; /* SECONDARY_TEXT */
+  --text-subtle: #727288;
+  --text-dark: #818cf8;
   
-  /* Precision Neumorphic Specular Borders & Bevels */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-color-active: rgba(139, 92, 246, 0.55);
-  --border-nm: 1px solid rgba(255, 255, 255, 0.08);
-  --bevel-light: inset 1px 1px 1.5px rgba(255, 255, 255, 0.09);
-  --bevel-dark: inset -1px -1px 1.5px rgba(0, 0, 0, 0.6);
+  /* Precision Borders & Bevels */
+  --border-color: #292938; /* BORDER token */
+  --border-color-active: rgba(243, 46, 53, 0.65);
+  --border-nm: 1px solid #292938;
+  --bevel-light: inset 1px 1px 1.5px rgba(255, 255, 255, 0.08);
+  --bevel-dark: inset -1px -1px 1.5px rgba(0, 0, 0, 0.8);
   
-  /* ==========================================================================
-     PHYSICAL DUAL-LIGHTING SHADOW SYSTEM (145-Degree Light Angle)
-     ========================================================================== */
-  --nm-flat: 6px 6px 14px #06070d, -4px -4px 12px #1f233a, inset 1px 1px 1px rgba(255, 255, 255, 0.06);
-  --nm-card: 8px 8px 20px #05060c, -6px -6px 16px #1e2238, inset 1px 1px 1.5px rgba(255, 255, 255, 0.08);
-  --nm-card-hover: 12px 12px 28px #04050a, -8px -8px 22px #262b46, 0 0 24px rgba(139, 92, 246, 0.35), inset 1px 1px 2px rgba(255, 255, 255, 0.12);
-  --nm-elevated: 8px 8px 20px #05060b, -6px -6px 16px #22263e, inset 1px 1px 1.5px rgba(255, 255, 255, 0.08);
+  /* Physical Shadows & Glows */
+  --nm-flat: 6px 6px 14px #040407, -4px -4px 12px #14141e, inset 1px 1px 1px rgba(255, 255, 255, 0.05);
+  --nm-card: 8px 8px 20px #040306, -6px -6px 16px #151520, inset 1px 1px 1.5px rgba(255, 255, 255, 0.06);
+  --nm-card-hover: 12px 12px 28px #020204, -8px -8px 22px #1c1c2a, 0 0 24px rgba(243, 46, 53, 0.25), inset 1px 1px 2px rgba(255, 255, 255, 0.1);
+  --nm-elevated: 8px 8px 20px #040306, -6px -6px 16px #161622, inset 1px 1px 1.5px rgba(255, 255, 255, 0.06);
   
   /* Recessed wells / Inset shadows */
-  --nm-inset: inset 3px 3px 7px #06070c, inset -3px -3px 7px #1c1f34;
-  --nm-inset-deep: inset 4px 4px 10px #040509, inset -4px -4px 10px #181b2e;
+  --nm-inset: inset 3px 3px 7px #040306, inset -3px -3px 7px #161622;
+  --nm-inset-deep: inset 4px 4px 10px #030205, inset -4px -4px 10px #13131c;
   
-  /* Convex tactile buttons */
-  --nm-convex-btn: 4px 4px 10px #06070d, -3px -3px 8px #222640, inset 1px 1px 1.5px rgba(255, 255, 255, 0.09);
-  --nm-pressed: inset 3px 3px 6px #06070d, inset -2px -2px 5px #1d2138;
-  --nm-primary-btn: 0 8px 24px rgba(109, 40, 217, 0.55), 4px 4px 12px #06070d, -2px -2px 8px #20243c, inset 0 1px 2px rgba(255, 255, 255, 0.45);
+  /* Buttons */
+  --nm-convex-btn: 4px 4px 10px #040407, -3px -3px 8px #181826, inset 1px 1px 1.5px rgba(255, 255, 255, 0.08);
+  --nm-pressed: inset 3px 3px 6px #040407, inset -2px -2px 5px #151520;
+  --nm-primary-btn: 0 6px 20px rgba(243, 46, 53, 0.45), 4px 4px 12px #040407, -2px -2px 8px #181826, inset 0 1px 2px rgba(255, 255, 255, 0.4);
   
-  /* Glows & Bezels */
-  --nm-glow: 0 0 25px rgba(139, 92, 246, 0.5);
-  --nm-hero-frame: 14px 14px 34px #04050a, -9px -9px 26px #1c2038, 0 0 32px rgba(139, 92, 246, 0.3);
+  /* Glows */
+  --nm-glow: 0 0 25px rgba(243, 46, 53, 0.4);
+  --nm-hero-frame: 14px 14px 34px #020204, -9px -9px 26px #14141e, 0 0 32px rgba(243, 46, 53, 0.2);
   
   --font-display: 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
@@ -648,3 +654,202 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateY(-8px) translateX(-50%); }
   to { opacity: 1; transform: translateY(0) translateX(-50%); }
 }
+
+/* ==========================================================================
+   22. ANIVERSES UI PATTERNS & THEME HELPERS
+   ========================================================================== */
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-accent-bar {
+  width: 4px;
+  height: 22px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  box-shadow: 0 0 12px var(--color-primary-glow);
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.section-see-all {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+}
+
+.section-see-all:hover {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+
+/* Ranking Numbers for Trending Cards */
+.trending-rank-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--color-primary);
+  line-height: 1;
+  text-shadow: 0 0 14px var(--color-primary-glow);
+}
+
+/* HD Badge */
+.badge-hd {
+  background: rgba(8, 7, 11, 0.85);
+  color: var(--text-main);
+  border: 1px solid rgba(243, 46, 53, 0.8);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+/* Airing Badge */
+.badge-airing {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 10px var(--color-primary-glow);
+}
+
+/* Horizontal Smooth Carousel Track */
+.horizontal-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 2px 14px 2px;
+}
+
+.horizontal-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Carousel Control Arrows */
+.carousel-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(18, 18, 26, 0.85);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--nm-flat);
+  user-select: none;
+  z-index: 5;
+}
+
+.carousel-nav-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 0 14px var(--color-primary-glow);
+}
+
+/* Day Selector Pills for Episode Schedule */
+.day-pill {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.day-pill:hover {
+  border-color: rgba(243, 46, 53, 0.4);
+  color: var(--text-main);
+}
+
+.day-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 0 14px var(--color-primary-glow);
+}
+
+/* Live Countdown Box */
+.countdown-box {
+  background: #0d0d14;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 28px;
+}
+
+.countdown-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.05em;
+}
+

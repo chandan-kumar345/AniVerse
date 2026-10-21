@@ -1,60 +1,69 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Shield } from 'lucide-react';
+import { Heart, Shield, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ background: 'var(--bg-main)', borderTop: '1px solid rgba(255,255,255,0.04)', padding: '60px 20px 30px', marginTop: '60px', position: 'relative' }}>
-      <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
+    <footer style={{ background: '#08070B', borderTop: '1px solid #292938', padding: '60px 24px 30px', marginTop: '60px', position: 'relative' }}>
+      <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '40px' }}>
         
-        {/* About column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff' }}>
-            <img src="/logo.png" alt="AniVerse" style={{ height: '38px', objectFit: 'contain' }} />
+        {/* Brand Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Link to="/" style={{ textDecoration: 'none', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '24px', letterSpacing: '0.04em', color: '#ffffff', lineHeight: 1 }}>
+                ANI<span style={{ color: 'var(--color-primary)' }}>VERSES</span>
+              </span>
+              <Sparkles size={16} color="var(--color-primary)" />
+            </div>
+            <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.24em', color: 'var(--text-muted)', marginTop: '3px', textTransform: 'uppercase' }}>
+              Anime Beyond Borders
+            </span>
           </Link>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.7' }}>
-            AniVerse is a premium anime streaming platform featuring high-definition playback, an interactive custom player, and a passionate social community.
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.7' }}>
+            ANIVERSES is a premium anime discovery and streaming platform featuring verified schedules, live countdowns, multi-audio translations, and a cinematic viewing experience.
           </p>
-          <div style={{ display: 'flex', gap: '14px', marginTop: '8px' }}>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/></svg>
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="nm-icon-btn social-icon" style={{ textDecoration: 'none', color: 'var(--text-muted)' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/><polygon points="10 15 15 12 10 9"/></svg>
-            </a>
+        </div>
+
+        {/* Navigation Links */}
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', color: '#fff', marginBottom: '18px', fontWeight: 700 }}>Discovery</h3>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+            <li><Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Home</Link></li>
+            <li><Link to="/discover" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Explore Catalogue</Link></li>
+            <li><Link to="/schedule" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Weekly Episode Schedule</Link></li>
+            <li><Link to="/running" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Running Anime</Link></li>
+            <li><Link to="/genres" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Genres & Categories</Link></li>
+          </ul>
+        </div>
+
+        {/* User Account */}
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', color: '#fff', marginBottom: '18px', fontWeight: 700 }}>My Account</h3>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+            <li><Link to="/watchlist" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">My Watchlist</Link></li>
+            <li><Link to="/history" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Watch History</Link></li>
+            <li><Link to="/profile" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Profile & Preferences</Link></li>
+            <li><Link to="/auth" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} className="footer-link">Sign In / Register</Link></li>
+          </ul>
+        </div>
+
+        {/* Legal & Notice */}
+        <div>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', color: '#fff', marginBottom: '18px', fontWeight: 700 }}>Compliance & Legal</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '12px', lineHeight: '1.6', marginBottom: '12px' }}>
+            ANIVERSES does not store copyrighted video files on its servers. All metadata is indexed via public APIs and authorized official embed links.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontSize: '12px', fontWeight: 600 }}>
+            <Shield size={14} /> Verified Legal Indexing
           </div>
-        </div>
-
-        {/* Quick Links */}
-        <div>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '20px', fontWeight: 600 }}>Quick Links</h3>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
-            <li><Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Home</Link></li>
-            <li><Link to="/search" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Catalog</Link></li>
-            <li><Link to="/search?status=Currently+Airing" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Airing Anime</Link></li>
-            <li><Link to="/search?type=Movie" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Anime Movies</Link></li>
-          </ul>
-        </div>
-
-        {/* Community / Support */}
-        <div>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: '#fff', marginBottom: '20px', fontWeight: 600 }}>Community</h3>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
-            <li><Link to="/profile" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">My Profile</Link></li>
-            <li><Link to="/profile?tab=watchlist" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Watchlist</Link></li>
-            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Discord Server</a></li>
-            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} className="footer-link">Terms of Service</a></li>
-          </ul>
         </div>
       </div>
 
-      {/* Giant AniVerse Horizontal Logo */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px', width: '100%', overflow: 'hidden' }}>
+      {/* Giant ANIVERSES Background Text */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px', width: '100%', overflow: 'hidden' }}>
         <div className="giant-logo-container">
-          {['A', 'n', 'i', 'V', 'e', 'r', 's', 'e'].map((char, index) => (
+          {['A', 'N', 'I', 'V', 'E', 'R', 'S', 'E', 'S'].map((char, index) => (
             <span key={index} className="giant-logo-letter">
               {char}
             </span>
@@ -62,57 +71,46 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="app-container" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '30px', paddingTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', paddingRight: '20px', paddingLeft: '20px' }}>
-        <p style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
-          &copy; {new Date().getFullYear()} AniVerse. All rights reserved. Built for anime fans.
+      <div className="app-container" style={{ borderTop: '1px solid #1c1c28', marginTop: '20px', paddingTop: '20px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '14px', paddingRight: '20px', paddingLeft: '20px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+          &copy; {new Date().getFullYear()} ANIVERSES. Anime Beyond Borders. All rights reserved.
         </p>
-        <p style={{ color: 'var(--text-dark)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          Made with <Heart size={12} style={{ color: 'var(--color-primary)' }} /> and <Shield size={12} style={{ color: 'var(--color-teal)' }} />
+        <p style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          Crafted with <Heart size={12} color="var(--color-primary)" style={{ fill: 'var(--color-primary)' }} /> for anime fans worldwide.
         </p>
       </div>
 
       <style>{`
-        .footer-link:hover { color: var(--color-primary) !important; padding-left: 4px; }
-        .social-icon:hover { color: var(--color-primary) !important; transform: scale(1.15); }
-        .footer-link { display: inline-block; transition: var(--transition-fast); }
+        .footer-link:hover { color: var(--color-primary) !important; padding-left: 3px; }
+        .footer-link { transition: var(--transition-fast); }
 
         .giant-logo-container {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 1.5vw;
+          gap: 1vw;
           user-select: none;
           width: 100%;
           flex-wrap: nowrap;
-          padding: 50px 0 30px;
+          padding: 30px 0 10px;
           overflow: hidden;
         }
 
         .giant-logo-letter {
           font-family: var(--font-display);
-          font-size: clamp(4rem, 15vw, 15rem);
+          font-size: clamp(3rem, 12vw, 12rem);
           font-weight: 900;
-          color: #ffffff;
+          color: rgba(255, 255, 255, 0.04);
           cursor: pointer;
-          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease, text-shadow 0.3s ease;
+          transition: transform 0.3s ease, color 0.3s ease;
           display: inline-block;
-          letter-spacing: -0.04em;
-          line-height: 0.85;
-          transform: scale(1.15, 1.05); /* Stretch width by 1.15 and height by 1.05 */
-          transform-origin: center;
+          letter-spacing: -0.02em;
+          line-height: 0.9;
         }
 
         .giant-logo-letter:hover {
-          color: var(--color-accent);
-          transform: scale(1.4, 1.3); /* Zoom in on hover, no vertical popup */
-          text-shadow: 0 0 35px var(--color-accent), 0 0 70px var(--color-primary);
-        }
-
-        @media (max-width: 768px) {
-          .giant-logo-container {
-            gap: 1vw;
-            padding: 30px 0 15px;
-          }
+          color: rgba(243, 46, 53, 0.25);
+          transform: translateY(-8px);
         }
       `}</style>
     </footer>

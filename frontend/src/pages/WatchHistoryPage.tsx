@@ -1,152 +1,291 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import type { AnimeData } from '../components/AnimeCard';
-import { History, Play, Trash2 } from 'lucide-react';
+import { History, Play, Trash2, ArrowRight } from 'lucide-react';
 
-interface HistoryItem {
+export interface HistoryDisplayItem {
   id: string;
   animeId: string;
+  slug: string;
+  title: string;
   episodeNumber: number;
+  seasonNumber?: number;
+  episodeTitle?: string;
+  thumbnail: string;
   watchedTime: number;
   duration: number;
-  progressPercentage: number;
-  updatedAt: string;
-  anime: AnimeData;
 }
 
 export const WatchHistoryPage: React.FC = () => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const { isAuthenticated } = useAuth();
+  const [history, setHistory] = useState<HistoryDisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'Watch History - AniVerse';
-    if (!authLoading && !isAuthenticated) {
-      navigate('/auth?redirect=/history');
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+    document.title = 'Watch History | ANIVERSES';
+  }, []);
 
   useEffect(() => {
     const fetchHistory = async () => {
-      if (!isAuthenticated) return;
+      setLoading(true);
+
+      // 1. Try local storage continue watching items first
       try {
-        setLoading(true);
-        const res = await axios.get('/api/history');
-        setHistory(res.data.history || []);
-      } catch (err) {
-        console.error('Error fetching watch history:', err);
-      } finally {
-        setLoading(false);
+        const local = localStorage.getItem('aniverse_continue_watching');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setHistory(parsed);
+          }
+        }
+      } catch (_) {}
+
+      // 2. If authenticated, fetch from backend
+      if (isAuthenticated) {
+        try {
+          const res = await axios.get('/api/history');
+          if (res.data?.history && res.data.history.length > 0) {
+            const mapped: HistoryDisplayItem[] = res.data.history.map((h: any) => ({
+              id: h.id,
+              animeId: h.animeId,
+              slug: h.anime?.slug || 'anime',
+              title: h.anime?.title || 'Anime',
+              episodeNumber: h.episodeNumber || 1,
+              seasonNumber: h.seasonNumber || 1,
+              episodeTitle: h.episode?.title || `Episode ${h.episodeNumber || 1}`,
+              thumbnail: h.episode?.thumbnail || h.anime?.bannerImage || h.anime?.posterImage || '',
+              watchedTime: Math.floor(h.watchedTime || 0),
+              duration: Math.floor(h.duration || 1440),
+            }));
+            setHistory(mapped);
+          }
+        } catch (_) {}
       }
+
+      setLoading(false);
     };
+
     fetchHistory();
   }, [isAuthenticated]);
 
-  const handleClear = async (animeId: string) => {
+  const handleClear = async (slug: string, epNum: number) => {
+    const updated = history.filter((item) => !(item.slug === slug && item.episodeNumber === epNum));
+    setHistory(updated);
     try {
-      await axios.delete(`/api/history/${animeId}`);
-      setHistory(prev => prev.filter(item => item.animeId !== animeId));
-    } catch (err) {
-      console.error('Failed to remove history item:', err);
-    }
+      localStorage.setItem('aniverse_continue_watching', JSON.stringify(updated));
+    } catch (_) {}
+  };
+
+  const handleClearAll = () => {
+    setHistory([]);
+    try {
+      localStorage.removeItem('aniverse_continue_watching');
+    } catch (_) {}
+  };
+
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   return (
-    <div className="app-container" style={{ padding: '30px 24px', color: '#fff' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-        <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', padding: '10px', borderRadius: '12px', display: 'flex' }}>
-          <History size={22} style={{ color: '#fff' }} />
-        </div>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, margin: 0 }}>
-            Watch History
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '13px', margin: '4px 0 0' }}>
-            Resume where you left off across all episodes and movies.
-          </p>
-        </div>
-      </div>
+    <div style={{ background: 'var(--bg-main)', minHeight: '100vh', padding: '36px 24px 80px 24px', color: '#fff' }}>
+      <div className="app-container">
+        {/* HEADER BAR */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(243, 46, 53, 0.15)', border: '1px solid rgba(243, 46, 53, 0.4)', padding: '10px', borderRadius: '10px', display: 'flex' }}>
+              <History size={22} color="var(--color-primary)" />
+            </div>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+                Watch History
+              </h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 0' }}>
+                Resume where you left off across all episodes and movies.
+              </p>
+            </div>
+          </div>
 
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ height: '90px', borderRadius: '12px' }} className="shimmer" />
-          ))}
-        </div>
-      ) : history.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 20px', color: '#94a3b8' }}>
-          <h3>No watch history found.</h3>
-          <Link to="/" style={{ color: '#8b5cf6', marginTop: '10px', display: 'inline-block' }}>
-            Start watching anime on Home
-          </Link>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {history.map(item => (
-            <div
-              key={item.id}
-              className="nm-card"
+          {history.length > 0 && (
+            <button
+              onClick={handleClearAll}
               style={{
-                padding: '16px 20px',
-                borderRadius: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '16px'
+                background: '#12121A',
+                border: '1px solid #292938',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                color: 'var(--color-primary)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <img
-                  src={item.anime.posterImage || ''}
-                  alt={item.anime.title}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=120&auto=format&fit=crop&q=80';
+              Clear Entire History
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ height: '90px', borderRadius: '12px', background: '#12121A', border: '1px solid #292938' }} className="shimmer" />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px', background: '#12121A', border: '1px solid #292938', borderRadius: '16px' }}>
+            <History size={36} color="var(--border-color)" style={{ marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
+              No Watch History
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+              Episodes you stream will automatically appear here with saved resume playback positions.
+            </p>
+            <Link
+              to="/"
+              style={{
+                background: 'var(--color-primary)',
+                color: '#fff',
+                textDecoration: 'none',
+                padding: '8px 20px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              Discover Anime <ArrowRight size={14} />
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {history.map((item) => {
+              const percent = Math.min(100, Math.max(5, (item.watchedTime / (item.duration || 1440)) * 100));
+
+              return (
+                <div
+                  key={`${item.slug}-${item.episodeNumber}`}
+                  style={{
+                    background: '#12121A',
+                    border: '1px solid #292938',
+                    borderRadius: '12px',
+                    padding: '12px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    boxShadow: 'var(--nm-card)',
+                    transition: 'var(--transition-smooth)',
                   }}
-                  style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '8px' }}
-                />
-                <div>
-                  <h4 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 4px', color: '#fff' }}>
-                    {item.anime.title}
-                  </h4>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#c084fc', fontWeight: 700 }}>Episode {item.episodeNumber}</span>
-                    <span>•</span>
-                    <span>Progress: {Math.round(item.progressPercentage)}%</span>
+                  className="history-row"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+                    {/* THUMBNAIL */}
+                    <div
+                      style={{
+                        width: '90px',
+                        aspectRatio: '16/9',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        flexShrink: 0,
+                        border: '1px solid #292938',
+                      }}
+                    >
+                      <img
+                        src={item.thumbnail || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300'}
+                        alt={item.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: '3px',
+                          background: 'rgba(255, 255, 255, 0.2)',
+                        }}
+                      >
+                        <div style={{ width: `${percent}%`, height: '100%', background: 'var(--color-primary)' }} />
+                      </div>
+                    </div>
+
+                    {/* TITLE & EPISODE INFO */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3
+                        style={{
+                          fontSize: '15px',
+                          fontWeight: 700,
+                          color: '#fff',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          marginBottom: '3px',
+                        }}
+                      >
+                        {item.title}
+                      </h3>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Episode {item.episodeNumber} {item.episodeTitle ? `• ${item.episodeTitle}` : ''}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600, marginTop: '3px' }}>
+                        Progress: {formatSeconds(item.watchedTime)} / {formatSeconds(item.duration)} ({Math.round(percent)}%)
+                      </div>
+                    </div>
                   </div>
-                  {/* PROGRESS BAR */}
-                  <div style={{ width: '160px', height: '4px', background: '#10121d', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(item.progressPercentage, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #c084fc)' }} />
+
+                  {/* ACTION BUTTONS */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Link
+                      to={`/watch/${item.slug}/episode/${item.episodeNumber}?t=${item.watchedTime}`}
+                      style={{
+                        background: 'var(--color-primary)',
+                        color: '#fff',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 16px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Play size={13} fill="#fff" /> Resume
+                    </Link>
+                    <button
+                      onClick={() => handleClear(item.slug, item.episodeNumber)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid #292938',
+                        color: 'var(--text-muted)',
+                        borderRadius: '6px',
+                        padding: '8px',
+                        cursor: 'pointer',
+                      }}
+                      title="Remove from history"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Link
-                  to={`/watch/${item.anime.slug}/episode/${item.episodeNumber}`}
-                  className="nm-btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '13px', textDecoration: 'none' }}
-                >
-                  <Play size={14} style={{ fill: '#fff' }} /> Resume
-                </Link>
-
-                <button
-                  onClick={() => handleClear(item.animeId)}
-                  className="nm-pill"
-                  style={{ padding: '8px', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                  title="Remove from history"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <style>{`
+        .history-row:hover {
+          border-color: rgba(243, 46, 53, 0.4) !important;
+          transform: translateY(-2px);
+        }
+      `}</style>
     </div>
   );
 };
