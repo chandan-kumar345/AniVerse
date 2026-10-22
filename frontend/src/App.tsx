@@ -7,7 +7,6 @@ import { Home } from './pages/Home';
 import { AnimeDetail } from './pages/AnimeDetail';
 import { Watch } from './pages/Watch';
 import { Search } from './pages/Search';
-import { Schedule } from './pages/Schedule';
 import { RunningAnime } from './pages/RunningAnime';
 import { Auth } from './pages/Auth';
 import { Profile } from './pages/Profile';
@@ -33,9 +32,6 @@ const App: React.FC = () => {
           <main style={{ flex: 1 }}>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/discover" element={<Search />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/schedule" element={<Schedule />} />
               <Route path="/running" element={<RunningAnime />} />
               <Route path="/series" element={<AnimeSeries />} />
               <Route path="/movies" element={<AnimeMovies />} />
@@ -48,6 +44,7 @@ const App: React.FC = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/anime/:slug" element={<AnimeDetail />} />
               <Route path="/watch/:slug/episode/:epNum" element={<Watch />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
             </Routes>

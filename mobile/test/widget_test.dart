@@ -6,7 +6,10 @@ void main() {
   testWidgets('AniVerse app boot test', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: AniVerseApp()));
     expect(find.byType(AniVerseApp), findsOneWidget);
-    // Settle splash delay timer
-    await tester.pumpAndSettle(const Duration(seconds: 4));
+    // Pump frames to verify splash screen rendering without indefinite pumpAndSettle
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.byType(AniVerseApp), findsOneWidget);
   });
 }
+

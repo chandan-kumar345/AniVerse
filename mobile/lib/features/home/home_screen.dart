@@ -8,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/safe_text.dart';
 import '../../core/widgets/anime_card.dart';
+import '../../core/widgets/airing_countdown_card.dart';
 import '../../core/providers/app_providers.dart';
 import '../../data/models/anime_model.dart';
 import '../../data/seed/anime_seed_data.dart';
@@ -143,6 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(animeRepositoryProvider).clearCache();
     ref.invalidate(homeDataProvider);
     ref.invalidate(trendingAnimeProvider);
+    ref.invalidate(runningAnimeProvider);
     ref.invalidate(popularAnimeProvider);
     ref.invalidate(topTenAnimeProvider);
     ref.invalidate(animeMoviesProvider);
@@ -202,6 +204,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ];
     final homeAsync = ref.watch(homeDataProvider);
     final trendingAsync = ref.watch(trendingAnimeProvider);
+    final runningAsync = ref.watch(runningAnimeProvider);
     final popularAsync = ref.watch(popularAnimeProvider);
     final topTenAsync = ref.watch(topTenAnimeProvider);
     final moviesAsync = ref.watch(animeMoviesProvider);
@@ -510,6 +513,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         },
                       );
                     },
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // 4.5. AIRING NEXT / RUNNING ANIME SECTION (Real-Time Release Countdown - Less Timer First)
+              SliverToBoxAdapter(
+                child: _buildSectionHeader(
+                  title: 'Airing Next • Live Countdown',
+                  onSeeAll: () {
+                    ref.read(selectedStatusFilterProvider.notifier).state = 'Currently Airing';
+                    ref.read(bottomNavIndexProvider.notifier).state = 1;
+                  },
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 250,
+                  child: runningAsync.when(
+                    data: (list) {
+                      if (list.isEmpty) return const SizedBox.shrink();
+                      return ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final item = list[index];
+                          return AiringCountdownCard(
+                            anime: item,
+                            width: 155,
+                            onTap: () => context.push('/anime/${item.slug}'),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => _buildTrendingShimmerRow(),
+                    error: (_, _) => const SizedBox.shrink(),
                   ),
                 ),
               ),

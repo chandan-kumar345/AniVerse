@@ -465,7 +465,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
                   border: '1px solid rgba(243, 46, 53, 0.4)',
                   borderRadius: '9999px',
                   padding: '6px 16px',
-                  boxShadow: '3px 3px 8px #080910, -2px -2px 6px #20233a',
+                  boxShadow: '3px 3px 8px #020102, -2px -2px 6px #1c1a20',
                   width: 'fit-content',
                   color: 'var(--color-primary)',
                   fontWeight: 700,
@@ -512,9 +512,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
               >
                 <span
                   style={{
-                    background: '#12121A',
-                    border: '1px solid #292938',
-                    boxShadow: 'inset 2px 2px 4px #08090f, inset -2px -2px 4px #1c1e30',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: 'inset 2px 2px 4px #020102, inset -2px -2px 4px #1a181e',
                     color: '#facc15',
                     fontWeight: 700,
                     padding: '3px 12px',
@@ -613,9 +613,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            background: '#12121A',
-            boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
-            border: '1px solid #292938',
+            background: 'var(--bg-surface-elevated)',
+            boxShadow: '5px 5px 12px #020102, -4px -4px 10px #1e1c22',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -634,9 +634,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            background: '#12121A',
-            boxShadow: '5px 5px 12px #07080d, -4px -4px 10px #22253c',
-            border: '1px solid #292938',
+            background: 'var(--bg-surface-elevated)',
+            boxShadow: '5px 5px 12px #020102, -4px -4px 10px #1e1c22',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -678,8 +678,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           height: 600px;
           overflow: hidden;
           border-radius: 28px;
-          border: 2px solid rgba(139, 92, 246, 0.35);
-          background-color: #0d0f18;
+          border: 2px solid rgba(243, 46, 53, 0.35);
+          background-color: var(--bg-main);
           box-shadow: var(--nm-hero-frame);
         }
 
@@ -726,7 +726,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: linear-gradient(90deg, #0d0f18 0%, #0d0f18 32%, rgba(13, 15, 24, 0.94) 46%, rgba(13, 15, 24, 0.45) 68%, rgba(13, 15, 24, 0) 95%);
+          background: linear-gradient(90deg, #080708 0%, #080708 32%, rgba(8, 7, 8, 0.94) 46%, rgba(8, 7, 8, 0.45) 68%, rgba(8, 7, 8, 0) 95%);
           z-index: 2;
         }
 
@@ -736,7 +736,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           left: 0;
           right: 0;
           height: 160px;
-          background: linear-gradient(0deg, #0d0f18 0%, rgba(13, 15, 24, 0) 100%);
+          background: linear-gradient(0deg, #080708 0%, rgba(8, 7, 8, 0) 100%);
           z-index: 2;
         }
 
@@ -777,8 +777,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           aspect-ratio: 2/3;
           border-radius: 16px;
           overflow: hidden;
-          border: 2px solid rgba(139, 92, 246, 0.4);
-          box-shadow: 6px 6px 20px #08090f, -4px -4px 14px #20233b, 0 0 24px rgba(139, 92, 246, 0.35);
+          border: 2px solid rgba(243, 46, 53, 0.4);
+          box-shadow: 6px 6px 20px #020102, -4px -4px 14px #1b191e, 0 0 24px rgba(243, 46, 53, 0.35);
           transform: rotate(2deg) translateY(-10px);
           animation: floatCard 6s ease-in-out infinite alternate;
         }
@@ -803,8 +803,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
           width: 9px;
           height: 9px;
           border-radius: 50%;
-          background: #181a2b;
-          box-shadow: inset 1px 1px 2px #07080e, inset -1px -1px 2px #22253c;
+          background: #141317;
+          box-shadow: inset 1px 1px 2px #020102, inset -1px -1px 2px #1c1a20;
           border: 1px solid rgba(255, 255, 255, 0.04);
           cursor: pointer;
           padding: 0;
@@ -839,8 +839,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ animeList }) => {
         }
 
         .slider-arrow:hover { 
-          background: #1e2034 !important; 
-          border-color: rgba(139, 92, 246, 0.6) !important; 
+          background: var(--bg-surface-elevated) !important; 
+          border-color: rgba(243, 46, 53, 0.6) !important; 
           box-shadow: 0 0 16px var(--color-primary-glow) !important; 
           transform: scale(1.06);
         }

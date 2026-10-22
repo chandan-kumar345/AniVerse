@@ -63,10 +63,10 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
           return;
         }
       } catch (err) {
-        console.warn('Could not fetch running anime from AniList, using prop/fallback:', err);
+        console.warn('Could not fetch running anime from AniList, using fallback:', err);
       }
 
-      // Fallback to animeList prop or curated ongoing list matching reference screenshot
+      // Fallback curated ongoing list matching reference screenshot
       if (isMounted) {
         const fallbackItems: RunningAnimeCardData[] = [
           {
@@ -114,6 +114,15 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
             airingAt: Math.floor(Date.now() / 1000) + (6 * 86400 + 11 * 3600 + 40 * 60),
             scheduleTimeText: 'Every Saturday 06:30 PM',
           },
+          {
+            id: 'solo-leveling',
+            slug: 'solo-leveling',
+            title: 'Solo Leveling Season 2',
+            posterImage: 'https://image.tmdb.org/t/p/original/xMNH87maNLt9n2bMDYeI6db5VFm.jpg',
+            nextEpisode: 5,
+            airingAt: Math.floor(Date.now() / 1000) + (5 * 86400 + 9 * 3600 + 20 * 60),
+            scheduleTimeText: 'Every Saturday 11:30 PM',
+          }
         ];
         setRunningItems(fallbackItems);
       }
@@ -146,29 +155,36 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
   if (runningItems.length === 0) return null;
 
   return (
-    <div style={{ position: 'relative', width: '100%', marginBottom: '42px' }}>
+    <div style={{ position: 'relative', width: '100%', margin: '36px 0 20px' }}>
       {/* SECTION HEADER ROW */}
-      <div className="section-header-row">
-        <div className="section-title-wrap">
-          <div className="section-accent-bar" />
-          <h2 className="section-title">Running Animes</h2>
-          <span className="section-subtitle">Stay updated with the latest episodes</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="section-indicator" />
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#fff', margin: 0 }}>
+              Running Animes
+            </h2>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Stay updated with the latest airing episodes</span>
+          </div>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Link to="/running" className="section-see-all">
+          <Link to="/running" className="nm-pill" style={{ textDecoration: 'none', padding: '6px 16px', fontSize: '13px' }}>
             See All &rarr;
           </Link>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={() => handleScroll('left')}
-              className="carousel-nav-btn"
+              className="nm-icon-btn"
+              style={{ width: '36px', height: '36px' }}
               aria-label="Scroll left"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => handleScroll('right')}
-              className="carousel-nav-btn"
+              className="nm-icon-btn"
+              style={{ width: '36px', height: '36px' }}
               aria-label="Scroll right"
             >
               <ChevronRight size={18} />
@@ -180,8 +196,17 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
       {/* HORIZONTAL CAROUSEL OF RUNNING ANIME */}
       <div
         ref={scrollRef}
+        style={{
+          display: 'flex',
+          gap: '18px',
+          overflowX: 'auto',
+          scrollBehavior: 'smooth',
+          paddingBottom: '16px',
+          paddingTop: '4px',
+          scrollbarWidth: 'none',
+          scrollSnapType: 'x mandatory'
+        }}
         className="horizontal-carousel"
-        style={{ scrollSnapType: 'x mandatory' }}
       >
         {runningItems.map((anime) => {
           const { days, hours, mins, isPassed } = calculateCountdown(anime.airingAt);
@@ -195,16 +220,16 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
                 scrollSnapAlign: 'start',
                 cursor: 'pointer',
                 userSelect: 'none',
-                background: '#12121A',
-                border: '1px solid #292938',
-                borderRadius: '14px',
-                padding: '12px',
+                background: 'var(--bg-surface-elevated-gradient)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '16px',
+                padding: '12px 14px',
                 display: 'flex',
                 gap: '14px',
                 boxShadow: 'var(--nm-card)',
                 transition: 'var(--transition-smooth)',
               }}
-              className="running-anime-card"
+              className="running-anime-card nm-card"
             >
               {/* POSTER THUMBNAIL */}
               <div
@@ -215,7 +240,8 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
                   overflow: 'hidden',
                   flexShrink: 0,
                   position: 'relative',
-                  border: '1px solid #292938',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  boxShadow: '3px 3px 8px #020102, -2px -2px 6px #1c1a20'
                 }}
               >
                 <img
@@ -268,23 +294,24 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
                       style={{
                         display: 'flex',
                         gap: '6px',
-                        background: '#0a0a10',
-                        border: '1px solid #292938',
-                        borderRadius: '6px',
+                        background: 'var(--bg-surface-recessed)',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        borderRadius: '8px',
                         padding: '4px 8px',
                         width: 'fit-content',
+                        boxShadow: 'var(--nm-inset)'
                       }}
                     >
                       <div style={{ textAlign: 'center' }}>
                         <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', display: 'block', lineHeight: 1 }}>{days}</span>
                         <span style={{ fontSize: '8px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>Days</span>
                       </div>
-                      <span style={{ color: 'var(--border-color)', fontWeight: 700 }}>:</span>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: 700 }}>:</span>
                       <div style={{ textAlign: 'center' }}>
                         <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', display: 'block', lineHeight: 1 }}>{hours < 10 ? `0${hours}` : hours}</span>
                         <span style={{ fontSize: '8px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>Hours</span>
                       </div>
-                      <span style={{ color: 'var(--border-color)', fontWeight: 700 }}>:</span>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.2)', fontWeight: 700 }}>:</span>
                       <div style={{ textAlign: 'center' }}>
                         <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', display: 'block', lineHeight: 1 }}>{mins < 10 ? `0${mins}` : mins}</span>
                         <span style={{ fontSize: '8px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>Mins</span>
@@ -295,7 +322,10 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
 
                 {/* FOOTER: AIRING BADGE & SCHEDULE TEXT */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="badge-airing">Airing</span>
+                  <span className="nm-tag" style={{ background: 'rgba(243, 46, 53, 0.15)', color: 'var(--color-primary)', border: '1px solid rgba(243, 46, 53, 0.35)', fontWeight: 800, padding: '2px 8px', fontSize: '10px' }}>
+                    <span className="live-ping-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block', marginRight: '5px' }} />
+                    Airing
+                  </span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {anime.scheduleTimeText}
                   </span>
@@ -311,6 +341,9 @@ export const RunningAnimesSection: React.FC<RunningAnimesProps> = ({ animeList }
           border-color: rgba(243, 46, 53, 0.5) !important;
           transform: translateY(-3px);
           box-shadow: var(--nm-card-hover) !important;
+        }
+        .horizontal-carousel::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>

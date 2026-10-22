@@ -60,7 +60,7 @@ export const AnimeSeries: React.FC = () => {
       {/* HEADER SECTION */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', padding: '10px', borderRadius: '12px', display: 'flex' }}>
+          <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', padding: '10px', borderRadius: '12px', display: 'flex' }}>
             <Tv size={22} style={{ color: '#fff' }} />
           </div>
           <div>
@@ -102,13 +102,13 @@ export const AnimeSeries: React.FC = () => {
       {/* FILTER CONTROLS BAR */}
       <div className="nm-card" style={{ padding: '14px 20px', borderRadius: '14px', marginBottom: '26px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Filter size={16} style={{ color: '#8b5cf6' }} />
+          <Filter size={16} style={{ color: 'var(--color-primary)' }} />
           <span style={{ fontSize: '13px', fontWeight: 700, color: '#cbd5e1' }}>Filters:</span>
           
           <select
             value={selectedGenre}
             onChange={(e) => { setSelectedGenre(e.target.value); setPage(1); }}
-            style={{ background: '#10121d', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '6px 12px', color: '#fff', fontSize: '12px', outline: 'none' }}
+            style={{ background: 'var(--bg-surface-recessed)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '6px 12px', color: '#fff', fontSize: '12px', outline: 'none' }}
           >
             <option value="">All Genres</option>
             {genres.map(g => <option key={g} value={g}>{g}</option>)}

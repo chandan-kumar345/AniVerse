@@ -247,10 +247,10 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 key={day.offset}
                 onClick={() => setSelectedDayOffset(day.offset)}
                 style={{
-                  background: isActive ? '#1e2034' : 'none',
+                  background: isActive ? 'var(--bg-surface-elevated)' : 'none',
                   border: isActive ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
                   borderRadius: '12px',
-                  boxShadow: isActive ? '4px 4px 10px #08090f, -3px -3px 8px #22253c' : 'none',
+                  boxShadow: isActive ? '4px 4px 10px #020102, -3px -3px 8px #1e1c22' : 'none',
                   outline: 'none',
                   cursor: 'pointer',
                   display: 'flex',
@@ -267,7 +267,7 @@ export const EstimatedSchedule: React.FC<EstimatedScheduleProps> = ({ animeList 
                 <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px' }}>{day.month} {day.dayNum}</span>
                 <span style={{ fontSize: '16px', fontWeight: isActive ? 800 : 600, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {day.dayName}
-                  {isToday && <span style={{ fontSize: '9px', fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', padding: '2px 5px', borderRadius: '4px', marginLeft: '4px' }}>TODAY</span>}
+                  {isToday && <span style={{ fontSize: '9px', fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', padding: '2px 5px', borderRadius: '4px', marginLeft: '4px' }}>TODAY</span>}
                 </span>
               </button>
             );

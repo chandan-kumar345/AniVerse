@@ -375,21 +375,10 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug) {
             }
         });
         // Determine how many episodes to seed
-        const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
-        const sampleVideos = [
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        ];
+        const targetEpCount = media.episodes || await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 1, newAnime.type, media.episodes, newAnime.genres, newAnime.rating);
         const episodeData = [];
         for (let i = 1; i <= targetEpCount; i++) {
-            const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+            const videoUrl = newAnime.malId ? `https://vidsrc.pm/embed/anime?mal=${newAnime.malId}&ep=${i}` : '';
             episodeData.push({
                 animeId: newAnime.id,
                 episodeNumber: i,
@@ -526,21 +515,10 @@ async function searchAndImportFromAniList(searchQuery) {
             }
         });
         // Determine how many episodes to seed
-        const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
-        const sampleVideos = [
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        ];
+        const targetEpCount = media.episodes || await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 1, newAnime.type, media.episodes, newAnime.genres, newAnime.rating);
         const episodeData = [];
         for (let i = 1; i <= targetEpCount; i++) {
-            const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+            const videoUrl = newAnime.malId ? `https://vidsrc.pm/embed/anime?mal=${newAnime.malId}&ep=${i}` : '';
             episodeData.push({
                 animeId: newAnime.id,
                 episodeNumber: i,
@@ -712,13 +690,34 @@ const KNOWN_EPISODE_COUNTS = {
     61603: 12, // Aoashi Season 2
     63509: 12 // I'm Dating a Dark Summoner
 };
-async function getDynamicEpisodeCount(title, malId, dbCount, type) {
-    if (type && (type.toUpperCase() === 'MOVIE' || type.toUpperCase() === 'SPECIAL')) {
-        return 1;
-    }
+async function getDynamicEpisodeCount(title, malId, dbCount, type, totalEpisodes, genres, rating, episodes) {
+    const upperType = (type || '').toUpperCase();
+    const isExplicitMovie = upperType === 'MOVIE' || upperType === 'SPECIAL';
     const titleLower = title.toLowerCase().trim();
-    if (titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban')) {
-        return 1;
+    const isTitleMovie = titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban');
+    if (isExplicitMovie || isTitleMovie) {
+        return Math.max(dbCount, 1);
+    }
+    const is18Plus = (genres && (genres.includes('18+') || genres.toLowerCase().includes('hentai'))) ||
+        rating === '18+' || rating === 'Rx' || rating === 'R+' || rating === 'R - 17+';
+    const hasCustomPlayer = episodes?.some((e) => e.videoUrl && (e.videoUrl.includes('hentaitube') ||
+        e.videoUrl.includes('new_player') ||
+        e.videoUrl.includes('/arquivos/')));
+    // 18+ titles or custom embedded anime have no external TV stream mirrors.
+    // Their episode count is strictly the real episodes that exist in the database.
+    if (is18Plus || hasCustomPlayer) {
+        return dbCount > 0 ? dbCount : (totalEpisodes || 1);
+    }
+    // OVA / ONA / MUSIC titles
+    const isOvaOrOna = upperType === 'OVA' || upperType === 'ONA' || upperType === 'MUSIC';
+    if (isOvaOrOna) {
+        if (malId && KNOWN_EPISODE_COUNTS[malId]) {
+            return KNOWN_EPISODE_COUNTS[malId];
+        }
+        if (totalEpisodes && totalEpisodes > 0) {
+            return totalEpisodes;
+        }
+        return dbCount > 0 ? dbCount : 1;
     }
     // 1. Check in-memory cache first
     if (malId && EPISODE_COUNT_CACHE.has(malId)) {
@@ -789,12 +788,14 @@ async function getDynamicEpisodeCount(title, malId, dbCount, type) {
         return 175;
     if (titleLower.includes('gintama'))
         return 201;
-    // 6. If this anime has more than 1 episode in the database, respect that count
-    if (dbCount > 1) {
+    // 6. Respect database totalEpisodes or existing database count (never fallback to fake 12 episodes)
+    if (totalEpisodes && totalEpisodes > 0) {
+        return totalEpisodes;
+    }
+    if (dbCount > 0) {
         return dbCount;
     }
-    // 7. Standard anime season fallback (at least 12 episodes for TV series, never just 1!)
-    return 12;
+    return 1;
 }
 async function getAllAnime(req, res) {
     try {
@@ -1171,8 +1172,16 @@ async function getAnimeDetail(req, res) {
         if (!anime) {
             return res.status(404).json({ error: 'Anime not found' });
         }
-        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length, anime.type);
-        if (anime.episodes.length < targetEpCount) {
+        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length, anime.type, anime.totalEpisodes, anime.genres, anime.rating, anime.episodes);
+        const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+            anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+        const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+        const hasCustomEmbed = anime.episodes?.some((e) => e.videoUrl && (e.videoUrl.includes('hentaitube') ||
+            e.videoUrl.includes('new_player') ||
+            e.videoUrl.includes('/arquivos/')));
+        // Only allow mock episodes for verified mainstream series where external provider has episodes
+        const shouldMockEpisodes = !isAdultAnime && !isOvaOrMovie && !hasCustomEmbed && anime.malId !== null && anime.episodes.length < targetEpCount;
+        if (shouldMockEpisodes) {
             const sampleVideos = [
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -1230,6 +1239,7 @@ async function getAnimeDetail(req, res) {
                     hasDub: epHasDub
                 };
             });
+            episodesWithDub.sort((a, b) => a.episodeNumber - b.episodeNumber);
             anime.episodes = episodesWithDub;
         }
         // Get related anime (franchise movies/specials first, then genre fallback)
@@ -1385,8 +1395,15 @@ async function getEpisodeDetail(req, res) {
             },
         });
         // Determine dynamic real-world episode count limit
-        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, 12, anime.type);
-        if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount) {
+        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes?.length || 1, anime.type, anime.totalEpisodes, anime.genres, anime.rating, anime.episodes);
+        const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+            anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+        const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+        const hasCustomEmbed = anime.episodes?.some((e) => e.videoUrl && (e.videoUrl.includes('hentaitube') ||
+            e.videoUrl.includes('new_player') ||
+            e.videoUrl.includes('/arquivos/')));
+        const canMock = !isAdultAnime && !isOvaOrMovie && !hasCustomEmbed && anime.malId !== null;
+        if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount && canMock) {
             const sampleVideos = [
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -1521,6 +1538,17 @@ async function getEpisodeSources(req, res) {
         const anime = await findOrCreateAnimeBySlugOrId(id);
         if (!anime) {
             return res.status(404).json({ error: 'Anime not found' });
+        }
+        const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+            anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+        const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+        const hasCustomEmbed = anime.episodes?.some((e) => e.videoUrl && (e.videoUrl.includes('hentaitube') ||
+            e.videoUrl.includes('new_player') ||
+            e.videoUrl.includes('/arquivos/')));
+        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes?.length || 1, anime.type, anime.totalEpisodes, anime.genres, anime.rating, anime.episodes);
+        const maxAllowedEp = (isAdultAnime || isOvaOrMovie || hasCustomEmbed) ? (anime.episodes?.length || 1) : targetEpCount;
+        if (episodeNumber > maxAllowedEp) {
+            return res.status(404).json({ error: `Episode ${episodeNumber} does not exist for this anime.` });
         }
         const title = anime.title || '';
         const slug = anime.slug || '';
@@ -2547,6 +2575,17 @@ async function downloadEpisode(req, res) {
         const anime = await findOrCreateAnimeBySlugOrId(id);
         if (!anime) {
             return res.status(404).json({ error: 'Anime not found' });
+        }
+        const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+            anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+        const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+        const hasCustomEmbed = anime.episodes?.some((e) => e.videoUrl && (e.videoUrl.includes('hentaitube') ||
+            e.videoUrl.includes('new_player') ||
+            e.videoUrl.includes('/arquivos/')));
+        const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes?.length || 1, anime.type, anime.totalEpisodes, anime.genres, anime.rating, anime.episodes);
+        const maxAllowedEp = (isAdultAnime || isOvaOrMovie || hasCustomEmbed) ? (anime.episodes?.length || 1) : targetEpCount;
+        if (episodeNumber > maxAllowedEp) {
+            return res.status(404).json({ error: `Episode ${episodeNumber} does not exist for this anime.` });
         }
         const title = anime.title || 'Anime';
         const hasDub = checkIfAnimeHasDub(anime);

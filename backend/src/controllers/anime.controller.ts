@@ -75,6 +75,9 @@ export const ANIWAVE_SLUG_MAP: Record<string, string> = {
   'naruto-shippuden': 'naruto-shippuuden-676',
   'bleach': 'bleach-140',
   'bleach-thousand-year-blood-war': 'bleach-sennen-kessen-hen-80126',
+  'bleach-thousand-year-blood-war-the-separation': 'bleach-sennen-kessen-hen-ketsubetsu-tan-80860',
+  'bleach-thousand-year-blood-war-the-conflict': 'bleach-sennen-kessen-hen-soukoku-tan-81878',
+  'bleach-thousand-year-blood-war-the-calamity': 'bleach-sennen-kessen-hen-kashin-tan-82555',
   'chainsaw-man': 'chainsaw-man-80327',
   'my-hero-academia': 'boku-no-hero-academia-38',
   'boku-no-hero-academia': 'boku-no-hero-academia-38',
@@ -386,22 +389,19 @@ async function findOrCreateAnimeBySlugOrId(idOrSlug: string): Promise<any | null
     });
 
     // Determine how many episodes to seed
-    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
-    const sampleVideos = [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    ];
+    const targetEpCount = media.episodes || await getDynamicEpisodeCount(
+      newAnime.title,
+      newAnime.malId,
+      1,
+      newAnime.type,
+      media.episodes,
+      newAnime.genres,
+      newAnime.rating
+    );
 
     const episodeData = [];
     for (let i = 1; i <= targetEpCount; i++) {
-      const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+      const videoUrl = newAnime.malId ? `https://vidsrc.pm/embed/anime?mal=${newAnime.malId}&ep=${i}` : '';
       episodeData.push({
         animeId: newAnime.id,
         episodeNumber: i,
@@ -550,22 +550,19 @@ async function searchAndImportFromAniList(searchQuery: string): Promise<any | nu
     });
 
     // Determine how many episodes to seed
-    const targetEpCount = await getDynamicEpisodeCount(newAnime.title, newAnime.malId, 12, newAnime.type);
-    const sampleVideos = [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    ];
+    const targetEpCount = media.episodes || await getDynamicEpisodeCount(
+      newAnime.title,
+      newAnime.malId,
+      1,
+      newAnime.type,
+      media.episodes,
+      newAnime.genres,
+      newAnime.rating
+    );
 
     const episodeData = [];
     for (let i = 1; i <= targetEpCount; i++) {
-      const videoUrl = sampleVideos[(i - 1 + newAnime.title.length) % sampleVideos.length];
+      const videoUrl = newAnime.malId ? `https://vidsrc.pm/embed/anime?mal=${newAnime.malId}&ep=${i}` : '';
       episodeData.push({
         animeId: newAnime.id,
         episodeNumber: i,
@@ -648,6 +645,8 @@ const KNOWN_EPISODE_COUNTS: Record<number, number> = {
   41467: 13,  // Bleach: Thousand-Year Blood War
   53998: 13,  // Bleach TYBW Part 2
   57495: 13,  // Bleach TYBW Part 3
+  56206: 13,  // Bleach TYBW Part 3 (MAL alt)
+  60636: 13,  // Bleach TYBW Part 4 (The Calamity)
   20: 220,    // Naruto
   1735: 500,  // Naruto Shippuden
   34566: 293, // Boruto: Naruto Next Generations
@@ -744,13 +743,50 @@ const KNOWN_EPISODE_COUNTS: Record<number, number> = {
   63509: 12   // I'm Dating a Dark Summoner
 };
 
-async function getDynamicEpisodeCount(title: string, malId: number | null, dbCount: number, type?: string): Promise<number> {
-  if (type && (type.toUpperCase() === 'MOVIE' || type.toUpperCase() === 'SPECIAL')) {
-    return 1;
-  }
+async function getDynamicEpisodeCount(
+  title: string,
+  malId: number | null,
+  dbCount: number,
+  type?: string | null,
+  totalEpisodes?: number | null,
+  genres?: string | null,
+  rating?: string | null,
+  episodes?: any[]
+): Promise<number> {
+  const upperType = (type || '').toUpperCase();
+  const isExplicitMovie = upperType === 'MOVIE' || upperType === 'SPECIAL';
   const titleLower = title.toLowerCase().trim();
-  if (titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban')) {
-    return 1;
+  const isTitleMovie = titleLower.includes('movie') || titleLower.includes('film') || titleLower.includes('gekijouban');
+  if (isExplicitMovie || isTitleMovie) {
+    return Math.max(dbCount, 1);
+  }
+
+  const is18Plus = (genres && (genres.includes('18+') || genres.toLowerCase().includes('hentai'))) ||
+                   rating === '18+' || rating === 'Rx' || rating === 'R+' || rating === 'R - 17+';
+  const hasCustomPlayer = episodes?.some((e: any) =>
+    e.videoUrl && (
+      e.videoUrl.includes('hentaitube') ||
+      e.videoUrl.includes('new_player') ||
+      e.videoUrl.includes('/arquivos/')
+    )
+  );
+
+  // 18+ titles or custom embedded anime have no external TV stream mirrors.
+  // Their episode count is strictly the real episodes that exist in the database.
+  if (is18Plus || hasCustomPlayer) {
+    return dbCount > 0 ? dbCount : (totalEpisodes || 1);
+  }
+
+  // OVA / ONA / MUSIC titles
+  const isOvaOrOna = upperType === 'OVA' || upperType === 'ONA' || upperType === 'MUSIC';
+  if (isOvaOrOna) {
+    if (malId && KNOWN_EPISODE_COUNTS[malId]) {
+      return KNOWN_EPISODE_COUNTS[malId];
+    }
+    if (totalEpisodes && totalEpisodes > 0) {
+      return totalEpisodes;
+    }
+    return dbCount > 0 ? dbCount : 1;
   }
 
   // 1. Check in-memory cache first
@@ -809,13 +845,15 @@ async function getDynamicEpisodeCount(title: string, malId: number | null, dbCou
   if (titleLower.includes('fairy tail')) return 175;
   if (titleLower.includes('gintama')) return 201;
 
-  // 6. If this anime has more than 1 episode in the database, respect that count
-  if (dbCount > 1) {
+  // 6. Respect database totalEpisodes or existing database count (never fallback to fake 12 episodes)
+  if (totalEpisodes && totalEpisodes > 0) {
+    return totalEpisodes;
+  }
+  if (dbCount > 0) {
     return dbCount;
   }
 
-  // 7. Standard anime season fallback (at least 12 episodes for TV series, never just 1!)
-  return 12;
+  return 1;
 }
 
 export async function getAllAnime(req: Request, res: Response) {
@@ -1224,9 +1262,32 @@ export async function getAnimeDetail(req: Request, res: Response) {
       return res.status(404).json({ error: 'Anime not found' });
     }
 
-    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, anime.episodes.length, anime.type);
+    const targetEpCount = await getDynamicEpisodeCount(
+      anime.title,
+      anime.malId,
+      anime.episodes.length,
+      anime.type,
+      anime.totalEpisodes,
+      anime.genres,
+      anime.rating,
+      anime.episodes
+    );
 
-    if (anime.episodes.length < targetEpCount) {
+    const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+                         anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+    const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+    const hasCustomEmbed = anime.episodes?.some((e: any) =>
+      e.videoUrl && (
+        e.videoUrl.includes('hentaitube') ||
+        e.videoUrl.includes('new_player') ||
+        e.videoUrl.includes('/arquivos/')
+      )
+    );
+
+    // Only allow mock episodes for verified mainstream series where external provider has episodes
+    const shouldMockEpisodes = !isAdultAnime && !isOvaOrMovie && !hasCustomEmbed && anime.malId !== null && anime.episodes.length < targetEpCount;
+
+    if (shouldMockEpisodes) {
       const sampleVideos = [
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -1244,7 +1305,11 @@ export async function getAnimeDetail(req: Request, res: Response) {
       
       for (let i = 1; i <= targetEpCount; i++) {
         if (!existingEpNums.has(i)) {
-          const videoUrl = sampleVideos[(i - 1 + anime.title.length) % sampleVideos.length];
+          const videoUrl = anime.malId
+            ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${i}`
+            : (anime.tmdbId
+                ? `https://vidsrc.to/embed/tv/${anime.tmdbId}/1/${i}`
+                : sampleVideos[(i - 1 + anime.title.length) % sampleVideos.length]);
           newEpisodes.push({
             id: `mock-${anime.id}-${i}`,
             animeId: anime.id,
@@ -1285,6 +1350,7 @@ export async function getAnimeDetail(req: Request, res: Response) {
           hasDub: epHasDub
         };
       });
+      episodesWithDub.sort((a: any, b: any) => a.episodeNumber - b.episodeNumber);
       (anime as any).episodes = episodesWithDub;
     }
 
@@ -1453,9 +1519,31 @@ export async function getEpisodeDetail(req: Request, res: Response) {
     });
 
     // Determine dynamic real-world episode count limit
-    const targetEpCount = await getDynamicEpisodeCount(anime.title, anime.malId, 12, anime.type);
+    const targetEpCount = await getDynamicEpisodeCount(
+      anime.title,
+      anime.malId,
+      anime.episodes?.length || 1,
+      anime.type,
+      anime.totalEpisodes,
+      anime.genres,
+      anime.rating,
+      anime.episodes
+    );
 
-    if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount) {
+    const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+                         anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+    const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+    const hasCustomEmbed = anime.episodes?.some((e: any) =>
+      e.videoUrl && (
+        e.videoUrl.includes('hentaitube') ||
+        e.videoUrl.includes('new_player') ||
+        e.videoUrl.includes('/arquivos/')
+      )
+    );
+
+    const canMock = !isAdultAnime && !isOvaOrMovie && !hasCustomEmbed && anime.malId !== null;
+
+    if (!episode && episodeNumber > 0 && episodeNumber <= targetEpCount && canMock) {
       const sampleVideos = [
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
@@ -1467,7 +1555,17 @@ export async function getEpisodeDetail(req: Request, res: Response) {
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback.mp4',
         'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
       ];
-      const videoUrl = sampleVideos[(episodeNumber - 1 + anime.title.length) % sampleVideos.length];
+      const videoUrl = anime.malId
+        ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}`
+        : (anime.tmdbId
+            ? `https://vidsrc.to/embed/tv/${anime.tmdbId}/1/${episodeNumber}`
+            : sampleVideos[(episodeNumber - 1 + anime.title.length) % sampleVideos.length]);
+      const dubVideoUrl = anime.malId
+        ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&dub=1`
+        : null;
+      const hindiVideoUrl = anime.malId
+        ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&lang=hi`
+        : null;
       episode = {
         id: `mock-${anime.id}-${episodeNumber}`,
         animeId: anime.id,
@@ -1478,8 +1576,8 @@ export async function getEpisodeDetail(req: Request, res: Response) {
         synopsis: null,
         releaseDate: null,
         videoUrl: videoUrl,
-        dubVideoUrl: anime.hasDub ? videoUrl : null,
-        hindiVideoUrl: anime.hasHindi ? videoUrl : null,
+        dubVideoUrl: (anime.hasDub || checkIfAnimeHasDub(anime)) ? (dubVideoUrl || videoUrl) : null,
+        hindiVideoUrl: (anime.hasHindi || checkIfAnimeHasHindi(anime)) ? (hindiVideoUrl || videoUrl) : null,
         thumbnail: anime.bannerImage || anime.posterImage,
         duration: '24 min',
         status: 'AVAILABLE',
@@ -1594,6 +1692,33 @@ export async function getEpisodeSources(req: Request, res: Response) {
     const anime = await findOrCreateAnimeBySlugOrId(id);
     if (!anime) {
       return res.status(404).json({ error: 'Anime not found' });
+    }
+
+    const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+                         anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+    const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+    const hasCustomEmbed = anime.episodes?.some((e: any) =>
+      e.videoUrl && (
+        e.videoUrl.includes('hentaitube') ||
+        e.videoUrl.includes('new_player') ||
+        e.videoUrl.includes('/arquivos/')
+      )
+    );
+
+    const targetEpCount = await getDynamicEpisodeCount(
+      anime.title,
+      anime.malId,
+      anime.episodes?.length || 1,
+      anime.type,
+      anime.totalEpisodes,
+      anime.genres,
+      anime.rating,
+      anime.episodes
+    );
+
+    const maxAllowedEp = (isAdultAnime || isOvaOrMovie || hasCustomEmbed) ? (anime.episodes?.length || 1) : targetEpCount;
+    if (episodeNumber > maxAllowedEp) {
+      return res.status(404).json({ error: `Episode ${episodeNumber} does not exist for this anime.` });
     }
 
     const title = anime.title || '';
@@ -1851,30 +1976,27 @@ export async function getEpisodeSources(req: Request, res: Response) {
       const subServers = [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
         { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || ''))) },
-        { id: 'vidsrc_me', name: 'HD-3: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (Sub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-6: AniVerse Auto (Sub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra (Sub)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-4: AniVerse Cinema (Sub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
+        { id: 'aniwave', name: 'HD-5: AniVerse Prime (Sub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=sub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) }
       ];
 
       const dubServers = hasDub ? [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
         { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=en` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&dub=1` : (customEmbedUrl || '')) },
-        { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || ''))) },
-        { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1?dub=1` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_to', name: 'HD-3: AniVerse Global (English Dub)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-4: AniVerse Auto (English Dub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
+        { id: 'aniwave', name: 'HD-5: AniVerse Multi (English Dub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=dub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) }
       ] : [];
 
       const hindiServers = hasHindi ? [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
         { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.me/embed/movie?tmdb=${movieTmdbId}&ds_lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-3: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_cc', name: 'HD-4: AniVerse Hindi (Stream)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.cc/v2/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-5: AniVerse Hindi (Auto)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/1&lang=hi` : (movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_io', name: 'HD-2: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_to', name: 'HD-3: AniVerse Hindi (Global)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-4: AniVerse Hindi (Auto)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) }
       ] : [];
 
       const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -2178,11 +2300,26 @@ export async function getEpisodeSources(req: Request, res: Response) {
           { seasonNumber: 11, startEp: 354, endEp: 367 },
         ]
       },
-      // 8. Bleach Original (MAL 269 / TMDB 30984) - Season 1 (366 eps)
+      // 8. Bleach Original (MAL 269 / TMDB 30984) - 16 Seasons (366 eps)
       269: {
         tmdbId: 30984,
         seasons: [
-          { seasonNumber: 1, startEp: 1, endEp: 366 }
+          { seasonNumber: 1, startEp: 1, endEp: 20 },
+          { seasonNumber: 2, startEp: 21, endEp: 41 },
+          { seasonNumber: 3, startEp: 42, endEp: 63 },
+          { seasonNumber: 4, startEp: 64, endEp: 91 },
+          { seasonNumber: 5, startEp: 92, endEp: 109 },
+          { seasonNumber: 6, startEp: 110, endEp: 131 },
+          { seasonNumber: 7, startEp: 132, endEp: 151 },
+          { seasonNumber: 8, startEp: 152, endEp: 167 },
+          { seasonNumber: 9, startEp: 168, endEp: 189 },
+          { seasonNumber: 10, startEp: 190, endEp: 205 },
+          { seasonNumber: 11, startEp: 206, endEp: 212 },
+          { seasonNumber: 12, startEp: 213, endEp: 229 },
+          { seasonNumber: 13, startEp: 230, endEp: 265 },
+          { seasonNumber: 14, startEp: 266, endEp: 316 },
+          { seasonNumber: 15, startEp: 317, endEp: 342 },
+          { seasonNumber: 16, startEp: 343, endEp: 366 },
         ]
       },
       // 9. Dragon Ball Z (MAL 813 / TMDB 12971) - Season 1 (291 eps)
@@ -2387,13 +2524,13 @@ export async function getEpisodeSources(req: Request, res: Response) {
       41587: { tmdbId: 65930, seasonNumber: 5 },
       49918: { tmdbId: 65930, seasonNumber: 6 },
       55894: { tmdbId: 65930, seasonNumber: 7 },
-      // Bleach TYBW (TMDB 30984, Season 2 with offsets)
-      41467: { tmdbId: 30984, seasonNumber: 2, epOffset: 0 },
-      45576: { tmdbId: 30984, seasonNumber: 2, epOffset: 0 }, // Part 1 - The Blood Warfare
-      53998: { tmdbId: 30984, seasonNumber: 2, epOffset: 13 }, // Part 2 - The Separation
-      56784: { tmdbId: 30984, seasonNumber: 2, epOffset: 26 }, // Part 3 - The Conflict
-      56206: { tmdbId: 30984, seasonNumber: 2, epOffset: 26 }, // Part 3 - The Conflict
-      60636: { tmdbId: 30984, seasonNumber: 2, epOffset: 39 }, // Part 4 - The Calamity
+      // Bleach TYBW (TMDB 30984, Seasons 17-20 on TMDB)
+      41467: { tmdbId: 30984, seasonNumber: 17, epOffset: 0 }, // Part 1 - The Blood Warfare
+      45576: { tmdbId: 30984, seasonNumber: 17, epOffset: 0 }, // Part 1 - The Blood Warfare
+      53998: { tmdbId: 30984, seasonNumber: 18, epOffset: 0 }, // Part 2 - The Separation
+      56784: { tmdbId: 30984, seasonNumber: 19, epOffset: 0 }, // Part 3 - The Conflict
+      56206: { tmdbId: 30984, seasonNumber: 19, epOffset: 0 }, // Part 3 - The Conflict
+      60636: { tmdbId: 30984, seasonNumber: 20, epOffset: 0 }, // Part 4 - The Calamity
       // Chainsaw Man
       44511: { tmdbId: 114410, seasonNumber: 1 },
       // Cyberpunk Edgerunners
@@ -2566,14 +2703,17 @@ export async function getEpisodeSources(req: Request, res: Response) {
     // Explicit Bleach TYBW override safeguard
     if (slug.includes('bleach-thousand-year-blood-war') || slug.includes('sennen-kessen-hen')) {
       tmdbId = 30984;
-      seasonNumber = 2;
       if (/the-calamity|part-4|kashin-tan/i.test(slug) || /the\s*calamity|part\s*4|kashin-tan/i.test(title)) {
-        epNumToUse = episodeNumber + 39;
+        seasonNumber = 20;
+        epNumToUse = episodeNumber;
       } else if (/the-conflict|part-3|soukoku-tan/i.test(slug) || /the\s*conflict|part\s*3|soukoku-tan/i.test(title)) {
-        epNumToUse = episodeNumber + 26;
+        seasonNumber = 19;
+        epNumToUse = episodeNumber;
       } else if (/the-separation|part-2|ketsubetsu-tan/i.test(slug) || /the\s*separation|part\s*2|ketsubetsu-tan/i.test(title)) {
-        epNumToUse = episodeNumber + 13;
+        seasonNumber = 18;
+        epNumToUse = episodeNumber;
       } else {
+        seasonNumber = 17;
         epNumToUse = episodeNumber;
       }
     }
@@ -2581,30 +2721,27 @@ export async function getEpisodeSources(req: Request, res: Response) {
     const subServers = [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
       { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` : (animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || ''))) },
-      { id: 'vidsrc_me', name: 'HD-3: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (Sub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-6: AniVerse Auto (Sub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra (Sub)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-4: AniVerse Cinema (Sub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+      { id: 'aniwave', name: 'HD-5: AniVerse Prime (Sub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) }
     ];
 
     const dubServers = hasDub ? [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
       { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_me', name: 'HD-2: AniVerse Prime (English Dub)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.net/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
-      { id: 'aniwave', name: 'HD-3: AniVerse Multi (English Dub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || ''))) },
-      { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema (English Dub)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}&dub=1` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-6: AniVerse Auto (English Dub)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}?dub=1` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_to', name: 'HD-3: AniVerse Global (English Dub)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-4: AniVerse Auto (English Dub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) },
+      { id: 'aniwave', name: 'HD-5: AniVerse Multi (English Dub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) }
     ] : [];
 
     const hindiServers = hasHindi ? [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
       { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_me', name: 'HD-2: AniVerse Hindi (Prime)', embedUrl: animeMalId ? `https://vidsrc.net/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${epNumToUse}&ds_lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-3: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_cc', name: 'HD-4: AniVerse Hindi (Stream)', embedUrl: animeMalId ? `https://vidsrc.cc/v2/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-5: AniVerse Hindi (Auto)', embedUrl: animeMalId ? `https://player.autoembed.cc/embed/anime/${animeMalId}/${episodeNumber}&lang=hi` : (tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_io', name: 'HD-2: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_to', name: 'HD-3: AniVerse Hindi (Global)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-4: AniVerse Hindi (Auto)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}&lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) }
     ] : [];
 
     const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -2648,6 +2785,33 @@ export async function downloadEpisode(req: Request, res: Response) {
     const anime = await findOrCreateAnimeBySlugOrId(id);
     if (!anime) {
       return res.status(404).json({ error: 'Anime not found' });
+    }
+
+    const isAdultAnime = (anime.genres && (anime.genres.includes('18+') || anime.genres.toLowerCase().includes('hentai'))) ||
+                         anime.rating === '18+' || anime.rating === 'Rx' || anime.rating === 'R+';
+    const isOvaOrMovie = anime.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(anime.type.toUpperCase());
+    const hasCustomEmbed = anime.episodes?.some((e: any) =>
+      e.videoUrl && (
+        e.videoUrl.includes('hentaitube') ||
+        e.videoUrl.includes('new_player') ||
+        e.videoUrl.includes('/arquivos/')
+      )
+    );
+
+    const targetEpCount = await getDynamicEpisodeCount(
+      anime.title,
+      anime.malId,
+      anime.episodes?.length || 1,
+      anime.type,
+      anime.totalEpisodes,
+      anime.genres,
+      anime.rating,
+      anime.episodes
+    );
+
+    const maxAllowedEp = (isAdultAnime || isOvaOrMovie || hasCustomEmbed) ? (anime.episodes?.length || 1) : targetEpCount;
+    if (episodeNumber > maxAllowedEp) {
+      return res.status(404).json({ error: `Episode ${episodeNumber} does not exist for this anime.` });
     }
 
     const title = anime.title || 'Anime';

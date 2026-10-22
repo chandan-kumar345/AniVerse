@@ -212,6 +212,45 @@ class AnimeRepository {
     return AnimeSeedData.topTen.map((e) => AnimeModel.fromJson(e)).toList();
   }
 
+  Future<List<AnimeModel>> getRunningAnime() async {
+    List<AnimeModel> airingList = [];
+
+    // 1. Try querying Currently Airing titles from backend API
+    try {
+      final response = await _client.dio.get(
+        ApiConstants.animeList,
+        queryParameters: {'status': 'Currently Airing', 'limit': 30},
+      );
+      final List list = response.data['animeList'] ?? [];
+      if (list.isNotEmpty) {
+        airingList = list.map((e) => AnimeModel.fromJson(e)).toList();
+      }
+    } catch (_) {}
+
+    // 2. If backend response empty, combine trending & popular airing series
+    if (airingList.isEmpty) {
+      try {
+        final trending = await getTrending();
+        final popular = await getPopular();
+        final combined = [...trending, ...popular];
+        final seen = <String>{};
+        airingList = combined.where((a) => seen.add(a.slug)).toList();
+      } catch (_) {}
+    }
+
+    // 3. Fallback to topTen if still empty
+    if (airingList.isEmpty) {
+      airingList = (await getTopTen()).take(12).toList();
+    }
+
+    // 4. Sort ascending by remaining countdown (less timer anime will show first)
+    airingList.sort((a, b) {
+      return a.remainingTimeToAir.compareTo(b.remainingTimeToAir);
+    });
+
+    return airingList;
+  }
+
   Future<List<String>> getGenres() async {
     await _ensureInitialized();
 

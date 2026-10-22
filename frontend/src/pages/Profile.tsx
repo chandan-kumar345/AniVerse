@@ -140,8 +140,8 @@ export const Profile: React.FC = () => {
               height: '96px',
               borderRadius: '50%',
               background: 'var(--bg-surface-elevated)',
-              border: '3px solid rgba(139, 92, 246, 0.4)',
-              boxShadow: '6px 6px 16px #08090f, -4px -4px 12px #20233b',
+              border: '3px solid rgba(243, 46, 53, 0.45)',
+              boxShadow: '6px 6px 16px #020102, -4px -4px 12px #1c1a20',
               padding: '4px'
             }}
           />
@@ -403,12 +403,12 @@ export const Profile: React.FC = () => {
                         maxWidth: '280px',
                         height: '6px',
                         background: 'var(--bg-surface-recessed)',
-                        boxShadow: 'inset 1px 1px 3px #08090f',
+                        boxShadow: 'inset 1px 1px 3px #020102',
                         borderRadius: '9999px',
                         overflow: 'hidden'
                       }}
                     >
-                      <div style={{ width: `${item.progressPercentage}%`, height: '100%', background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)', borderRadius: '9999px' }} />
+                      <div style={{ width: `${item.progressPercentage}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', borderRadius: '9999px' }} />
                     </div>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
                       {Math.round(item.progressPercentage)}% completed

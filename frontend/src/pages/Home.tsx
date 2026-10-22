@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { HeroSlider } from '../components/HeroSlider';
-import { TrendingCarousel } from '../components/TrendingCarousel';
 import { ContinueWatchingSection } from '../components/ContinueWatchingSection';
 import { RunningAnimesSection } from '../components/RunningAnimesSection';
-import { UpcomingScheduleSection } from '../components/UpcomingScheduleSection';
-import { ExploreGenreSection } from '../components/ExploreGenreSection';
-import { SeasonalAnimeSection } from '../components/SeasonalAnimeSection';
+import { AnimeSlider } from '../components/AnimeSlider';
+import { LatestUpdatesSection } from '../components/LatestUpdatesSection';
+import { SectionWisePanels } from '../components/SectionWisePanels';
+import { EstimatedSchedule } from '../components/EstimatedSchedule';
 import { AZListSection } from '../components/AZListSection';
-import { anilistService, type AniListMedia } from '../services/anilistService';
 import type { AnimeData } from '../components/AnimeCard';
 
 export const Home: React.FC = () => {
   const [trending, setTrending] = useState<AnimeData[]>([]);
-      const [runningList, setRunningList] = useState<AnimeData[]>([]);
-  
+  const [popular, setPopular] = useState<AnimeData[]>([]);
+  const [topTen, setTopTen] = useState<AnimeData[]>([]);
+  const [latestUpdates, setLatestUpdates] = useState<AnimeData[]>([]);
+  const [movies, setMovies] = useState<AnimeData[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [newRelease, setNewRelease] = useState<AnimeData[]>([]);
+  const [newAdded, setNewAdded] = useState<AnimeData[]>([]);
+  const [justCompleted, setJustCompleted] = useState<AnimeData[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // 1. Instant Cache Hydration: Render immediately from sessionStorage if available (0ms)
   useEffect(() => {
     try {
@@ -23,159 +30,210 @@ export const Home: React.FC = () => {
         const d = JSON.parse(cached);
         if (d && (d.trending?.length || d.topTen?.length)) {
           if (d.trending) setTrending(d.trending);
-                              if (d.newRelease) setRunningList(d.newRelease);
-                  }
+          if (d.popular) setPopular(d.popular);
+          if (d.topTen) setTopTen(d.topTen);
+          if (d.latestUpdates) setLatestUpdates(d.latestUpdates);
+          if (d.movies) setMovies(d.movies);
+          if (d.genres) setGenres(d.genres);
+          if (d.newRelease) setNewRelease(d.newRelease);
+          if (d.newAdded) setNewAdded(d.newAdded);
+          if (d.justCompleted) setJustCompleted(d.justCompleted);
+          setLoading(false);
+        }
       }
     } catch (_) {}
   }, []);
 
-  // 2. Fetch fresh home data through AniList metadata service + AniVerse API fallback
+  // 2. Fetch fresh home data through AniVerse API
   useEffect(() => {
-    let isMounted = true;
-
-    const loadHomeData = async () => {
+    const fetchHomeData = async (showShimmer = false) => {
       try {
-        // Fast Path A: Fetch trending from AniList directly for immediate high-fidelity metadata
-        const aniTrendingPromise = anilistService.getTrending(1, 15);
-        const aniAiringPromise = anilistService.getCurrentlyAiring(1, 8);
+        if (showShimmer && loading) {
+          setLoading(true);
+        }
 
-        // Fast Path B: Call local /api/anime/home endpoint in parallel
-        const localApiPromise = axios.get('/api/anime/home', { timeout: 6000 }).catch(() => null);
+        // Fast Path: Call the unified and in-memory cached /api/anime/home endpoint
+        try {
+          const homeRes = await axios.get('/api/anime/home', { timeout: 10000 });
+          if (homeRes.data && (homeRes.data.trending || homeRes.data.topTen)) {
+            const d = homeRes.data;
+            setTrending(d.trending || []);
+            setPopular(d.popular || []);
+            setTopTen(d.topTen || []);
+            setLatestUpdates(d.latestUpdates || []);
+            setMovies(d.movies || []);
+            setGenres(d.genres || []);
+            setNewRelease(d.newRelease || []);
+            setNewAdded(d.newAdded || []);
+            setJustCompleted(d.justCompleted || []);
 
-        const [aniTrending, aniAiring, localHomeRes] = await Promise.allSettled([
-          aniTrendingPromise,
-          aniAiringPromise,
-          localApiPromise,
+            try {
+              sessionStorage.setItem('aniverse_home_cache', JSON.stringify(d));
+            } catch (_) {}
+
+            setLoading(false);
+            return;
+          }
+        } catch (unifiedErr) {
+          console.warn('/api/anime/home error, falling back to parallel endpoints:', unifiedErr);
+        }
+
+        // Fallback Path: Parallel queries with Promise.allSettled so no single error blocks the page
+        const [
+          trendingRes,
+          popularRes,
+          topTenRes,
+          moviesRes,
+          genresRes,
+          newReleaseRes,
+          newAddedRes,
+          justCompletedRes,
+          latestUpdatesRes
+        ] = await Promise.allSettled([
+          axios.get('/api/anime/trending'),
+          axios.get('/api/anime/popular'),
+          axios.get('/api/anime/top-ten'),
+          axios.get('/api/anime?contentType=movie&limit=16'),
+          axios.get('/api/anime/genres'),
+          axios.get('/api/anime?status=Currently Airing&limit=5'),
+          axios.get('/api/anime?sort=latest&limit=5'),
+          axios.get('/api/anime?status=Finished Airing&limit=5'),
+          axios.get('/api/anime?sort=latest&limit=35')
         ]);
 
-        if (!isMounted) return;
-
-        let loadedTrending: AnimeData[] = [];
-        let loadedRunning: AnimeData[] = [];
-
-        // If local API succeeded with database entries, use them
-        if (localHomeRes.status === 'fulfilled' && localHomeRes.value && localHomeRes.value.data?.trending?.length > 0) {
-          const d = localHomeRes.value.data;
-          loadedTrending = d.trending || [];
-                              if (d.newRelease?.length > 0) {
-            loadedRunning = d.newRelease;
+        const getVal = (res: PromiseSettledResult<any>, key: string, fallback: any = []) => {
+          if (res.status === 'fulfilled' && res.value?.data) {
+            return res.value.data[key] || fallback;
           }
-        }
+          return fallback;
+        };
 
-        // If AniList succeeded and local API didn't have enough trending, merge/hydrate AniList media
-        if (aniTrending.status === 'fulfilled' && aniTrending.value.length > 0) {
-          const aniListMapped: AnimeData[] = aniTrending.value.map((m: AniListMedia) => {
-            const title = m.title.english || m.title.romaji || m.title.native || 'Anime';
-            const slug = m.slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            return {
-              id: String(m.id),
-              slug,
-              title,
-              englishTitle: m.title.english || null,
-              description: m.description ? m.description.replace(/<[^>]*>/g, '') : '',
-              posterImage: m.coverImage?.extraLarge || m.coverImage?.large || '',
-              bannerImage: m.bannerImage || m.coverImage?.extraLarge || m.coverImage?.large || '',
-              score: m.averageScore ? m.averageScore / 10 : 8.0,
-              type: m.format || 'TV',
-              studio: m.studios?.nodes?.[0]?.name || 'Studio',
-              status: m.status === 'RELEASING' ? 'Currently Airing' : 'Finished Airing',
-              releasedYear: m.startDate?.year || 2024,
-              duration: m.duration ? `${m.duration} min` : '24 min',
-              genres: m.genres ? m.genres.join(', ') : 'Action, Fantasy',
-              hasSub: true,
-              hasDub: true,
-              nextAiringEpisode: m.nextAiringEpisode ? {
-                episode: m.nextAiringEpisode.episode,
-                airingAt: m.nextAiringEpisode.airingAt,
-              } : null,
-            };
-          });
+        const trendingData = getVal(trendingRes, 'trending');
+        const popularData = getVal(popularRes, 'popular');
+        const topTenData = getVal(topTenRes, 'topTen');
+        const moviesData = getVal(moviesRes, 'animeList');
+        const genresData = getVal(genresRes, 'genres');
+        const newReleaseData = getVal(newReleaseRes, 'animeList');
+        const newAddedData = getVal(newAddedRes, 'animeList');
+        const justCompletedData = getVal(justCompletedRes, 'animeList');
+        const latestUpdatesData = getVal(latestUpdatesRes, 'animeList');
 
-          // Prioritize high-definition catalog items
-          if (loadedTrending.length < 5) {
-            loadedTrending = aniListMapped;
-          }
-        }
-
-        if (aniAiring.status === 'fulfilled' && aniAiring.value.length > 0 && loadedRunning.length === 0) {
-          loadedRunning = aniAiring.value.map((m: AniListMedia) => {
-            const title = m.title.english || m.title.romaji || 'Anime';
-            const slug = m.slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            return {
-              id: String(m.id),
-              slug,
-              title,
-              description: m.description ? m.description.replace(/<[^>]*>/g, '') : '',
-              posterImage: m.coverImage?.large || '',
-              score: m.averageScore ? m.averageScore / 10 : 8.0,
-              type: m.format || 'TV',
-              status: 'Currently Airing',
-              genres: m.genres ? m.genres.join(', ') : 'Action',
-              nextAiringEpisode: m.nextAiringEpisode ? {
-                episode: m.nextAiringEpisode.episode,
-                airingAt: m.nextAiringEpisode.airingAt,
-              } : null,
-            };
-          });
-        }
-
-        setTrending(loadedTrending);
-        setRunningList(loadedRunning);
+        setTrending(trendingData);
+        setPopular(popularData);
+        setTopTen(topTenData);
+        setMovies(moviesData);
+        setGenres(genresData);
+        setNewRelease(newReleaseData);
+        setNewAdded(newAddedData);
+        setJustCompleted(justCompletedData);
+        setLatestUpdates(latestUpdatesData.length > 0 ? latestUpdatesData : trendingData);
 
         try {
           sessionStorage.setItem('aniverse_home_cache', JSON.stringify({
-            trending: loadedTrending,
-            newRelease: loadedRunning,
+            trending: trendingData,
+            popular: popularData,
+            topTen: topTenData,
+            latestUpdates: latestUpdatesData,
+            movies: moviesData,
+            genres: genresData,
+            newRelease: newReleaseData,
+            newAdded: newAddedData,
+            justCompleted: justCompletedData,
           }));
         } catch (_) {}
       } catch (err) {
-        console.warn('Error loading home data:', err);
+        console.error('Error fetching home page data:', err);
       } finally {
-              }
+        setLoading(false);
+      }
     };
 
-    loadHomeData();
-    return () => {
-      isMounted = false;
-    };
+    fetchHomeData(true);
+
+    // Auto-update home data every 60 seconds quietly in the background
+    const interval = setInterval(() => fetchHomeData(false), 60000);
+    return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    document.title = "AniVerse - Watch Free Anime Online in HD (No Ads) - Aniwave Alternative";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Stream high-definition popular anime series like Bleach TYBW, Demon Slayer, Jujutsu Kaisen, and One Piece online for free on AniVerse with custom HTML5 player, ad-blocked iframe servers, and dynamic nested comments.');
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="app-container" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Banner Skeleton */}
+        <div style={{ height: '600px', width: '100%', borderRadius: '16px' }} className="shimmer" />
+        {/* Row Skeletons */}
+        <div style={{ display: 'flex', gap: '20px', overflow: 'hidden' }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ flex: '1 0 180px', height: '270px', borderRadius: '8px' }} className="shimmer" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // To re-order sections, simply swap the indices or positions below.
   return (
-    <div style={{ background: 'var(--bg-main)', minHeight: '100vh', paddingBottom: '60px' }}>
-      {/* 1. CINEMATIC FEATURED HERO BANNER */}
-      <section style={{ padding: '0 24px 36px 24px' }}>
-        <div className="app-container">
-          <HeroSlider animeList={trending.length > 0 ? trending : []} />
-        </div>
-      </section>
+    <div className="app-container" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* 1. HERO SPOTLIGHT SLIDER */}
+      <HeroSlider animeList={topTen} />
 
-      {/* 2. MAIN HOMEPAGE SECTIONS CONTAINER */}
-      <section style={{ padding: '0 24px' }}>
-        <div className="app-container">
-          {/* SECTION B: TRENDING NOW (Ranked 1, 2, 3... cards) */}
-          <TrendingCarousel animeList={trending} />
+      {/* 1.5. CONTINUE WATCHING (Resume anime where left off) */}
+      <ContinueWatchingSection />
 
-          {/* SECTION C: CONTINUE WATCHING (Playback progress & resume) */}
-          <ContinueWatchingSection />
+      {/* 2. TRENDING NOW SLIDER */}
+      <AnimeSlider title="Trending Now" animeList={trending} showCountdown={false} />
 
-          {/* SECTION D: RUNNING ANIMES (Currently airing with countdown) */}
-          <RunningAnimesSection animeList={runningList} />
+      {/* 2.5. RUNNING ANIMES (Currently Airing with Countdown) */}
+      <RunningAnimesSection animeList={trending} />
 
-          {/* SECTION E: UPCOMING EPISODE SCHEDULE (Day selector pills) */}
-          <UpcomingScheduleSection />
+      {/* 3. LATEST EPISODE UPDATES & SIDEBAR */}
+      <LatestUpdatesSection 
+        latestUpdates={latestUpdates} 
+        topTen={topTen} 
+        genres={genres} 
+      />
 
-          {/* SECTION F: EXPLORE BY GENRE */}
-          <ExploreGenreSection />
+      {/* 3.5. ANIME MOVIES SLIDER */}
+      <AnimeSlider title="Anime Movies" animeList={movies} showCountdown={false} />
 
-          {/* SECTION H: SEASONAL ANIME */}
-          <SeasonalAnimeSection />
+      {/* 4. MOST POPULAR SLIDER */}
+      <AnimeSlider title="Most Popular" animeList={popular} showCountdown={false} />
 
-          {/* SECTION: A-Z CATALOGUE DIRECTORY */}
-          <div style={{ marginTop: '20px' }}>
-            <AZListSection />
-          </div>
-        </div>
-      </section>
+      {/* 5. NEW RELEASE / NEW ADDED / JUST COMPLETED PANELS */}
+      <SectionWisePanels 
+        newRelease={newRelease} 
+        newAdded={newAdded} 
+        justCompleted={justCompleted} 
+      />
+
+      {/* 6. ESTIMATED AIRING SCHEDULE */}
+      <EstimatedSchedule animeList={trending.concat(popular)} />
+
+      {/* 7. A-Z ALPHABET LISTING PANEL */}
+      <AZListSection />
+
+      <style>{`
+        .genre-item-link:hover { background: var(--color-primary) !important; color: #fff !important; box-shadow: var(--glow-shadow); }
+        .view-all-link:hover { color: var(--color-primary-hover) !important; }
+        
+        .section-list-item:hover .section-item-title { color: var(--color-primary) !important; }
+        .section-list-item:hover .section-item-thumb { transform: scale(1.05); border-color: var(--color-primary) !important; }
+        .section-item-thumb { transition: var(--transition-fast); }
+        
+        .az-item:hover { background: var(--color-primary) !important; border-color: var(--color-primary) !important; color: #fff !important; box-shadow: var(--glow-shadow); }
+
+        @media (max-width: 992px) {
+          .home-content-layout { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 };

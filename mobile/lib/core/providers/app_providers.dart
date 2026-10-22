@@ -87,6 +87,11 @@ final topTenAnimeProvider = FutureProvider<List<AnimeModel>>((ref) async {
   return repo.getTopTen();
 });
 
+final runningAnimeProvider = FutureProvider<List<AnimeModel>>((ref) async {
+  final repo = ref.watch(animeRepositoryProvider);
+  return repo.getRunningAnime();
+});
+
 final genresListProvider = FutureProvider<List<String>>((ref) async {
   final repo = ref.watch(animeRepositoryProvider);
   return repo.getGenres();

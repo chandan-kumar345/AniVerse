@@ -1,118 +1,76 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, User, LogOut, Bookmark, History, Bell, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Menu, X, User, LogOut, Heart, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { anilistService, type AniListMedia } from '../services/anilistService';
 import axios from 'axios';
 
-interface SuggestionItem {
-  id: string | number;
+interface Suggestion {
+  id: string;
   slug: string;
   title: string;
+  englishTitle: string;
   posterImage: string;
-  score?: number;
-  releasedYear?: number;
-  type?: string;
+  score: number;
+  releasedYear: number;
+  type: string;
 }
 
 export const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard shortcut '/' to focus search input
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === '/' &&
-        document.activeElement?.tagName !== 'INPUT' &&
-        document.activeElement?.tagName !== 'TEXTAREA'
-      ) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Close menus when clicking outside
+  // Close suggestions and dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+      if (
+        autocompleteRef.current &&
+        !autocompleteRef.current.contains(event.target as Node)
+      ) {
         setShowSuggestions(false);
       }
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsProfileDropdownOpen(false);
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setIsNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Debounced multi-source autocomplete suggestions (AniList GraphQL + local)
+  // Fetch search suggestions
   useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSuggestions([]);
+        return;
+      }
       try {
-        // First try AniList GraphQL API for rich global results
-        const aniResult = await anilistService.search({
-          search: searchQuery.trim(),
-          perPage: 6,
-        });
-
-        if (aniResult && aniResult.media.length > 0) {
-          const mapped: SuggestionItem[] = aniResult.media.map((m: AniListMedia) => {
-            const title = m.title.english || m.title.romaji || m.title.native || 'Unknown Title';
-            const slug = m.slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            return {
-              id: m.id,
-              slug,
-              title,
-              posterImage: m.coverImage?.large || m.coverImage?.medium || '',
-              score: m.averageScore ? m.averageScore / 10 : undefined,
-              releasedYear: m.startDate?.year || undefined,
-              type: m.format || 'TV',
-            };
-          });
-          setSuggestions(mapped);
-          return;
-        }
-
-        // Fallback to local search endpoint if AniList returned empty
-        const res = await axios.get(`/api/anime/search/suggest?q=${encodeURIComponent(searchQuery)}`);
+        const res = await axios.get(`/api/anime/search/suggest?q=${searchQuery}`);
         setSuggestions(res.data.suggestions || []);
       } catch (err) {
-        console.warn('Autocomplete fetch fallback:', err);
+        console.error('Failed to load suggestions:', err);
       }
-    }, 250);
+    };
 
+    const timer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/search?q=${searchQuery}`);
       setShowSuggestions(false);
     }
   };
@@ -123,228 +81,93 @@ export const Header: React.FC = () => {
     setShowSuggestions(false);
   };
 
-  const currentPath = location.pathname;
+  const location = window.location.pathname;
 
   return (
-    <header
-      style={{
-        height: '74px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'rgba(8, 7, 11, 0.94)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid #292938',
-      }}
-    >
-      <div
-        className="app-container"
-        style={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-        }}
-      >
-        {/* BRAND LOGO */}
-        <Link
-          to="/"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            textDecoration: 'none',
-            flexShrink: 0,
-            userSelect: 'none',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 900,
-                fontSize: '24px',
-                letterSpacing: '0.04em',
-                color: '#ffffff',
-                lineHeight: 1,
-              }}
-            >
-              ANI<span style={{ color: 'var(--color-primary)' }}>VERSES</span>
-            </span>
-            <Sparkles size={16} color="var(--color-primary)" style={{ filter: 'drop-shadow(0 0 6px var(--color-primary-glow))' }} />
-          </div>
-          <span
-            style={{
-              fontSize: '8.5px',
-              fontWeight: 700,
-              letterSpacing: '0.24em',
-              color: 'var(--text-muted)',
-              marginTop: '3px',
-              textTransform: 'uppercase',
-            }}
-          >
-            Anime Beyond Borders
-          </span>
+    <header className="glass-header" style={{ height: '74px', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div className="app-container" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
+        
+        {/* LOGO */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: '#fff', flexShrink: 0 }}>
+          <img src="/logo.png" alt="AniVerse" style={{ height: '42px', objectFit: 'contain' }} />
         </Link>
-
-        {/* DESKTOP NAVIGATION LINKS */}
-        <nav className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '24px' }}>
-          <Link
-            to="/"
-            className={`nav-link-pill ${currentPath === '/' ? 'active' : ''}`}
+ 
+        {/* SEARCH BAR - Neumorphic Inset Capsule */}
+        <div ref={autocompleteRef} style={{ flex: '0 1 480px', position: 'relative', margin: '0 24px', display: 'none' }} className="desktop-search">
+          <form 
+            onSubmit={handleSearchSubmit} 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              background: 'var(--bg-surface-recessed)', 
+              borderRadius: '9999px', 
+              boxShadow: 'var(--nm-inset)', 
+              border: '1px solid rgba(255,255,255,0.04)', 
+              padding: '4px 6px 4px 18px', 
+              transition: 'var(--transition-smooth)' 
+            }} 
+            className="search-form"
           >
-            Home
-          </Link>
-          <Link
-            to="/discover"
-            className={`nav-link-pill ${currentPath === '/discover' || currentPath === '/search' ? 'active' : ''}`}
-          >
-            Explore
-          </Link>
-          <Link
-            to="/genres"
-            className={`nav-link-pill ${currentPath.startsWith('/genres') ? 'active' : ''}`}
-          >
-            Genres
-          </Link>
-          <Link
-            to="/schedule"
-            className={`nav-link-pill ${currentPath === '/schedule' ? 'active' : ''}`}
-          >
-            Schedule
-          </Link>
-          <Link
-            to="/running"
-            className={`nav-link-pill ${currentPath === '/running' ? 'active' : ''}`}
-          >
-            Running Anime
-          </Link>
-          <Link
-            to="/watchlist"
-            className={`nav-link-pill ${currentPath === '/watchlist' ? 'active' : ''}`}
-          >
-            My List
-          </Link>
-        </nav>
-
-        {/* SEARCH BAR (Pill shaped with search icon & '/' keyboard hint) */}
-        <div
-          ref={autocompleteRef}
-          style={{ flex: '0 1 420px', position: 'relative', margin: '0 20px', display: 'none' }}
-          className="desktop-search"
-        >
-          <form
-            onSubmit={handleSearchSubmit}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: '#12121A',
-              borderRadius: '9999px',
-              border: '1px solid #292938',
-              padding: '4px 12px 4px 16px',
-              transition: 'var(--transition-smooth)',
-            }}
-            className="search-form-pill"
-          >
-            <Search size={16} color="var(--text-muted)" style={{ flexShrink: 0, marginRight: '8px' }} />
             <input
-              ref={searchInputRef}
               type="text"
-              placeholder="Search anime, movies..."
+              placeholder="Search anime, movies, series..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
-              style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: '#fff',
-                fontSize: '13px',
-                height: '34px',
-              }}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', height: '36px', paddingRight: '10px' }}
             />
-            {/* Keyboard shortcut hint */}
-            <div
-              style={{
-                background: '#1d1d29',
-                color: 'var(--text-muted)',
-                border: '1px solid #292938',
-                borderRadius: '4px',
-                padding: '2px 7px',
-                fontSize: '11px',
-                fontWeight: 700,
-                lineHeight: 1,
-                userSelect: 'none',
+            <button 
+              type="submit" 
+              style={{ 
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', 
+                border: 'none', 
+                borderRadius: '50%', 
+                width: '34px', 
+                height: '34px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                cursor: 'pointer', 
+                color: '#fff', 
+                boxShadow: '0 4px 14px rgba(243, 46, 53, 0.45)',
+                transition: 'var(--transition-smooth)',
+                flexShrink: 0
               }}
+              className="search-btn"
             >
-              /
-            </div>
+              <Search size={16} />
+            </button>
           </form>
-
-          {/* Autocomplete Dropdown */}
+ 
+          {/* Autocomplete Dropdown - Neumorphic elevated menu */}
           {showSuggestions && suggestions.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '120%',
-                left: 0,
-                right: 0,
-                background: '#12121A',
-                border: '1px solid #292938',
-                borderRadius: '14px',
-                boxShadow: 'var(--nm-card-hover)',
-                zIndex: 99,
-                overflow: 'hidden',
-                padding: '6px 0',
-              }}
-            >
+            <div style={{ position: 'absolute', top: '115%', left: 0, right: 0, background: 'var(--bg-surface-elevated)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', boxShadow: 'var(--nm-elevated)', zIndex: 99, overflow: 'hidden', padding: '8px 0' }}>
               {suggestions.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleSuggestionClick(item.slug)}
-                  style={{
-                    display: 'flex',
-                    gap: '12px',
-                    padding: '8px 16px',
-                    cursor: 'pointer',
-                    transition: 'var(--transition-fast)',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                  }}
-                  className="suggestion-row"
+                  style={{ display: 'flex', gap: '12px', padding: '10px 18px', cursor: 'pointer', transition: 'var(--transition-fast)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                  className="suggestion-item"
                 >
                   <img
-                    src={item.posterImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=120'}
+                    src={item.posterImage}
                     alt={item.title}
                     referrerPolicy="no-referrer"
-                    style={{
-                      width: '36px',
-                      height: '48px',
-                      objectFit: 'cover',
-                      borderRadius: '6px',
-                      border: '1px solid #292938',
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&auto=format&fit=crop&q=80';
                     }}
+                    style={{ width: '42px', height: '56px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        color: '#fff',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 1,
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
+                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                       {item.title}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                      {item.type} {item.releasedYear ? `• ${item.releasedYear}` : ''} {item.score ? `• ⭐ ${item.score.toFixed(1)}` : ''}
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      {item.type} • {item.releasedYear} • ⭐ {item.score.toFixed(1)}
                     </div>
                   </div>
                 </div>
@@ -353,197 +176,117 @@ export const Header: React.FC = () => {
           )}
         </div>
 
-        {/* RIGHT SIDE ACTIONS: NOTIFICATIONS & PROFILE */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* NOTIFICATION BELL */}
-          <div ref={notificationsRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                background: '#12121A',
-                border: '1px solid #292938',
-                color: 'var(--text-main)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'var(--transition-fast)',
-              }}
-              title="Notifications"
+        {/* NAVIGATION LINKS & AUTH */}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div className="desktop-links" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Link 
+              to="/" 
+              className={`nav-pill ${location === '/' ? 'active' : ''}`}
             >
-              <Bell size={18} />
-              {/* Red notification dot */}
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  width: '7px',
-                  height: '7px',
-                  background: 'var(--color-primary)',
-                  borderRadius: '50%',
-                  boxShadow: '0 0 6px var(--color-primary-glow)',
-                }}
-              />
-            </button>
-
-            {/* Notifications Dropdown */}
-            {isNotificationsOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '125%',
-                  right: 0,
-                  width: '300px',
-                  background: '#12121A',
-                  border: '1px solid #292938',
-                  borderRadius: '12px',
-                  boxShadow: 'var(--nm-card-hover)',
-                  overflow: 'hidden',
-                  zIndex: 99,
-                  padding: '12px',
-                }}
+              Home
+            </Link>
+            <Link 
+              to="/series" 
+              className={`nav-pill ${location.startsWith('/series') ? 'active' : ''}`}
+            >
+              Series
+            </Link>
+            <Link 
+              to="/movies" 
+              className={`nav-pill ${location.startsWith('/movies') ? 'active' : ''}`}
+            >
+              Movies
+            </Link>
+            <Link 
+              to="/genres" 
+              className={`nav-pill ${location.startsWith('/genres') ? 'active' : ''}`}
+            >
+              Genres
+            </Link>
+            <Link 
+              to="/search" 
+              className={`nav-pill ${location.startsWith('/search') ? 'active' : ''}`}
+            >
+              Catalog
+            </Link>
+            {isAuthenticated && (
+              <Link 
+                to="/profile?tab=watchlist" 
+                className={`nav-pill ${location.includes('watchlist') ? 'active' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Notifications</span>
-                  <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>Live Updates</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ padding: '8px', borderRadius: '8px', background: '#181824', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    <div style={{ color: '#fff', fontWeight: 600, marginBottom: '2px' }}>Solo Leveling Episode 8</div>
-                    <span>New episode now airing on authorized streams!</span>
-                  </div>
-                  <div style={{ padding: '8px', borderRadius: '8px', background: '#181824', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    <div style={{ color: '#fff', fontWeight: 600, marginBottom: '2px' }}>Demon Slayer Season 4</div>
-                    <span>Hashira Training Arc is scheduled for this Sunday.</span>
-                  </div>
-                </div>
-              </div>
+                <Heart size={15} /> Watchlist
+              </Link>
             )}
           </div>
 
-          {/* USER PROFILE / AUTH */}
+          {/* Vertical Separator */}
+          <div className="desktop-links" style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)' }} />
+
+          {/* USER ACTION BUTTONS */}
           {isAuthenticated ? (
             <div ref={profileDropdownRef} style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'transparent',
-                  border: '2px solid var(--color-primary)',
-                  boxShadow: '0 0 12px var(--color-primary-glow)',
-                  padding: '2px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                className="nm-pill"
+                style={{ 
+                  background: 'var(--bg-surface-elevated)', 
+                  border: '1px solid rgba(255,255,255,0.06)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  cursor: 'pointer', 
+                  color: '#fff',
+                  padding: '5px 14px 5px 6px'
                 }}
               >
-                <img
-                  src={
-                    user?.avatar
-                      ? `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`
-                      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
-                  }
-                  alt={user?.username || 'Profile'}
-                  referrerPolicy="no-referrer"
-                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                />
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(243, 46, 53, 0.4)' }}>
+                  {user?.avatar ? (
+                    <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} alt="avatar" referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    user?.username.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <span className="desktop-username" style={{ fontWeight: 600, fontSize: '13px' }}>{user?.username}</span>
+                <ChevronDown size={14} style={{ opacity: 0.7 }} />
               </button>
 
               {/* Profile Dropdown */}
               {isProfileDropdownOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '125%',
-                    right: 0,
-                    width: '210px',
-                    background: '#12121A',
-                    border: '1px solid #292938',
-                    borderRadius: '12px',
-                    boxShadow: 'var(--nm-card-hover)',
-                    overflow: 'hidden',
-                    zIndex: 99,
-                    padding: '6px',
-                  }}
-                >
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #292938', marginBottom: '4px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>{user?.username}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
-                  </div>
+                <div style={{ position: 'absolute', top: '125%', right: 0, width: '210px', background: 'var(--bg-surface-elevated)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', boxShadow: 'var(--nm-elevated)', overflow: 'hidden', zIndex: 99, padding: '6px' }}>
                   <Link
                     to="/profile"
                     onClick={() => setIsProfileDropdownOpen(false)}
-                    className="dropdown-item-link"
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '13px', borderRadius: '8px' }}
+                    className="dropdown-item"
                   >
-                    <User size={15} /> Profile & Settings
+                    <User size={15} /> Profile
                   </Link>
                   <Link
-                    to="/watchlist"
+                    to="/profile?tab=history"
                     onClick={() => setIsProfileDropdownOpen(false)}
-                    className="dropdown-item-link"
-                  >
-                    <Bookmark size={15} /> My Watchlist
-                  </Link>
-                  <Link
-                    to="/history"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                    className="dropdown-item-link"
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: 'var(--text-main)', textDecoration: 'none', transition: 'var(--transition-fast)', fontSize: '13px', borderRadius: '8px' }}
+                    className="dropdown-item"
                   >
                     <History size={15} /> Watch History
                   </Link>
-                  <div style={{ borderTop: '1px solid #292938', margin: '4px 0' }} />
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '4px 0' }} />
                   <button
                     onClick={() => {
                       logout();
                       setIsProfileDropdownOpen(false);
                       navigate('/');
                     }}
-                    style={{
-                      width: '100%',
-                      border: 'none',
-                      background: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 12px',
-                      color: 'var(--color-primary)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      borderRadius: '8px',
-                    }}
+                    style={{ width: '100%', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ef4444', textAlign: 'left', cursor: 'pointer', fontSize: '13px', transition: 'var(--transition-fast)', borderRadius: '8px' }}
+                    className="dropdown-item logout"
                   >
-                    <LogOut size={15} /> Sign Out
+                    <LogOut size={15} /> Log Out
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link
-              to="/auth"
-              style={{
-                background: 'var(--color-primary)',
-                color: '#ffffff',
-                textDecoration: 'none',
-                padding: '8px 20px',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '13px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                boxShadow: '0 4px 14px var(--color-primary-glow)',
-                transition: 'var(--transition-fast)',
-              }}
-            >
+            <Link to="/auth" className="nm-btn-primary" style={{ padding: '8px 22px', fontSize: '13px' }}>
               Sign In
             </Link>
           )}
@@ -551,121 +294,87 @@ export const Header: React.FC = () => {
           {/* MOBILE MENU TOGGLE */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="mobile-toggle"
-            style={{
-              display: 'none',
-              background: '#12121A',
-              border: '1px solid #292938',
-              borderRadius: '8px',
-              padding: '6px',
-              color: '#fff',
-              cursor: 'pointer',
-            }}
+            className="mobile-toggle nm-icon-btn"
+            style={{ display: 'none' }}
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-        </div>
+        </nav>
       </div>
 
       {/* MOBILE DRAWER */}
       {isMobileMenuOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '74px',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: '#08070B',
-            padding: '24px',
-            zIndex: 99,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            borderTop: '1px solid #292938',
-          }}
-        >
+        <div className="mobile-drawer" style={{ position: 'fixed', top: '70px', left: 0, right: 0, bottom: 0, background: 'var(--bg-main)', padding: '24px', zIndex: 98, display: 'flex', flexDirection: 'column', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           {/* Mobile Search */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', background: '#12121A', border: '1px solid #292938', borderRadius: '8px', padding: '6px 14px' }}>
-            <Search size={16} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '25px', padding: '2px 6px 2px 16px' }}>
             <input
               type="text"
               placeholder="Search anime..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', height: '34px' }}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '14px', height: '36px' }}
             />
+            <button type="submit" style={{ background: 'var(--color-primary)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+              <Search size={16} />
+            </button>
           </form>
 
-          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath === '/' ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>Home</Link>
-          <Link to="/discover" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath === '/discover' ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>Explore</Link>
-          <Link to="/genres" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath.startsWith('/genres') ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>Genres</Link>
-          <Link to="/schedule" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath === '/schedule' ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>Schedule</Link>
-          <Link to="/running" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath === '/running' ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>Running Anime</Link>
-          <Link to="/watchlist" onClick={() => setIsMobileMenuOpen(false)} style={{ color: currentPath === '/watchlist' ? 'var(--color-primary)' : 'var(--text-main)', textDecoration: 'none', fontSize: '17px', fontWeight: 600 }}>My List</Link>
+           <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Home</Link>
+          <Link to="/series" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Anime Series</Link>
+          <Link to="/movies" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Anime Movies</Link>
+          <Link to="/genres" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Genres</Link>
+          <Link to="/search" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>Catalog</Link>
+          {isAuthenticated && (
+            <>
+              <Link to="/profile?tab=watchlist" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>My Watchlist</Link>
+              <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '18px', fontWeight: 600 }}>My Account</Link>
+            </>
+          )}
         </div>
       )}
 
-      {/* Header Inline Styles for Responsive Transitions */}
+      {/* Header media query styles */}
       <style>{`
-        @media (min-width: 900px) {
+        @media (min-width: 768px) {
           .desktop-search { display: block !important; }
           .mobile-toggle { display: none !important; }
         }
-        @media (max-width: 899px) {
-          .desktop-links { display: none !important; }
+        @media (max-width: 767px) {
+          .desktop-links, .desktop-username { display: none !important; }
           .mobile-toggle { display: block !important; }
         }
-        .nav-link-pill {
+        .nav-pill {
           color: var(--text-muted);
           text-decoration: none;
           font-weight: 600;
           font-size: 14px;
-          padding: 8px 14px;
-          border-radius: 8px;
+          padding: 8px 20px;
+          border-radius: 9999px;
           transition: var(--transition-fast);
-          position: relative;
+          border: 1px solid transparent;
         }
-        .nav-link-pill:hover {
-          color: #ffffff;
+        .nav-pill:hover {
+          color: #fff;
+          background: rgba(255, 255, 255, 0.04);
+          box-shadow: 3px 3px 8px #020102, -2px -2px 6px #1a181e;
         }
-        .nav-link-pill.active {
-          color: #ffffff;
-          font-weight: 700;
+        .nav-pill.active {
+          background: linear-gradient(145deg, #1b191e 0%, #111013 100%);
+          color: #fff;
+          box-shadow: 4px 4px 10px #020102, -3px -3px 8px #1e1c22, inset 1px 1px 1.5px rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(243, 46, 53, 0.5);
         }
-        .nav-link-pill.active::after {
-          content: '';
-          position: absolute;
-          bottom: 0px;
-          left: 14px;
-          right: 14px;
-          height: 2px;
-          background: var(--color-primary);
-          border-radius: 2px;
-          box-shadow: 0 0 8px var(--color-primary-glow);
+        .dropdown-item:hover { background: rgba(255,255,255,0.06); }
+        .dropdown-item.logout:hover { background: rgba(243, 46, 53, 0.15); }
+        .search-form:focus-within { 
+          border-color: rgba(243, 46, 53, 0.6) !important; 
+          box-shadow: inset 3px 3px 7px #020102, inset -3px -3px 7px #16151a, 0 0 18px rgba(243, 46, 53, 0.35) !important; 
         }
-        .search-form-pill:focus-within {
-          border-color: var(--color-primary) !important;
-          box-shadow: 0 0 14px var(--color-primary-glow);
+        .search-btn:hover { 
+          transform: scale(1.05); 
+          box-shadow: 0 6px 20px rgba(243, 46, 53, 0.7) !important; 
         }
-        .suggestion-row:hover {
-          background: #181824;
-        }
-        .dropdown-item-link {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 12px;
-          color: var(--text-main);
-          text-decoration: none;
-          font-size: 13px;
-          border-radius: 8px;
-          transition: var(--transition-fast);
-        }
-        .dropdown-item-link:hover {
-          background: #181824;
-          color: #ffffff;
-        }
+        .suggestion-item:hover { background: rgba(255,255,255,0.05); }
       `}</style>
     </header>
   );

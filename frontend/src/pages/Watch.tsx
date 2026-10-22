@@ -5,6 +5,7 @@ import { CommentsSection } from '../components/CommentsSection';
 import { AgeVerificationModal } from '../components/AgeVerificationModal';
 import axios from 'axios';
 import { cleanAndNormalizeVideoUrl, isDirectMediaFile } from '../utils/videoUtils';
+import { saveContinueWatching } from '../utils/continueWatching';
 
 const axiosInstance = axios;
 
@@ -26,16 +27,16 @@ export interface ServerSource {
 
 const DEFAULT_FALLBACK_SERVERS: ServerSource[] = [
   { id: 'vidsrc', name: 'HD-1: AniVerse Multi' },
-  { id: 'aniwave', name: 'HD-2: AniVerse Prime' },
-  { id: 'vidsrc_me', name: 'HD-3: AniVerse Global' },
-  { id: 'vidsrc_io', name: 'HD-4: AniVerse Cloud' },
-  { id: 'vidsrc_cc', name: 'HD-5: AniVerse Cinema' },
-  { id: 'autoembed', name: 'HD-6: AniVerse Auto' }
+  { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud' },
+  { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra' },
+  { id: 'autoembed', name: 'HD-4: AniVerse Cinema' },
+  { id: 'aniwave', name: 'HD-5: AniVerse Prime' }
 ];
 
 interface AnimeDetailData {
   id: string;
   malId?: number | null;
+  tmdbId?: number | null;
   slug: string;
   title: string;
   englishTitle?: string | null;
@@ -233,7 +234,7 @@ export const Watch: React.FC = () => {
       const nextServer = listToUse[nextIndex];
       handleSelectServer(nextServer.id, nextServer.embedUrl);
     } else {
-      const fallbackList = ['vidsrc', 'aniwave', 'vidsrc_me', 'vidsrc_io', 'vidsrc_cc', 'autoembed'];
+      const fallbackList = ['vidsrc', 'vidsrc_io', 'vidsrc_to', 'autoembed', 'aniwave'];
       const currentIndex = fallbackList.indexOf(activeServer);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % fallbackList.length : 0;
       setActiveServer(fallbackList[nextIndex]);
@@ -298,11 +299,12 @@ export const Watch: React.FC = () => {
     }
   }, [animeDetail?.id]);
 
-  // Mark current episode as watched and save to localStorage + api history
+  // Mark current episode as watched and save to Continue Watching + localStorage + api history
   useEffect(() => {
     if (animeDetail?.id && epNum) {
-      const ep = parseInt(epNum);
+      const ep = parseInt(epNum, 10);
       if (!isNaN(ep)) {
+        // 1. Maintain list of watched episode numbers
         const key = `watched:${animeDetail.id}`;
         const currentListStr = localStorage.getItem(key);
         let list: number[] = [];
@@ -317,29 +319,109 @@ export const Watch: React.FC = () => {
           const newList = [...list, ep];
           localStorage.setItem(key, JSON.stringify(newList));
           setWatchedEpisodes(newList);
-
-          // Save to server history in background ONLY if token exists
-          const token = localStorage.getItem('bankai_token');
-          if (token) {
-            axiosInstance.post('/api/history', {
-              animeId: animeDetail.id,
-              episodeNumber: ep
-            }).catch(() => {
-              // Safe ignore if unauthorized/anonymous
-            });
-          }
         }
+
+        const currentEp = episodesList.find((e) => e.episodeNumber === ep);
+
+        // 2. Immediately record this episode in Continue Watching with initial progress
+        saveContinueWatching({
+          animeId: animeDetail.id,
+          slug: animeDetail.slug || slug || '',
+          title: animeDetail.title || animeDetail.englishTitle || '',
+          englishTitle: animeDetail.englishTitle || undefined,
+          posterImage: animeDetail.posterImage || '',
+          bannerImage: animeDetail.bannerImage || animeDetail.posterImage || '',
+          episodeNumber: ep,
+          totalEpisodes: episodesList.length > 0 ? episodesList.length : undefined,
+          episodeTitle: currentEp?.title || `Episode ${ep}`,
+          rating: animeDetail.rating || undefined,
+          type: animeDetail.type || undefined,
+          progressPercentage: 15,
+        });
+
+        // 3. Incrementally track session progress while staying on watch page
+        let currentSeconds = 45;
+        const interval = setInterval(() => {
+          currentSeconds += 30;
+          const durationSeconds = 1440; // 24 mins
+          const progress = Math.min(Math.round((currentSeconds / durationSeconds) * 100), 95);
+
+          saveContinueWatching({
+            animeId: animeDetail.id,
+            slug: animeDetail.slug || slug || '',
+            title: animeDetail.title || animeDetail.englishTitle || '',
+            englishTitle: animeDetail.englishTitle || undefined,
+            posterImage: animeDetail.posterImage || '',
+            bannerImage: animeDetail.bannerImage || animeDetail.posterImage || '',
+            episodeNumber: ep,
+            totalEpisodes: episodesList.length > 0 ? episodesList.length : undefined,
+            episodeTitle: currentEp?.title || `Episode ${ep}`,
+            rating: animeDetail.rating || undefined,
+            type: animeDetail.type || undefined,
+            watchedTime: currentSeconds,
+            duration: durationSeconds,
+            progressPercentage: progress,
+          });
+        }, 15000);
+
+        return () => clearInterval(interval);
       }
     }
-  }, [animeDetail?.id, epNum]);
+  }, [animeDetail?.id, animeDetail?.slug, animeDetail?.title, epNum, episodesList, slug]);
 
   useEffect(() => {
     const fetchWatchData = async () => {
       if (!slug || !epNum) return;
       try {
         setLoading(true);
+        // Fetch anime details and related list (franchise content)
+        const detailRes = await axiosInstance.get(`/api/anime/${slug}`);
+        const animeData = detailRes.data.anime;
+        setAnimeDetail(animeData);
+
+        const rawEpisodes: EpisodeDetail[] = animeData.episodes || [];
+        const isMature = Boolean(
+          animeData.rating === 'TV-MA' ||
+          animeData.rating === 'R - 17+' ||
+          animeData.rating === 'R-17+' ||
+          animeData.rating === '18+' ||
+          animeData.rating === 'R+' ||
+          animeData.genres?.includes('18+')
+        );
+        if (isMature && localStorage.getItem('aniverse_age_verified') !== 'true') {
+          setIsAgeModalOpen(true);
+        }
+
+        const isOvaOrMovie = Boolean(
+          animeData.type && ['MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'].includes(animeData.type.toUpperCase())
+        );
+        const hasCustom = rawEpisodes.some((e: any) =>
+          e.videoUrl && (
+            e.videoUrl.includes('hentaitube') ||
+            e.videoUrl.includes('new_player') ||
+            e.videoUrl.includes('/arquivos/') ||
+            !e.videoUrl.includes('vidsrc')
+          )
+        );
+
+        // Filter out any fake/mock episodes if the anime is 18+, OVA, Movie, or custom
+        const validEpisodes = (isMature || isOvaOrMovie || hasCustom)
+          ? rawEpisodes.filter(e => !e.id?.startsWith('mock-'))
+          : rawEpisodes;
+
+        setEpisodesList(validEpisodes);
+        setRelatedList(detailRes.data.related || []);
+        setSeasons(detailRes.data.seasons || []);
+
+        const requestedNum = parseInt(epNum || '1', 10);
+        const maxEpNumber = validEpisodes.length > 0 ? Math.max(...validEpisodes.map(e => e.episodeNumber)) : 1;
+        if (requestedNum > maxEpNumber && validEpisodes.length > 0) {
+          navigate(`/watch/${slug}/episode/1`, { replace: true });
+          return;
+        }
+
         // Fetch episode streaming data
-        const epRes = await axiosInstance.get(`/api/anime/${slug}/episodes/${epNum}`);
+        const epRes = await axiosInstance.get(`/api/anime/${slug}/episodes/${requestedNum}`);
         setEpisode(epRes.data.episode);
         setAnimeName(epRes.data.animeName);
         setHasPrev(epRes.data.hasPrev);
@@ -355,23 +437,6 @@ export const Watch: React.FC = () => {
         }
         if (epRes.data.availableAudios) {
           setAvailableAudios(epRes.data.availableAudios);
-        }
-
-        // Fetch anime details and related list (franchise content)
-        const detailRes = await axiosInstance.get(`/api/anime/${slug}`);
-        const animeData = detailRes.data.anime;
-        setAnimeDetail(animeData);
-
-        const isMature = Boolean(
-          animeData.rating === 'TV-MA' ||
-          animeData.rating === 'R - 17+' ||
-          animeData.rating === 'R-17+' ||
-          animeData.rating === '18+' ||
-          animeData.rating === 'R+' ||
-          animeData.genres?.includes('18+')
-        );
-        if (isMature && localStorage.getItem('aniverse_age_verified') !== 'true') {
-          setIsAgeModalOpen(true);
         }
 
         const animeHasDub = Boolean(animeData.hasDub) && epHasDub;
@@ -404,9 +469,6 @@ export const Watch: React.FC = () => {
         }
 
         setActiveTranslation(defaultTranslation);
-        setEpisodesList(detailRes.data.anime.episodes || []);
-        setRelatedList(detailRes.data.related || []);
-        setSeasons(detailRes.data.seasons || []);
 
         // Fetch watchlist status only if logged in
         const savedToken = localStorage.getItem('bankai_token');
@@ -504,6 +566,25 @@ export const Watch: React.FC = () => {
         }
       } catch (err) {
         console.error('Error fetching episode dynamic source:', err);
+        // Resilient fallback if backend is slow, sleeping, or unreachable
+        const malId = animeDetail?.malId;
+        const isDub = activeTranslation === 'dub';
+        const isHindi = activeTranslation === 'hindi';
+        let fallbackUrl = '';
+        if (activeServer === 'vidsrc_io' && malId) {
+          fallbackUrl = `https://vidsrc.io/embed/anime?mal=${malId}&ep=${epNum}${isDub ? '&dub=1' : (isHindi ? '&lang=hi' : '')}`;
+        } else if (activeServer === 'aniwave') {
+          fallbackUrl = `https://aniwaves.ru/watch/${slug}/ep-${epNum}?lang=${activeTranslation}`;
+        } else if (activeServer === 'autoembed' && animeDetail?.tmdbId) {
+          fallbackUrl = `https://autoembed.co/tv/tmdb/${animeDetail.tmdbId}-1-${epNum}${isDub ? '?dub=1' : (isHindi ? '?lang=hi' : '')}`;
+        } else if (malId) {
+          fallbackUrl = `https://vidsrc.pm/embed/anime?mal=${malId}&ep=${epNum}${isDub ? '&dub=1' : (isHindi ? '&lang=hi' : '')}`;
+        } else if (episode?.videoUrl) {
+          fallbackUrl = episode.videoUrl;
+        }
+        if (fallbackUrl) {
+          setEmbedUrl(cleanAndNormalizeVideoUrl(fallbackUrl));
+        }
       }
     };
 
@@ -660,7 +741,7 @@ export const Watch: React.FC = () => {
         <span style={{ color: '#64748b' }}>/</span>
         <Link to={`/anime/${animeDetail.slug}`} style={{ color: '#cbd5e1', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>{animeName}</Link>
         <span style={{ color: '#64748b' }}>/</span>
-        <span style={{ color: '#4E50DE', fontWeight: 800, background: 'rgba(139, 92, 246, 0.15)', padding: '2px 10px', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>Episode {epNum}</span>
+        <span style={{ color: 'var(--color-primary)', fontWeight: 800, background: 'rgba(243, 46, 53, 0.15)', padding: '2px 10px', borderRadius: '6px', border: '1px solid rgba(243, 46, 53, 0.35)' }}>Episode {epNum}</span>
       </div>
 
       {/* THEATER MAIN SCREEN BOX (2-COLUMN LAYOUT) */}
@@ -843,12 +924,12 @@ export const Watch: React.FC = () => {
                     background: adShieldMode === 'smart' 
                       ? 'rgba(16, 185, 129, 0.15)' 
                       : adShieldMode === 'strict' 
-                        ? 'rgba(139, 92, 246, 0.2)' 
+                        ? 'rgba(78, 80, 222, 0.25)' 
                         : 'rgba(239, 68, 68, 0.1)',
                     color: adShieldMode === 'smart' 
                       ? '#34d399' 
                       : adShieldMode === 'strict' 
-                        ? '#4E50DE' 
+                        ? 'var(--color-accent)' 
                         : '#f87171',
                     cursor: 'pointer',
                     padding: '5px 11px',
@@ -869,8 +950,8 @@ export const Watch: React.FC = () => {
                   className="nm-pill"
                   style={{
                     border: focusVideoOnly ? '1px solid var(--color-primary-glow)' : 'none',
-                    background: focusVideoOnly ? 'rgba(139, 92, 246, 0.2)' : undefined,
-                    color: focusVideoOnly ? '#4E50DE' : '#cbd5e1',
+                    background: focusVideoOnly ? 'rgba(243, 46, 53, 0.25)' : undefined,
+                    color: focusVideoOnly ? 'var(--color-primary)' : '#cbd5e1',
                     cursor: 'pointer',
                     padding: '5px 11px',
                     fontSize: '11px',
@@ -999,15 +1080,15 @@ export const Watch: React.FC = () => {
                   </div>
                 )
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', color: '#cbd5e1', fontSize: '14px', background: '#09080d', padding: '20px', textAlign: 'center' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', color: '#cbd5e1', fontSize: '14px', background: 'var(--bg-surface-recessed)', padding: '20px', textAlign: 'center' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(243, 46, 53, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Play size={20} style={{ color: 'var(--color-primary)', marginLeft: '3px' }} />
                   </div>
                   <div style={{ fontWeight: 600 }}>Loading stream mirror...</div>
                   <button
                     onClick={switchToNextServer}
                     className="nm-pill"
-                    style={{ fontSize: '12px', fontWeight: 700, padding: '8px 18px', color: 'var(--color-primary)', border: '1px solid var(--color-primary-glow)', background: 'rgba(139, 92, 246, 0.1)', cursor: 'pointer' }}
+                    style={{ fontSize: '12px', fontWeight: 700, padding: '8px 18px', color: 'var(--color-primary)', border: '1px solid var(--color-primary-glow)', background: 'rgba(243, 46, 53, 0.1)', cursor: 'pointer' }}
                   >
                     ⚡ Switch to Alternate Mirror
                   </button>
@@ -1189,7 +1270,7 @@ export const Watch: React.FC = () => {
                       color: '#fff',
                       minWidth: '84px',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 16px rgba(139, 92, 246, 0.65)'
+                      boxShadow: '0 4px 16px rgba(243, 46, 53, 0.65)'
                     }}
                   >
                     <span style={{ fontSize: '10px', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '3px', padding: '0 3px', lineHeight: '1.2' }}>CC</span>
@@ -1206,7 +1287,7 @@ export const Watch: React.FC = () => {
                           className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                         >
                           <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Play size={8} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
+                            <Play size={8} style={{ fill: isSelected ? 'var(--color-accent)' : '#fff', color: isSelected ? 'var(--color-accent)' : '#fff', marginLeft: '1px' }} />
                           </div>
                           {s.name}
                         </button>
@@ -1236,7 +1317,7 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'sub' ? 'var(--color-primary)' : '#151726',
+                        background: activeTranslation === 'sub' ? 'var(--color-primary)' : 'var(--bg-surface-elevated)',
                         border: `1px solid ${activeTranslation === 'sub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
                         padding: '8px 18px',
                         fontSize: '12px',
@@ -1245,7 +1326,7 @@ export const Watch: React.FC = () => {
                         minWidth: '84px',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: activeTranslation === 'sub' ? '0 4px 16px rgba(139, 92, 246, 0.65)' : 'none'
+                        boxShadow: activeTranslation === 'sub' ? '0 4px 16px rgba(243, 46, 53, 0.65)' : 'none'
                       }}
                       title="Switch to Japanese Audio with Subtitles"
                     >
@@ -1267,7 +1348,7 @@ export const Watch: React.FC = () => {
                             className={`nm-server-pill ${isSelected ? 'active' : ''}`}
                           >
                             <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: isSelected ? '#fff' : 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Play size={8} style={{ fill: isSelected ? '#7c3aed' : '#fff', color: isSelected ? '#7c3aed' : '#fff', marginLeft: '1px' }} />
+                              <Play size={8} style={{ fill: isSelected ? 'var(--color-accent)' : '#fff', color: isSelected ? 'var(--color-accent)' : '#fff', marginLeft: '1px' }} />
                             </div>
                             {s.name}
                           </button>
@@ -1295,7 +1376,7 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : '#151726',
+                        background: activeTranslation === 'dub' ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'var(--bg-surface-elevated)',
                         border: `1px solid ${activeTranslation === 'dub' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
                         padding: '8px 18px',
                         fontSize: '12px',
@@ -1354,7 +1435,7 @@ export const Watch: React.FC = () => {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#151726',
+                        background: activeTranslation === 'hindi' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'var(--bg-surface-elevated)',
                         border: `1px solid ${activeTranslation === 'hindi' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
                         padding: '8px 18px',
                         fontSize: '12px',
@@ -1841,8 +1922,8 @@ export const Watch: React.FC = () => {
               style={{
                 borderRadius: '16px',
                 overflow: 'hidden',
-                boxShadow: '6px 6px 16px #08090f, -4px -4px 12px #20233b',
-                border: '1px solid rgba(139, 92, 246, 0.25)'
+                boxShadow: '6px 6px 16px #020102, -4px -4px 12px #1b191e',
+                border: '1px solid rgba(243, 46, 53, 0.25)'
               }}
             >
               <img
@@ -1893,8 +1974,8 @@ export const Watch: React.FC = () => {
                   height: '160px',
                   borderRadius: '16px',
                   overflow: 'hidden',
-                  border: '1px solid rgba(139, 92, 246, 0.25)',
-                  boxShadow: '4px 4px 12px #090a10, -3px -3px 8px #20233c',
+                  border: '1px solid rgba(243, 46, 53, 0.25)',
+                  boxShadow: '4px 4px 12px #020102, -3px -3px 8px #1c1a20',
                   position: 'relative'
                 }}
               >
@@ -1908,7 +1989,7 @@ export const Watch: React.FC = () => {
                   }}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(13, 15, 24, 0.95))' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(8, 7, 8, 0.95))' }} />
               </div>
             )}
 
@@ -1921,7 +2002,7 @@ export const Watch: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
                 {animeDetail.hasSub !== false && (
-                  <span className="nm-tag" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#4E50DE', borderColor: 'var(--color-primary-glow)', fontWeight: 800 }}>SUB</span>
+                  <span className="nm-tag" style={{ background: 'rgba(78, 80, 222, 0.2)', color: 'var(--color-accent)', borderColor: 'rgba(78, 80, 222, 0.4)', fontWeight: 800 }}>SUB</span>
                 )}
                 {animeDetail.hasDub !== false && (
                   <span className="nm-tag" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', borderColor: 'rgba(6, 182, 212, 0.4)', fontWeight: 800 }}>DUB</span>

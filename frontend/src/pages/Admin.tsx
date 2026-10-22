@@ -860,7 +860,7 @@ export const Admin: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '28px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)', padding: '8px', borderRadius: '12px', display: 'flex' }}>
+            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', padding: '8px', borderRadius: '12px', display: 'flex' }}>
               <Shield size={24} style={{ color: '#fff' }} />
             </div>
             <div>
@@ -890,7 +890,7 @@ export const Admin: React.FC = () => {
             className="nm-pill"
             style={{ padding: '9px 18px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700 }}
           >
-            <RefreshCw size={15} style={{ color: '#8b5cf6', animation: auditRunning ? 'spin 1s linear infinite' : 'none' }} />
+            <RefreshCw size={15} style={{ color: 'var(--color-primary)', animation: auditRunning ? 'spin 1s linear infinite' : 'none' }} />
             {auditRunning ? 'Auditing...' : 'Run Verification Audit'}
           </button>
 
@@ -905,7 +905,7 @@ export const Admin: React.FC = () => {
       </div>
 
       {auditMessage && (
-        <div style={{ background: '#10121d', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '12px', padding: '12px 20px', marginBottom: '20px', color: '#c084fc', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid rgba(243, 46, 53, 0.3)', borderRadius: '12px', padding: '12px 20px', marginBottom: '20px', color: 'var(--color-primary)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CheckCircle size={16} />
           <span>{auditMessage}</span>
         </div>
@@ -967,7 +967,7 @@ export const Admin: React.FC = () => {
                 <div className="nm-card" style={{ padding: '20px', borderRadius: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94a3b8', fontSize: '13px', fontWeight: 600 }}>
                     <span>Total Library Titles</span>
-                    <Film size={18} style={{ color: '#8b5cf6' }} />
+                    <Film size={18} style={{ color: 'var(--color-primary)' }} />
                   </div>
                   <div style={{ fontSize: '32px', fontWeight: 800, color: '#fff', marginTop: '10px' }}>
                     {stats.totalTitles}
@@ -1022,7 +1022,7 @@ export const Admin: React.FC = () => {
                 
                 <div className="nm-card" style={{ padding: '24px', borderRadius: '16px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Volume2 size={18} style={{ color: '#8b5cf6' }} /> Verified Dubbing Availability
+                    <Volume2 size={18} style={{ color: 'var(--color-primary)' }} /> Verified Dubbing Availability
                   </h3>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -1215,7 +1215,7 @@ export const Admin: React.FC = () => {
 
                         <td style={{ padding: '12px 18px' }}>
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(139, 92, 246, 0.15)', color: 'var(--color-accent)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
                               SUB
                             </span>
                             {item.hasDub && (
@@ -1251,7 +1251,7 @@ export const Admin: React.FC = () => {
                             className="nm-pill"
                             style={{ padding: '6px 14px', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                           >
-                            <Edit size={13} style={{ color: '#8b5cf6' }} /> Edit
+                            <Edit size={13} style={{ color: 'var(--color-primary)' }} /> Edit
                           </button>
                         </td>
                       </tr>
@@ -1311,7 +1311,7 @@ export const Admin: React.FC = () => {
                 Select a plain text file (one title per line) or a JSON file.
               </p>
               
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff', padding: '10px 22px', borderRadius: '9999px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)', color: '#fff', padding: '10px 22px', borderRadius: '9999px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)' }}>
                 <span>📁 Select File From Computer</span>
                 <input
                   type="file"
@@ -1379,7 +1379,7 @@ export const Admin: React.FC = () => {
                     type="checkbox"
                     checked={bulkHasDub}
                     onChange={(e) => setBulkHasDub(e.target.checked)}
-                    style={{ accentColor: '#8b5cf6' }}
+                    style={{ accentColor: 'var(--color-primary)' }}
                   />
                   <span style={{ fontSize: '13px', color: '#fff' }}>Has English Dub Track</span>
                 </label>
@@ -1556,7 +1556,7 @@ export const Admin: React.FC = () => {
                     border: '1px solid rgba(139, 92, 246, 0.4)',
                     borderRadius: '8px',
                     padding: '8px 12px',
-                    color: '#c084fc',
+                    color: 'var(--color-accent)',
                     fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -1622,7 +1622,7 @@ export const Admin: React.FC = () => {
                   <div>
                     {filteredMedia.length > 0 ? (
                       <span>
-                        Showing <strong style={{ color: '#fff' }}>{startIndex + 1}–{Math.min(startIndex + pageSize, filteredMedia.length)}</strong> of <strong style={{ color: '#c084fc' }}>{filteredMedia.length}</strong> anime
+                        Showing <strong style={{ color: '#fff' }}>{startIndex + 1}–{Math.min(startIndex + pageSize, filteredMedia.length)}</strong> of <strong style={{ color: 'var(--color-accent)' }}>{filteredMedia.length}</strong> anime
                         <span style={{ marginLeft: '8px', color: '#64748b' }}>(30 per page)</span>
                       </span>
                     ) : (
@@ -1695,7 +1695,7 @@ export const Admin: React.FC = () => {
                         padding: '8px',
                         borderRadius: '10px',
                         border: dragOverId === item.id 
-                          ? '2px dashed #8b5cf6' 
+                          ? '2px dashed var(--color-primary)' 
                           : '1px solid rgba(255, 255, 255, 0.05)',
                         background: dragOverId === item.id 
                           ? 'rgba(139, 92, 246, 0.12)' 
@@ -1719,14 +1719,14 @@ export const Admin: React.FC = () => {
                               height: '100%',
                               objectFit: 'cover',
                               borderRadius: '6px',
-                              border: dragOverId === item.id ? '2px solid #8b5cf6' : '1px solid rgba(255,255,255,0.1)',
+                              border: dragOverId === item.id ? '2px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
                               opacity: uploadingImageId === item.id ? 0.35 : 1,
                               transition: 'opacity 0.2s ease'
                             }}
                           />
                           {uploadingImageId === item.id && (
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <RefreshCw size={14} color="#c084fc" style={{ animation: 'spin 1s linear infinite' }} />
+                              <RefreshCw size={14} color="var(--color-accent)" style={{ animation: 'spin 1s linear infinite' }} />
                             </div>
                           )}
                         </div>
@@ -1751,7 +1751,7 @@ export const Admin: React.FC = () => {
                                 style={{ display: 'none' }}
                               />
                             </label>
-                            <span style={{ fontSize: '10px', color: dragOverId === item.id ? '#c084fc' : '#64748b', fontWeight: dragOverId === item.id ? 700 : 400 }}>
+                            <span style={{ fontSize: '10px', color: dragOverId === item.id ? 'var(--color-accent)' : '#64748b', fontWeight: dragOverId === item.id ? 700 : 400 }}>
                               {dragOverId === item.id ? '✨ Drop image here!' : 'or drag & drop image file / link'}
                             </span>
                           </div>
@@ -1801,7 +1801,7 @@ export const Admin: React.FC = () => {
 
                         {/* 2. DUB Video URL */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: 800, color: '#a855f7', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '2px 6px', borderRadius: '4px', width: '42px', textAlign: 'center' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--color-accent)', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '2px 6px', borderRadius: '4px', width: '42px', textAlign: 'center' }}>
                             DUB
                           </span>
                           <input
@@ -1817,7 +1817,7 @@ export const Admin: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="nm-pill"
-                              style={{ padding: '4px 8px', textDecoration: 'none', color: '#c084fc', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
+                              style={{ padding: '4px 8px', textDecoration: 'none', color: 'var(--color-accent)', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
                               title="Test DUB Stream"
                             >
                               <ExternalLink size={10} /> Test
@@ -1860,7 +1860,7 @@ export const Admin: React.FC = () => {
                             style={{
                               background: (item.episodes && item.episodes.length > 1) ? 'rgba(139, 92, 246, 0.2)' : '#10121d',
                               border: '1px solid rgba(139, 92, 246, 0.4)',
-                              color: '#c084fc',
+                              color: 'var(--color-accent)',
                               fontSize: '11px',
                               fontWeight: 700,
                               cursor: 'pointer',
@@ -1947,7 +1947,7 @@ export const Admin: React.FC = () => {
                                 cursor: 'pointer',
                                 fontSize: '12px',
                                 fontWeight: p === safeMediaPage ? 800 : 500,
-                                background: p === safeMediaPage ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : '#10121d',
+                                background: p === safeMediaPage ? 'linear-gradient(135deg, var(--color-primary), #ec4899)' : '#10121d',
                                 color: p === safeMediaPage ? '#fff' : '#94a3b8'
                               }}
                             >
@@ -2013,7 +2013,7 @@ export const Admin: React.FC = () => {
                           }
                         }}
                         className="nm-pill"
-                        style={{ padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#c084fc', fontWeight: 700 }}
+                        style={{ padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'var(--color-accent)', fontWeight: 700 }}
                       >
                         Go
                       </button>
@@ -2042,7 +2042,7 @@ export const Admin: React.FC = () => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80';
                     }}
-                    style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #8b5cf6' }}
+                    style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--color-primary)' }}
                   />
                 )}
                 <div>
@@ -2063,7 +2063,7 @@ export const Admin: React.FC = () => {
             </div>
 
             {epModalMessage && (
-              <div style={{ background: '#0e101a', border: '1px solid rgba(139, 92, 246, 0.4)', borderRadius: '10px', padding: '10px 16px', color: '#c084fc', fontSize: '13px', marginBottom: '16px' }}>
+              <div style={{ background: '#0e101a', border: '1px solid rgba(139, 92, 246, 0.4)', borderRadius: '10px', padding: '10px 16px', color: 'var(--color-accent)', fontSize: '13px', marginBottom: '16px' }}>
                 {epModalMessage}
               </div>
             )}
@@ -2155,7 +2155,7 @@ export const Admin: React.FC = () => {
                     {/* Top Row: Episode number, title, delete */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#c084fc', minWidth: '46px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--color-accent)', minWidth: '46px' }}>
                           Ep {ep.episodeNumber}
                         </div>
                         <input
@@ -2225,7 +2225,7 @@ export const Admin: React.FC = () => {
 
                       {/* DUB URL */}
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 800, color: '#a855f7', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '2px 6px', borderRadius: '4px', width: '42px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--color-accent)', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '2px 6px', borderRadius: '4px', width: '42px', textAlign: 'center' }}>
                           DUB
                         </span>
                         <input
@@ -2244,7 +2244,7 @@ export const Admin: React.FC = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="nm-pill"
-                            style={{ padding: '5px 8px', textDecoration: 'none', color: '#c084fc', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap' }}
+                            style={{ padding: '5px 8px', textDecoration: 'none', color: 'var(--color-accent)', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap' }}
                             title="Test DUB Stream"
                           >
                             <ExternalLink size={10} /> Test
@@ -2451,7 +2451,7 @@ export const Admin: React.FC = () => {
                   style={{
                     padding: '8px',
                     borderRadius: '8px',
-                    border: dragOverId === 'modal-edit-poster' ? '2px dashed #8b5cf6' : '1px solid rgba(255,255,255,0.06)',
+                    border: dragOverId === 'modal-edit-poster' ? '2px dashed var(--color-primary)' : '1px solid rgba(255,255,255,0.06)',
                     background: dragOverId === 'modal-edit-poster' ? 'rgba(139, 92, 246, 0.12)' : 'transparent',
                     transition: 'all 0.2s ease'
                   }}
@@ -2473,7 +2473,7 @@ export const Admin: React.FC = () => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80';
                         }}
-                        style={{ width: '38px', height: '54px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #8b5cf6' }}
+                        style={{ width: '38px', height: '54px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--color-primary)' }}
                       />
                     )}
                   </div>
@@ -2503,7 +2503,7 @@ export const Admin: React.FC = () => {
                         style={{ display: 'none' }}
                       />
                     </label>
-                    <span style={{ fontSize: '11px', color: dragOverId === 'modal-edit-poster' ? '#c084fc' : '#64748b' }}>
+                    <span style={{ fontSize: '11px', color: dragOverId === 'modal-edit-poster' ? 'var(--color-accent)' : '#64748b' }}>
                       {dragOverId === 'modal-edit-poster' ? '✨ Drop image now!' : 'or drag & drop image file or web link here'}
                     </span>
                   </div>
@@ -2538,7 +2538,7 @@ export const Admin: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#c084fc', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', marginBottom: '4px' }}>
                     🎙️ Episode 1 DUB (English) Video URL
                   </label>
                   <input
@@ -2618,7 +2618,7 @@ export const Admin: React.FC = () => {
           <div className="nm-card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', borderRadius: '16px', background: '#141624' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', padding: '6px', borderRadius: '8px', display: 'flex' }}>
+                <div style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', padding: '6px', borderRadius: '8px', display: 'flex' }}>
                   <Plus size={18} color="#fff" />
                 </div>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>Quick Add Anime</h3>
@@ -2707,7 +2707,7 @@ export const Admin: React.FC = () => {
                             ? (tag === '18+' ? 'rgba(225, 29, 72, 0.3)' : 'rgba(139, 92, 246, 0.3)')
                             : 'rgba(255, 255, 255, 0.05)',
                           color: active
-                            ? (tag === '18+' ? '#fb7185' : '#c084fc')
+                            ? (tag === '18+' ? '#fb7185' : 'var(--color-accent)')
                             : '#94a3b8',
                           border: `1px solid ${active ? (tag === '18+' ? 'rgba(225, 29, 72, 0.5)' : 'rgba(139, 92, 246, 0.5)') : 'rgba(255,255,255,0.08)'}`,
                           borderRadius: '6px',
@@ -2756,7 +2756,7 @@ export const Admin: React.FC = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#c084fc', marginBottom: '6px' }}>Episode 1 DUB (English) URL</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--color-accent)', marginBottom: '6px' }}>Episode 1 DUB (English) URL</label>
                   <input
                     type="text"
                     placeholder="e.g. https://domain.com/embed/ep1-dub (optional)"
@@ -2823,7 +2823,7 @@ export const Admin: React.FC = () => {
                   style={{
                     padding: '8px',
                     borderRadius: '8px',
-                    border: dragOverId === 'modal-add-poster' ? '2px dashed #8b5cf6' : '1px solid rgba(255,255,255,0.06)',
+                    border: dragOverId === 'modal-add-poster' ? '2px dashed var(--color-primary)' : '1px solid rgba(255,255,255,0.06)',
                     background: dragOverId === 'modal-add-poster' ? 'rgba(139, 92, 246, 0.12)' : 'transparent',
                     transition: 'all 0.2s ease'
                   }}
@@ -2845,7 +2845,7 @@ export const Admin: React.FC = () => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80';
                         }}
-                        style={{ width: '38px', height: '54px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #8b5cf6' }}
+                        style={{ width: '38px', height: '54px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--color-primary)' }}
                       />
                     )}
                   </div>
@@ -2875,7 +2875,7 @@ export const Admin: React.FC = () => {
                         style={{ display: 'none' }}
                       />
                     </label>
-                    <span style={{ fontSize: '11px', color: dragOverId === 'modal-add-poster' ? '#c084fc' : '#64748b' }}>
+                    <span style={{ fontSize: '11px', color: dragOverId === 'modal-add-poster' ? 'var(--color-accent)' : '#64748b' }}>
                       {dragOverId === 'modal-add-poster' ? '✨ Drop image now!' : 'or drag & drop image file or web link here'}
                     </span>
                   </div>

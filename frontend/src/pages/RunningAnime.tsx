@@ -125,11 +125,8 @@ export const RunningAnime: React.FC = () => {
 
           <button
             onClick={loadRunningAnime}
+            className="nm-pill"
             style={{
-              background: '#12121A',
-              border: '1px solid #292938',
-              borderRadius: '8px',
-              color: 'var(--text-main)',
               padding: '8px 16px',
               fontSize: '13px',
               fontWeight: 600,
@@ -147,9 +144,10 @@ export const RunningAnime: React.FC = () => {
 
         {/* CONTROLS: SEARCH & DAY FILTERS */}
         <div
+          className="nm-card"
           style={{
-            background: '#12121A',
-            border: '1px solid #292938',
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '14px',
             padding: '16px 20px',
             display: 'flex',
@@ -166,12 +164,13 @@ export const RunningAnime: React.FC = () => {
               <button
                 key={d.key}
                 onClick={() => setSelectedDay(d.key)}
+                className="nm-pill"
                 style={{
                   padding: '6px 14px',
                   borderRadius: '6px',
                   border: '1px solid',
-                  borderColor: selectedDay === d.key ? 'var(--color-primary)' : '#292938',
-                  background: selectedDay === d.key ? 'var(--color-primary)' : '#08070B',
+                  borderColor: selectedDay === d.key ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.08)',
+                  background: selectedDay === d.key ? 'var(--color-primary)' : 'var(--bg-surface-recessed)',
                   color: selectedDay === d.key ? '#fff' : 'var(--text-muted)',
                   fontSize: '13px',
                   fontWeight: 600,
@@ -186,11 +185,12 @@ export const RunningAnime: React.FC = () => {
 
           {/* Search Box */}
           <div
+            className="nm-inset"
             style={{
               display: 'flex',
               alignItems: 'center',
-              background: '#08070B',
-              border: '1px solid #292938',
+              background: 'var(--bg-surface-recessed)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
               borderRadius: '8px',
               padding: '6px 12px',
               width: '260px',
@@ -223,18 +223,19 @@ export const RunningAnime: React.FC = () => {
                 style={{
                   height: '160px',
                   borderRadius: '14px',
-                  background: '#12121A',
-                  border: '1px solid #292938',
-                  animation: 'pulse 1.5s infinite',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                 }}
+                className="shimmer"
               />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
           <div
+            className="nm-card"
             style={{
-              background: '#12121A',
-              border: '1px solid #292938',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: '14px',
               padding: '60px 20px',
               textAlign: 'center',
@@ -265,9 +266,9 @@ export const RunningAnime: React.FC = () => {
                   key={anime.id}
                   onClick={() => navigate(`/anime/${anime.slug}`)}
                   style={{
-                    background: '#12121A',
-                    border: '1px solid #292938',
-                    borderRadius: '14px',
+                    background: 'var(--bg-surface-elevated-gradient)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
                     padding: '14px',
                     display: 'flex',
                     gap: '16px',
@@ -275,7 +276,7 @@ export const RunningAnime: React.FC = () => {
                     transition: 'var(--transition-smooth)',
                     boxShadow: 'var(--nm-card)',
                   }}
-                  className="running-card-item"
+                  className="running-card-item nm-card"
                 >
                   {/* POSTER */}
                   <div
@@ -286,7 +287,8 @@ export const RunningAnime: React.FC = () => {
                       overflow: 'hidden',
                       flexShrink: 0,
                       position: 'relative',
-                      border: '1px solid #292938',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      boxShadow: '3px 3px 8px #020102, -2px -2px 6px #1c1a20'
                     }}
                   >
                     <img
@@ -357,11 +359,12 @@ export const RunningAnime: React.FC = () => {
                           style={{
                             display: 'flex',
                             gap: '6px',
-                            background: '#0a0a10',
-                            border: '1px solid #292938',
+                            background: 'var(--bg-surface-recessed)',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
                             borderRadius: '6px',
                             padding: '4px 8px',
                             width: 'fit-content',
+                            boxShadow: 'var(--nm-inset)',
                           }}
                         >
                           <div style={{ textAlign: 'center' }}>

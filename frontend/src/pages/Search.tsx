@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { AnimeCard, type AnimeData } from '../components/AnimeCard';
-import { anilistService, type AniListMedia } from '../services/anilistService';
-import { Search as SearchIcon, Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { AnimeCard } from '../components/AnimeCard';
+import type { AnimeData } from '../components/AnimeCard';
+import { Search as SearchIcon, Filter, X, ChevronLeft, ChevronRight, ShieldAlert } from 'lucide-react';
 import { AgeVerificationModal } from '../components/AgeVerificationModal';
 
 export const Search: React.FC = () => {
@@ -23,67 +23,86 @@ export const Search: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Query params
+  // Filter form states (tied to URL search params)
   const qParam = searchParams.get('q') || '';
   const genreParam = searchParams.get('genre') || '';
   const typeParam = searchParams.get('type') || '';
-  const sortParam = searchParams.get('sort') || 'POPULARITY_DESC';
+  const contentTypeParam = searchParams.get('contentType') || '';
+  const hasDubParam = searchParams.get('hasDub') === 'true';
+  const hasHindiParam = searchParams.get('hasHindi') === 'true';
   const statusParam = searchParams.get('status') || '';
   const yearParam = searchParams.get('year') || '';
-  const seasonParam = searchParams.get('season') || '';
+  const letterParam = searchParams.get('letter') || '';
   const pageParam = parseInt(searchParams.get('page') || '1');
 
   const [searchField, setSearchField] = useState(qParam);
   const [selectedGenre, setSelectedGenre] = useState(genreParam);
   const [selectedType, setSelectedType] = useState(typeParam);
-  const [selectedSort, setSelectedSort] = useState(sortParam);
+  const [selectedContentType, setSelectedContentType] = useState(contentTypeParam);
+  const [filterDub, setFilterDub] = useState(hasDubParam);
+  const [filterHindi, setFilterHindi] = useState(hasHindiParam);
   const [selectedStatus, setSelectedStatus] = useState(statusParam);
   const [selectedYear, setSelectedYear] = useState(yearParam);
-  const [selectedSeason, setSelectedSeason] = useState(seasonParam);
 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // Synchronize state with URL parameters
+  // Sync inputs with URL changes
   useEffect(() => {
     setSearchField(qParam);
     setSelectedGenre(genreParam);
     setSelectedType(typeParam);
-    setSelectedSort(sortParam);
+    setSelectedContentType(contentTypeParam);
+    setFilterDub(hasDubParam);
+    setFilterHindi(hasHindiParam);
     setSelectedStatus(statusParam);
     setSelectedYear(yearParam);
-    setSelectedSeason(seasonParam);
     setCurrentPage(pageParam);
-  }, [qParam, genreParam, typeParam, sortParam, statusParam, yearParam, seasonParam, pageParam]);
+  }, [qParam, genreParam, typeParam, contentTypeParam, hasDubParam, hasHindiParam, statusParam, yearParam, pageParam, letterParam]);
 
-  // Document title
   useEffect(() => {
-    const qText = qParam ? `for "${qParam}"` : genreParam ? `${genreParam} Anime` : 'Discover Anime';
-    document.title = `${qText} | ANIVERSES`;
-  }, [qParam, genreParam]);
+    const qText = qParam ? `for "${qParam}"` : letterParam ? `starting with "${letterParam}"` : 'Catalog';
+    document.title = `Search Anime ${qText} Online Free in HD - AniVerse`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', `Browse our catalog ${qText}. Filter by genre, format, released year, and airing status. Stream anime online free on AniVerse.`);
+    }
+  }, [qParam, letterParam]);
 
-  // Load genres
+  // Load distinct genres list once
   useEffect(() => {
-    const loadGenres = async () => {
+    const fetchGenres = async () => {
       try {
         const res = await axios.get('/api/anime/genres');
-        if (res.data?.genres && res.data.genres.length > 0) {
-          setGenres(res.data.genres);
-          return;
-        }
-      } catch (_) {}
-      setGenres(anilistService.getStandardGenres());
+        setGenres(res.data.genres || []);
+      } catch (err) {
+        console.error('Error fetching genres list:', err);
+      }
     };
-    loadGenres();
+    fetchGenres();
   }, []);
 
-  // Debounced search query & multi-source fetch
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
+  const handleAgeConfirm = () => {
+    localStorage.setItem('aniverse_age_verified', 'true');
+    setIsAgeVerified(true);
+    setIsAgeModalOpen(false);
+  };
 
-    const performSearch = async () => {
+  const handleAgeDecline = () => {
+    setIsAgeModalOpen(false);
+    setSelectedGenre('');
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('genre');
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
+
+  // Fetch results based on URL queries
+  useEffect(() => {
+    const fetchResults = async () => {
       try {
-        // Intercept 18+ genre if unverified
+        setLoading(true);
+
+        // Intercept 18+ genre if age not verified
         if (genreParam === '18+' && !isAgeVerified) {
           setIsAgeModalOpen(true);
           setAnimeList([]);
@@ -91,93 +110,53 @@ export const Search: React.FC = () => {
           return;
         }
 
-        // 1. Fetch from AniList GraphQL directly for complete global discovery
-        const aniResult = await anilistService.search({
-          search: qParam || undefined,
-          genre: genreParam || undefined,
-          year: yearParam ? parseInt(yearParam) : undefined,
-          format: typeParam || undefined,
-          season: (seasonParam as any) || undefined,
-          status: statusParam === 'Currently Airing' ? 'RELEASING' : statusParam === 'Finished Airing' ? 'FINISHED' : undefined,
-          sort: (sortParam as any) || 'POPULARITY_DESC',
-          page: pageParam,
-          perPage: 24,
-        });
-
-        if (aniResult && aniResult.media.length > 0 && isMounted) {
-          const mapped: AnimeData[] = aniResult.media.map((m: AniListMedia) => {
-            const title = m.title.english || m.title.romaji || m.title.native || 'Anime';
-            const slug = m.slug || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            return {
-              id: String(m.id),
-              slug,
-              title,
-              englishTitle: m.title.english,
-              description: m.description ? m.description.replace(/<[^>]*>/g, '') : '',
-              posterImage: m.coverImage?.extraLarge || m.coverImage?.large || '',
-              bannerImage: m.bannerImage || m.coverImage?.extraLarge || '',
-              score: m.averageScore ? m.averageScore / 10 : 7.8,
-              type: m.format || 'TV',
-              studio: m.studios?.nodes?.[0]?.name || 'Studio',
-              status: m.status === 'RELEASING' ? 'Currently Airing' : 'Finished Airing',
-              releasedYear: m.startDate?.year || 2024,
-              duration: m.duration ? `${m.duration} min` : '24 min',
-              genres: m.genres ? m.genres.join(', ') : 'Action',
-              hasSub: true,
-              hasDub: true,
-            };
-          });
-
-          setAnimeList(mapped);
-          setTotalPages(Math.min(50, Math.ceil(aniResult.pageInfo.total / 24) || 1));
-          setLoading(false);
-          return;
-        }
-
-        // 2. Fallback to local database search endpoint
         const queryParams = new URLSearchParams();
         if (qParam) queryParams.append('search', qParam);
         if (genreParam) queryParams.append('genre', genreParam);
         if (typeParam) queryParams.append('type', typeParam);
+        if (contentTypeParam) queryParams.append('contentType', contentTypeParam);
+        if (hasDubParam) queryParams.append('hasDub', 'true');
+        if (hasHindiParam) queryParams.append('hasHindi', 'true');
         if (statusParam) queryParams.append('status', statusParam);
         if (yearParam) queryParams.append('year', yearParam);
+        if (letterParam) queryParams.append('letter', letterParam);
         queryParams.append('page', String(pageParam));
-        queryParams.append('limit', '24');
+        queryParams.append('limit', '12');
 
         const res = await axios.get(`/api/anime?${queryParams.toString()}`);
-        if (isMounted) {
-          setAnimeList(res.data.animeList || []);
-          setTotalPages(res.data.pagination?.totalPages || 1);
-        }
+        setAnimeList(res.data.animeList || []);
+        setTotalPages(res.data.pagination?.totalPages || 1);
       } catch (err) {
-        console.warn('Search query error:', err);
+        console.error('Search query error:', err);
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
 
-    const timer = setTimeout(performSearch, 150);
-    return () => {
-      clearTimeout(timer);
-      isMounted = false;
-    };
-  }, [qParam, genreParam, typeParam, sortParam, statusParam, yearParam, seasonParam, pageParam, isAgeVerified]);
+    fetchResults();
+  }, [qParam, genreParam, typeParam, contentTypeParam, hasDubParam, hasHindiParam, statusParam, yearParam, pageParam, letterParam, isAgeVerified]);
 
-  const applyFilters = (targetPage = 1) => {
+  // Apply filters
+  const applyFilters = (updatedPage?: number) => {
     if (selectedGenre === '18+' && !isAgeVerified) {
       setIsAgeModalOpen(true);
       return;
     }
 
     const newParams: Record<string, string> = {};
-    if (searchField.trim()) newParams.q = searchField.trim();
+    if (searchField) newParams.q = searchField;
     if (selectedGenre) newParams.genre = selectedGenre;
     if (selectedType) newParams.type = selectedType;
-    if (selectedSort && selectedSort !== 'POPULARITY_DESC') newParams.sort = selectedSort;
+    if (selectedContentType) newParams.contentType = selectedContentType;
+    if (filterDub) newParams.hasDub = 'true';
+    if (filterHindi) newParams.hasHindi = 'true';
     if (selectedStatus) newParams.status = selectedStatus;
     if (selectedYear) newParams.year = selectedYear;
-    if (selectedSeason) newParams.season = selectedSeason;
-    if (targetPage > 1) newParams.page = String(targetPage);
+
+    const pageToUse = updatedPage !== undefined ? updatedPage : 1;
+    if (pageToUse > 1) {
+      newParams.page = String(pageToUse);
+    }
 
     setSearchParams(newParams);
     setIsMobileFiltersOpen(false);
@@ -192,363 +171,398 @@ export const Search: React.FC = () => {
     setSearchField('');
     setSelectedGenre('');
     setSelectedType('');
-    setSelectedSort('POPULARITY_DESC');
+    setSelectedContentType('');
+    setFilterDub(false);
+    setFilterHindi(false);
     setSelectedStatus('');
     setSelectedYear('');
-    setSelectedSeason('');
     setSearchParams({});
     setIsMobileFiltersOpen(false);
   };
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      applyFilters(newPage);
+    }
+  };
+
   return (
-    <div style={{ background: 'var(--bg-main)', minHeight: '100vh', padding: '36px 24px 80px 24px' }}>
-      <div className="app-container">
-        {/* HEADER BAR */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '28px' }}>
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Discover Anime
-              <Sparkles size={22} color="var(--color-primary)" />
-            </h1>
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Explore the complete anime catalogue with deep genre, year, status and format filtering.
-            </p>
+    <div className="app-container" style={{ padding: '30px 20px', color: '#fff' }}>
+      
+      {/* HEADER TITLE */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+        <span className="section-indicator" />
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>
+          Anime Catalog
+        </h2>
+      </div>
+
+      {/* SEARCH / FILTERS BUTTONS FOR MOBILE */}
+      <div className="mobile-filter-bar" style={{ display: 'none', gap: '10px', marginBottom: '20px' }}>
+        <button onClick={() => setIsMobileFiltersOpen(true)} className="nm-pill" style={{ flex: 1, justifyContent: 'center', padding: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Filter size={16} /> Filters
+        </button>
+      </div>
+
+      {/* MAIN LAYOUT GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: '290px 1fr', gap: '30px' }} className="search-grid-layout">
+        
+        {/* FILTERS PANEL (LEFT SIDEBAR) */}
+        <aside
+          className={`nm-card filters-panel ${isMobileFiltersOpen ? 'mobile-open' : ''}`}
+          style={{
+            borderRadius: '24px',
+            padding: '24px',
+            height: 'fit-content',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}
+        >
+          {/* Mobile close */}
+          <div style={{ display: 'none', justifyContent: 'space-between', alignItems: 'center' }} className="mobile-filter-header">
+            <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Filters</h3>
+            <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
           </div>
 
-          {/* MOBILE FILTER TOGGLE */}
-          <button
-            onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
-            className="mobile-filter-btn"
+          {/* Search field - Neumorphic Inset */}
+          <form
+            onSubmit={handleSearchSubmit}
             style={{
-              display: 'none',
-              background: '#12121A',
-              border: '1px solid #292938',
-              borderRadius: '8px',
-              padding: '8px 16px',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: '13px',
-              cursor: 'pointer',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <SlidersHorizontal size={15} /> Filters
-          </button>
-        </div>
-
-        {/* 2-COLUMN LAYOUT: FILTERS SIDEBAR + RESULTS GRID */}
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '28px' }} className="search-layout-grid">
-          {/* SIDEBAR FILTERS */}
-          <aside
-            style={{
-              background: '#12121A',
-              border: '1px solid #292938',
-              borderRadius: '16px',
-              padding: '22px',
-              height: 'fit-content',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '18px',
+              alignItems: 'center',
+              background: 'var(--bg-surface-recessed)',
+              boxShadow: 'var(--nm-inset)',
+              border: '1px solid rgba(255,255,255,0.03)',
+              borderRadius: '9999px',
+              padding: '4px 8px 4px 16px'
             }}
-            className={`search-sidebar ${isMobileFiltersOpen ? 'mobile-filters-open' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Filter size={15} color="var(--color-primary)" />
-                <span>Filters</span>
-              </div>
-              <button
-                onClick={clearFilters}
-                style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Reset All
-              </button>
-            </div>
-
-            {/* Keyword Search Input */}
-            <form onSubmit={handleSearchSubmit}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: '#08070B',
-                  border: '1px solid #292938',
-                  borderRadius: '8px',
-                  padding: '6px 12px',
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Keyword search..."
-                  value={searchField}
-                  onChange={(e) => setSearchField(e.target.value)}
-                  style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#fff', fontSize: '13px' }}
-                />
-                <button type="submit" style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer' }}>
-                  <SearchIcon size={14} />
-                </button>
-              </div>
-            </form>
-
-            {/* Genre Select */}
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Genre</label>
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: '#08070B',
-                  border: '1px solid #292938',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
-              >
-                <option value="">All Genres</option>
-                {genres.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort Select */}
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Sort By</label>
-              <select
-                value={selectedSort}
-                onChange={(e) => setSelectedSort(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: '#08070B',
-                  border: '1px solid #292938',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
-              >
-                <option value="POPULARITY_DESC">Most Popular</option>
-                <option value="TRENDING_DESC">Trending Now</option>
-                <option value="SCORE_DESC">Highest Rated</option>
-                <option value="START_DATE_DESC">Newest Release</option>
-                <option value="FAVOURITES_DESC">Top Favorites</option>
-              </select>
-            </div>
-
-            {/* Format Select */}
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Format</label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: '#08070B',
-                  border: '1px solid #292938',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
-              >
-                <option value="">All Formats</option>
-                <option value="TV">TV Series</option>
-                <option value="MOVIE">Movie</option>
-                <option value="OVA">OVA</option>
-                <option value="ONA">ONA</option>
-                <option value="SPECIAL">Special</option>
-              </select>
-            </div>
-
-            {/* Status Select */}
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase' }}>Airing Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: '#08070B',
-                  border: '1px solid #292938',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: '#fff',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
-              >
-                <option value="">All Statuses</option>
-                <option value="Currently Airing">Currently Airing</option>
-                <option value="Finished Airing">Finished Airing</option>
-              </select>
-            </div>
-
-            {/* Apply Action */}
+            <input
+              type="text"
+              placeholder="Keyword..."
+              value={searchField}
+              onChange={(e) => setSearchField(e.target.value)}
+              style={{ flex: 1, background: 'none', border: 'none', padding: '8px 0', color: '#fff', outline: 'none', fontSize: '13px' }}
+            />
             <button
-              onClick={() => applyFilters(1)}
+              type="submit"
+              className="nm-icon-btn"
+              style={{ width: '32px', height: '32px', color: '#fff', background: 'var(--color-primary)' }}
+            >
+              <SearchIcon size={14} />
+            </button>
+          </form>
+
+          {/* Genre select */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Genre</label>
+            <select
+              value={selectedGenre}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '18+' && !isAgeVerified) {
+                  setSelectedGenre(val);
+                  setIsAgeModalOpen(true);
+                  return;
+                }
+                setSelectedGenre(val);
+              }}
               style={{
-                background: 'var(--color-primary)',
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
                 color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px',
-                fontWeight: 700,
-                fontSize: '13px',
-                cursor: 'pointer',
-                marginTop: '6px',
-                boxShadow: '0 4px 14px var(--color-primary-glow)',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
               }}
             >
-              Apply Filters
-            </button>
-          </aside>
+              <option value="">All Genres</option>
+              {genres.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
 
-          {/* RESULTS CONTENT */}
-          <main>
-            {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
-                {[...Array(12)].map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      aspectRatio: '2/3',
-                      borderRadius: '12px',
-                      background: '#12121A',
-                      border: '1px solid #292938',
-                      animation: 'pulse 1.5s infinite',
-                    }}
-                  />
-                ))}
+          {/* Format/Type select */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Format</label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
+            >
+              <option value="">All Types</option>
+              <option value="TV">TV</option>
+              <option value="Movie">Movie</option>
+              <option value="OVA">OVA</option>
+              <option value="Special">Special</option>
+            </select>
+          </div>
+
+          {/* Status select */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Airing Status</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
+            >
+              <option value="">All Statuses</option>
+              <option value="Currently Airing">Currently Airing</option>
+              <option value="Finished Airing">Finished Airing</option>
+            </select>
+          </div>
+
+          {/* Year select */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Released Year</label>
+            <input
+              type="number"
+              placeholder="e.g. 2024"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
+            />
+          </div>
+
+          {/* Content Type select (Series vs Movie) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Catalog Section</label>
+            <select
+              value={selectedContentType}
+              onChange={(e) => setSelectedContentType(e.target.value)}
+              style={{
+                background: 'var(--bg-surface-recessed)',
+                boxShadow: 'var(--nm-inset)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                padding: '11px 14px',
+                color: '#fff',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '13px'
+              }}
+            >
+              <option value="">All Catalog (Series & Movies)</option>
+              <option value="series">Anime Series (200 Series)</option>
+              <option value="movie">Anime Movies (200 Movies)</option>
+            </select>
+          </div>
+
+          {/* Audio Dub Language filters */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Audio Dubbing</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-surface-recessed)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#cbd5e1' }}>
+                <input
+                  type="checkbox"
+                  checked={filterDub}
+                  onChange={(e) => setFilterDub(e.target.checked)}
+                  style={{ accentColor: '#06b6d4', cursor: 'pointer' }}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎙️ English Dubbed
+                </span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#cbd5e1' }}>
+                <input
+                  type="checkbox"
+                  checked={filterHindi}
+                  onChange={(e) => setFilterHindi(e.target.checked)}
+                  style={{ accentColor: '#f59e0b', cursor: 'pointer' }}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🇮🇳 Hindi Dubbed
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Filter action buttons */}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+            <button
+              onClick={() => applyFilters(1)}
+              className="nm-btn-primary"
+              style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+            >
+              Filter
+            </button>
+            <button
+              onClick={clearFilters}
+              className="nm-pill"
+              style={{ flex: 1, padding: '10px 0', justifyContent: 'center', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+            >
+              Reset
+            </button>
+          </div>
+        </aside>
+
+        {/* RESULTS GRID (RIGHT SECTION) */}
+        <div>
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} style={{ height: '280px', width: '100%', borderRadius: '16px' }} className="shimmer" />
+              ))}
+            </div>
+          ) : (genreParam === '18+' && !isAgeVerified) ? (
+            <div
+              className="nm-card"
+              style={{
+                borderRadius: '24px',
+                padding: '60px 24px',
+                textAlign: 'center',
+                background: 'linear-gradient(145deg, rgba(225, 29, 72, 0.08) 0%, rgba(18, 20, 36, 0.95) 100%)',
+                border: '1px solid rgba(225, 29, 72, 0.25)',
+                boxShadow: '0 12px 36px rgba(0,0,0,0.4)'
+              }}
+            >
+              <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '18px', background: 'rgba(225, 29, 72, 0.15)', color: '#e11d48', marginBottom: '16px' }}>
+                <ShieldAlert size={42} />
               </div>
-            ) : animeList.length === 0 ? (
-              <div
+              <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '8px' }}>
+                Age Verification Required (18+)
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '460px', margin: '0 auto 20px', lineHeight: '1.6' }}>
+                This section contains mature anime content rated TV-MA and R-17+. You must confirm you are at least 18 years old to view these titles.
+              </p>
+              <button
+                onClick={() => setIsAgeModalOpen(true)}
                 style={{
-                  background: '#12121A',
-                  border: '1px solid #292938',
-                  borderRadius: '16px',
-                  padding: '60px 20px',
-                  textAlign: 'center',
-                  color: 'var(--text-muted)',
+                  background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                  color: '#fff',
+                  padding: '12px 32px',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(225, 29, 72, 0.4)'
                 }}
               >
-                <SearchIcon size={40} color="var(--border-color)" style={{ marginBottom: '14px' }} />
-                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>
-                  No Anime Found
-                </h3>
-                <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>
-                  We couldn't find any anime matching your criteria. Try adjusting your keyword or filters.
-                </p>
-                <button
-                  onClick={clearFilters}
-                  style={{
-                    marginTop: '18px',
-                    background: 'var(--color-primary)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '8px 20px',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Clear Filters
-                </button>
+                Verify You Are 18+ To View
+              </button>
+            </div>
+          ) : animeList.length === 0 ? (
+            <div
+              className="nm-card"
+              style={{
+                borderRadius: '24px',
+                padding: '60px 20px',
+                textAlign: 'center',
+                color: 'var(--text-muted)'
+              }}
+            >
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 800 }}>No results matching your filters.</h3>
+              <p style={{ marginTop: '8px', fontSize: '14px' }}>Try resetting filters or searching another keyword.</p>
+              <button
+                onClick={clearFilters}
+                className="nm-btn-primary"
+                style={{ marginTop: '24px', padding: '10px 28px', fontSize: '13px', borderRadius: '9999px', cursor: 'pointer' }}
+              >
+                Reset Catalog
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Anime list grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '24px 20px' }}>
+                {animeList.map((anime) => (
+                  <AnimeCard key={anime.id} anime={anime} />
+                ))}
               </div>
-            ) : (
-              <div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
-                  {animeList.map((anime) => (
-                    <AnimeCard key={anime.id} anime={anime} />
-                  ))}
-                </div>
 
-                {/* PAGINATION */}
-                {totalPages > 1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '40px' }}>
-                    <button
-                      onClick={() => applyFilters(Math.max(1, currentPage - 1))}
-                      disabled={currentPage <= 1}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        background: '#12121A',
-                        border: '1px solid #292938',
-                        color: currentPage <= 1 ? 'var(--text-muted)' : '#fff',
-                        cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <ChevronLeft size={16} /> Prev
-                    </button>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => applyFilters(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage >= totalPages}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        background: '#12121A',
-                        border: '1px solid #292938',
-                        color: currentPage >= totalPages ? 'var(--text-muted)' : '#fff',
-                        cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Next <ChevronRight size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </main>
+              {/* PAGINATION CONTROLS */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '50px' }}>
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{ padding: '9px 18px', opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', borderRadius: '9999px' }}
+                    className="nm-pill"
+                  >
+                    <ChevronLeft size={16} /> Prev
+                  </button>
+                  <span
+                    className="nm-pill"
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '9999px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    Page <span style={{ color: '#fff', fontWeight: 800 }}>{currentPage}</span> of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    style={{ padding: '9px 18px', opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', borderRadius: '9999px' }}
+                    className="nm-pill"
+                  >
+                    Next <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
       <AgeVerificationModal
         isOpen={isAgeModalOpen}
-        onConfirm={() => {
-          localStorage.setItem('aniverse_age_verified', 'true');
-          setIsAgeVerified(true);
-          setIsAgeModalOpen(false);
-        }}
-        onDecline={() => {
-          setIsAgeModalOpen(false);
-          setSelectedGenre('');
-          applyFilters(1);
-        }}
+        onConfirm={handleAgeConfirm}
+        onDecline={handleAgeDecline}
       />
 
       <style>{`
-        @media (max-width: 860px) {
-          .search-layout-grid {
-            grid-template-columns: 1fr !important;
+        @media (max-width: 768px) {
+          .search-grid-layout { grid-template-columns: 1fr !important; }
+          .mobile-filter-bar { display: flex !important; }
+          .filters-panel {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            bottom: 0;
+            width: 280px;
+            z-index: 1000;
+            border-radius: 0 !important;
+            transition: left 0.3s ease;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.8);
           }
-          .mobile-filter-btn {
-            display: inline-flex !important;
-          }
-          .search-sidebar {
-            display: none !important;
-          }
-          .search-sidebar.mobile-filters-open {
-            display: flex !important;
-          }
+          .filters-panel.mobile-open { left: 0; }
+          .mobile-filter-header { display: flex !important; margin-bottom: 10px; }
         }
       `}</style>
     </div>

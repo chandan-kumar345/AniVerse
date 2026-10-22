@@ -32,5 +32,16 @@ void main() {
 
     final genres = await repo.getGenres();
     expect(genres, isNotEmpty);
+
+    final running = await repo.getRunningAnime();
+    expect(running, isNotEmpty);
+    // Verify that running anime are sorted ascending by remainingTimeToAir (less timer first)
+    for (int i = 0; i < running.length - 1; i++) {
+      expect(
+        running[i].remainingTimeToAir.inSeconds <= running[i + 1].remainingTimeToAir.inSeconds,
+        isTrue,
+        reason: 'Anime with less timer must show first (${running[i].title} vs ${running[i+1].title})',
+      );
+    }
   });
 }
