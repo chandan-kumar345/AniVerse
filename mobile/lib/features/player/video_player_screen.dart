@@ -163,23 +163,64 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     return 52299;
   }
 
+  static const Map<String, String> _aniwaveSlugMap = {
+    'solo-leveling': 'ore-dake-level-up-na-ken-76040',
+    'solo-leveling-season-2': 'ore-dake-level-up-na-ken-season-2-arise-from-the-shadow-82064',
+    'jujutsu-kaisen': 'jujutsu-kaisen-78052',
+    'jujutsu-kaisen-season-2': 'jujutsu-kaisen-2nd-season-78067',
+    'demon-slayer': 'kimetsu-no-yaiba-77721',
+    'demon-slayer-kimetsu-no-yaiba': 'kimetsu-no-yaiba-77721',
+    'attack-on-titan': 'shingeki-no-kyojin-74865',
+    'one-piece': 'one-piece-81553',
+    'naruto': 'naruto-76396',
+    'naruto-shippuden': 'naruto-shippuuden-76416',
+    'bleach': 'bleach-80678',
+    'bleach-thousand-year-blood-war': 'bleach-sennen-kessen-hen-80126',
+    'chainsaw-man': 'chainsaw-man-80414',
+    'my-hero-academia': 'boku-no-hero-academia-38',
+    'death-note': 'death-note-79992',
+    'hunter-x-hunter': 'hunter-x-hunter-2011-82579',
+    'frieren-beyond-journeys-end': 'sousou-no-frieren-81338',
+    'blue-lock': 'blue-lock-80414',
+    'dandadan': 'dandadan-82411',
+    'kaiju-no-8': 'kaijuu-8-gou-81822',
+    'dragon-ball-z': 'dragon-ball-z-79702',
+    'dragon-ball-super': 'dragon-ball-super-68',
+    'black-clover': 'black-clover-80711',
+    'fairy-tail': 'fairy-tail-79535',
+    'gintama': 'gintama-79083'
+  };
+
   String _buildFallbackUrl(String server) {
     final malId = _resolveMalId();
     final isDub = _activeAudio == 'dub';
     final isHindi = _activeAudio == 'hindi';
 
+    if (isDub) {
+      if (server == 'aniwave' || _aniwaveSlugMap.containsKey(widget.slug)) {
+        final mappedSlug = _aniwaveSlugMap[widget.slug] ?? widget.slug;
+        return 'https://aniwaves.ru/watch/$mappedSlug/ep-$_currentEpNum?lang=dub';
+      }
+      return 'https://vidsrc.pm/embed/anime?mal=$malId&ep=$_currentEpNum&dub=1';
+    }
+
+    if (isHindi) {
+      return 'https://vidsrc.pm/embed/anime?mal=$malId&ep=$_currentEpNum&lang=hi';
+    }
+
     switch (server) {
+      case 'vidsrc_su':
+        return 'https://vidsrc.su/embed/anime?mal=$malId&ep=$_currentEpNum';
       case 'vidsrc_io':
-        return 'https://vidsrc.io/embed/anime?mal=$malId&ep=$_currentEpNum${isDub ? '&dub=1' : (isHindi ? '&lang=hi' : '')}';
-      case 'vidsrc_to':
-        return 'https://vidsrc.to/embed/anime/$malId/$_currentEpNum';
-      case 'autoembed':
-        return 'https://autoembed.co/anime/$malId/$_currentEpNum';
+        return 'https://vidsrc.io/embed/anime?mal=$malId&ep=$_currentEpNum';
       case 'aniwave':
-        return 'https://aniwaves.ru/watch/${widget.slug}/ep-$_currentEpNum?lang=$_activeAudio';
+        final mappedSlug = _aniwaveSlugMap[widget.slug] ?? widget.slug;
+        return 'https://aniwaves.ru/watch/$mappedSlug/ep-$_currentEpNum?lang=sub';
       case 'vidsrc':
+      case 'vidsrc_to':
+      case 'autoembed':
       default:
-        return 'https://vidsrc.pm/embed/anime?mal=$malId&ep=$_currentEpNum${isDub ? '&dub=1' : (isHindi ? '&lang=hi' : '')}';
+        return 'https://vidsrc.pm/embed/anime?mal=$malId&ep=$_currentEpNum';
     }
   }
 
@@ -544,7 +585,16 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                       : null,
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() => _activeAudio = lang);
+                    setState(() {
+                      _activeAudio = lang;
+                      if (lang == 'dub') {
+                        _activeServer = _aniwaveSlugMap.containsKey(widget.slug) ? 'aniwave' : 'vidsrc';
+                      } else if (lang == 'hindi') {
+                        _activeServer = 'vidsrc';
+                      } else {
+                        _activeServer = 'vidsrc_su';
+                      }
+                    });
                     _initStream();
                   },
                 );
