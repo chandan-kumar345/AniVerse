@@ -9,149 +9,89 @@ import { SectionWisePanels } from '../components/SectionWisePanels';
 import { EstimatedSchedule } from '../components/EstimatedSchedule';
 import { AZListSection } from '../components/AZListSection';
 import type { AnimeData } from '../components/AnimeCard';
+import { INITIAL_HOME_SEED_DATA } from '../utils/seedData';
+
+const getInitialHomeState = () => {
+  try {
+    const cached = localStorage.getItem('aniverse_home_cache') || sessionStorage.getItem('aniverse_home_cache');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && (parsed.trending?.length || parsed.topTen?.length)) {
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return INITIAL_HOME_SEED_DATA;
+};
+
+const initialData = getInitialHomeState();
 
 export const Home: React.FC = () => {
-  const [trending, setTrending] = useState<AnimeData[]>([]);
-  const [popular, setPopular] = useState<AnimeData[]>([]);
-  const [topTen, setTopTen] = useState<AnimeData[]>([]);
-  const [latestUpdates, setLatestUpdates] = useState<AnimeData[]>([]);
-  const [movies, setMovies] = useState<AnimeData[]>([]);
-  const [genres, setGenres] = useState<string[]>([]);
-  const [newRelease, setNewRelease] = useState<AnimeData[]>([]);
-  const [newAdded, setNewAdded] = useState<AnimeData[]>([]);
-  const [justCompleted, setJustCompleted] = useState<AnimeData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [trending, setTrending] = useState<AnimeData[]>(initialData.trending || []);
+  const [popular, setPopular] = useState<AnimeData[]>(initialData.popular || []);
+  const [topTen, setTopTen] = useState<AnimeData[]>(initialData.topTen || []);
+  const [latestUpdates, setLatestUpdates] = useState<AnimeData[]>(initialData.latestUpdates || []);
+  const [movies, setMovies] = useState<AnimeData[]>(initialData.movies || []);
+  const [genres, setGenres] = useState<string[]>(initialData.genres || []);
+  const [newRelease, setNewRelease] = useState<AnimeData[]>(initialData.newRelease || []);
+  const [newAdded, setNewAdded] = useState<AnimeData[]>(initialData.newAdded || []);
+  const [justCompleted, setJustCompleted] = useState<AnimeData[]>(initialData.justCompleted || []);
+  const [loading, setLoading] = useState(!initialData.trending?.length && !initialData.topTen?.length);
 
-  // 1. Instant Cache Hydration: Render immediately from sessionStorage if available (0ms)
+  // 1. Fetch fresh home data asynchronously in the background through AniVerse API
   useEffect(() => {
-    try {
-      const cached = sessionStorage.getItem('aniverse_home_cache');
-      if (cached) {
-        const d = JSON.parse(cached);
-        if (d && (d.trending?.length || d.topTen?.length)) {
-          if (d.trending) setTrending(d.trending);
-          if (d.popular) setPopular(d.popular);
-          if (d.topTen) setTopTen(d.topTen);
-          if (d.latestUpdates) setLatestUpdates(d.latestUpdates);
-          if (d.movies) setMovies(d.movies);
-          if (d.genres) setGenres(d.genres);
-          if (d.newRelease) setNewRelease(d.newRelease);
-          if (d.newAdded) setNewAdded(d.newAdded);
-          if (d.justCompleted) setJustCompleted(d.justCompleted);
-          setLoading(false);
-        }
-      }
-    } catch (_) {}
-  }, []);
-
-  // 2. Fetch fresh home data through AniVerse API
-  useEffect(() => {
-    const fetchHomeData = async (showShimmer = false) => {
+    const fetchHomeData = async () => {
       try {
-        if (showShimmer && loading) {
-          setLoading(true);
-        }
-
         // Fast Path: Call the unified and in-memory cached /api/anime/home endpoint
         try {
-          const homeRes = await axios.get('/api/anime/home', { timeout: 10000 });
+          const homeRes = await axios.get('/api/anime/home', { timeout: 6000 });
           if (homeRes.data && (homeRes.data.trending || homeRes.data.topTen)) {
             const d = homeRes.data;
-            setTrending(d.trending || []);
-            setPopular(d.popular || []);
-            setTopTen(d.topTen || []);
-            setLatestUpdates(d.latestUpdates || []);
-            setMovies(d.movies || []);
-            setGenres(d.genres || []);
-            setNewRelease(d.newRelease || []);
-            setNewAdded(d.newAdded || []);
-            setJustCompleted(d.justCompleted || []);
+            if (d.trending?.length) setTrending(d.trending);
+            if (d.popular?.length) setPopular(d.popular);
+            if (d.topTen?.length) setTopTen(d.topTen);
+            if (d.latestUpdates?.length) setLatestUpdates(d.latestUpdates);
+            if (d.movies?.length) setMovies(d.movies);
+            if (d.genres?.length) setGenres(d.genres);
+            if (d.newRelease?.length) setNewRelease(d.newRelease);
+            if (d.newAdded?.length) setNewAdded(d.newAdded);
+            if (d.justCompleted?.length) setJustCompleted(d.justCompleted);
+            setLoading(false);
 
             try {
+              localStorage.setItem('aniverse_home_cache', JSON.stringify(d));
               sessionStorage.setItem('aniverse_home_cache', JSON.stringify(d));
             } catch (_) {}
-
-            setLoading(false);
             return;
           }
         } catch (unifiedErr) {
-          console.warn('/api/anime/home error, falling back to parallel endpoints:', unifiedErr);
+          console.warn('/api/anime/home slow or sleeping, gently attempting lightweight fallback...');
         }
 
-        // Fallback Path: Parallel queries with Promise.allSettled so no single error blocks the page
-        const [
-          trendingRes,
-          popularRes,
-          topTenRes,
-          moviesRes,
-          genresRes,
-          newReleaseRes,
-          newAddedRes,
-          justCompletedRes,
-          latestUpdatesRes
-        ] = await Promise.allSettled([
-          axios.get('/api/anime/trending'),
-          axios.get('/api/anime/popular'),
-          axios.get('/api/anime/top-ten'),
-          axios.get('/api/anime?contentType=movie&limit=16'),
-          axios.get('/api/anime/genres'),
-          axios.get('/api/anime?status=Currently Airing&limit=5'),
-          axios.get('/api/anime?sort=latest&limit=5'),
-          axios.get('/api/anime?status=Finished Airing&limit=5'),
-          axios.get('/api/anime?sort=latest&limit=35')
-        ]);
-
-        const getVal = (res: PromiseSettledResult<any>, key: string, fallback: any = []) => {
-          if (res.status === 'fulfilled' && res.value?.data) {
-            return res.value.data[key] || fallback;
-          }
-          return fallback;
-        };
-
-        const trendingData = getVal(trendingRes, 'trending');
-        const popularData = getVal(popularRes, 'popular');
-        const topTenData = getVal(topTenRes, 'topTen');
-        const moviesData = getVal(moviesRes, 'animeList');
-        const genresData = getVal(genresRes, 'genres');
-        const newReleaseData = getVal(newReleaseRes, 'animeList');
-        const newAddedData = getVal(newAddedRes, 'animeList');
-        const justCompletedData = getVal(justCompletedRes, 'animeList');
-        const latestUpdatesData = getVal(latestUpdatesRes, 'animeList');
-
-        setTrending(trendingData);
-        setPopular(popularData);
-        setTopTen(topTenData);
-        setMovies(moviesData);
-        setGenres(genresData);
-        setNewRelease(newReleaseData);
-        setNewAdded(newAddedData);
-        setJustCompleted(justCompletedData);
-        setLatestUpdates(latestUpdatesData.length > 0 ? latestUpdatesData : trendingData);
-
+        // Lightweight fallback: Only query trending and popular if primary endpoint is delayed
         try {
-          sessionStorage.setItem('aniverse_home_cache', JSON.stringify({
-            trending: trendingData,
-            popular: popularData,
-            topTen: topTenData,
-            latestUpdates: latestUpdatesData,
-            movies: moviesData,
-            genres: genresData,
-            newRelease: newReleaseData,
-            newAdded: newAddedData,
-            justCompleted: justCompletedData,
-          }));
+          const [trendingRes, popularRes] = await Promise.allSettled([
+            axios.get('/api/anime/trending', { timeout: 4000 }),
+            axios.get('/api/anime/popular', { timeout: 4000 })
+          ]);
+          if (trendingRes.status === 'fulfilled' && trendingRes.value.data?.trending?.length) {
+            setTrending(trendingRes.value.data.trending);
+          }
+          if (popularRes.status === 'fulfilled' && popularRes.value.data?.popular?.length) {
+            setPopular(popularRes.value.data.popular);
+          }
         } catch (_) {}
       } catch (err) {
-        console.error('Error fetching home page data:', err);
+        console.error('Error in background home refresh:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchHomeData(true);
+    fetchHomeData();
 
-    // Auto-update home data every 60 seconds quietly in the background
-    const interval = setInterval(() => fetchHomeData(false), 60000);
+    // Auto-update home data every 120 seconds quietly in the background
+    const interval = setInterval(fetchHomeData, 120000);
     return () => clearInterval(interval);
   }, []);
 

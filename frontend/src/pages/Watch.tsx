@@ -25,12 +25,48 @@ export interface ServerSource {
   embedUrl?: string;
 }
 
+export const ANIWAVE_SLUG_MAP: Record<string, string> = {
+  'solo-leveling': 'ore-dake-level-up-na-ken-76040',
+  'solo-leveling-season-2': 'ore-dake-level-up-na-ken-season-2-arise-from-the-shadow-82064',
+  'jujutsu-kaisen': 'jujutsu-kaisen-78052',
+  'jujutsu-kaisen-season-2': 'jujutsu-kaisen-2nd-season-78067',
+  'demon-slayer': 'kimetsu-no-yaiba-77721',
+  'demon-slayer-kimetsu-no-yaiba': 'kimetsu-no-yaiba-77721',
+  'attack-on-titan': 'shingeki-no-kyojin-74865',
+  'shingeki-no-kyojin': 'shingeki-no-kyojin-74865',
+  'one-piece': 'one-piece-81553',
+  'naruto': 'naruto-76396',
+  'naruto-shippuden': 'naruto-shippuuden-76416',
+  'bleach': 'bleach-80678',
+  'bleach-thousand-year-blood-war': 'bleach-sennen-kessen-hen-80126',
+  'bleach-thousand-year-blood-war-the-separation': 'bleach-sennen-kessen-hen-ketsubetsu-tan-80682',
+  'bleach-thousand-year-blood-war-the-conflict': 'bleach-sennen-kessen-hen-soukoku-tan-81805',
+  'bleach-thousand-year-blood-war-the-calamity': 'bleach-sennen-kessen-hen-kashin-tan-82555',
+  'chainsaw-man': 'chainsaw-man-80414',
+  'my-hero-academia': 'boku-no-hero-academia-38',
+  'boku-no-hero-academia': 'boku-no-hero-academia-38',
+  'death-note': 'death-note-79992',
+  'hunter-x-hunter': 'hunter-x-hunter-2011-82579',
+  'frieren-beyond-journeys-end': 'sousou-no-frieren-81338',
+  'sousou-no-frieren': 'sousou-no-frieren-81338',
+  'blue-lock': 'blue-lock-80414',
+  'blue-lock-season-2': 'blue-lock-vs-u-20-japan-82084',
+  'dandadan': 'dandadan-82411',
+  'kaiju-no-8': 'kaijuu-8-gou-81822',
+  'dragon-ball-z': 'dragon-ball-z-79702',
+  'dragon-ball-super': 'dragon-ball-super-68',
+  'black-clover': 'black-clover-80711',
+  'fairy-tail': 'fairy-tail-79535',
+  'gintama': 'gintama-79083',
+  'wind-breaker': 'wind-breaker-81781'
+};
+
 const DEFAULT_FALLBACK_SERVERS: ServerSource[] = [
-  { id: 'vidsrc', name: 'HD-1: AniVerse Multi' },
-  { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud' },
-  { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra' },
+  { id: 'vidsrc_su', name: 'HD-1: AniVerse Global' },
+  { id: 'aniwave', name: 'HD-2: AniVerse Prime' },
+  { id: 'vidsrc', name: 'HD-3: AniVerse Multi' },
   { id: 'autoembed', name: 'HD-4: AniVerse Cinema' },
-  { id: 'aniwave', name: 'HD-5: AniVerse Prime' }
+  { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud' }
 ];
 
 interface AnimeDetailData {
@@ -105,8 +141,8 @@ export const Watch: React.FC = () => {
     navigate('/genres');
   };
 
-  // High-performance streaming server states (Default to HD-1: AniVerse Multi)
-  const [activeServer, setActiveServer] = useState<string>('vidsrc');
+  // High-performance streaming server states (Default to HD-1: AniVerse Global)
+  const [activeServer, setActiveServer] = useState<string>('vidsrc_su');
   const [availableServers, setAvailableServers] = useState<ServerSource[]>([]);
   const [serversByAudio, setServersByAudio] = useState<{
     sub?: ServerSource[];
@@ -143,25 +179,21 @@ export const Watch: React.FC = () => {
   // Ad-Shield & Anti-Sandbox Engine States
   const [adShieldMode, setAdShieldMode] = useState<'smart' | 'strict' | 'relaxed'>(() => {
     const saved = localStorage.getItem('aniverse_ad_shield');
-    return (saved === 'strict' || saved === 'relaxed' || saved === 'smart') ? saved : 'smart';
+    if (saved === 'strict') {
+      localStorage.setItem('aniverse_ad_shield', 'smart');
+      return 'smart';
+    }
+    return (saved === 'relaxed' || saved === 'smart') ? saved : 'smart';
   });
   const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
   const [shieldToast, setShieldToast] = useState<string | null>(null);
 
-  // Dynamic sandbox calculation across all servers
-  const activeSandboxValue = React.useMemo(() => {
-    // If user explicitly chooses Strict mode, enforce HTML sandbox attribute
-    if (adShieldMode === 'strict') {
-      return 'allow-scripts allow-same-origin allow-forms allow-presentation allow-downloads';
-    }
-    // Smart mode (default) & Relaxed mode:
-    // ALL third-party embed servers (AutoEmbed, 2Embed, VidSrc, StreamCloud, etc.)
-    // actively enforce anti-sandbox checks and display "Playback blocked" or "Sandbox not allowed"
-    // if ANY sandbox attribute is present on the iframe.
-    // Therefore, omit sandbox attribute across all servers so every mirror streams seamlessly!
-    // Ad & popup protection is handled natively at the parent layer via Navigation Lock & Focus Deflector.
-    return undefined;
-  }, [adShieldMode]);
+  // Dynamic sandbox calculation across all servers:
+  // All third-party video embed servers (VidSrc, AutoEmbed, TwoEmbed, Aniwave) run sbx.js
+  // and anti-sandbox verification. If ANY iframe sandbox attribute is present, WebAssembly,
+  // Blob Workers, and HLS decoders are blocked by browser sandbox restrictions, freezing on "Loading".
+  // Therefore, sandbox attribute is strictly omitted on video iframe DOM elements.
+  // Full popup deflection and redirect protection is handled safely at the parent window layer.
 
   // Protect parent window from external tab hijacking and deflect popups for ALL servers
   useEffect(() => {
@@ -234,7 +266,7 @@ export const Watch: React.FC = () => {
       const nextServer = listToUse[nextIndex];
       handleSelectServer(nextServer.id, nextServer.embedUrl);
     } else {
-      const fallbackList = ['vidsrc', 'vidsrc_io', 'vidsrc_to', 'autoembed', 'aniwave'];
+      const fallbackList = ['vidsrc_su', 'autoembed'];
       const currentIndex = fallbackList.indexOf(activeServer);
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % fallbackList.length : 0;
       setActiveServer(fallbackList[nextIndex]);
@@ -571,10 +603,15 @@ export const Watch: React.FC = () => {
         const isDub = activeTranslation === 'dub';
         const isHindi = activeTranslation === 'hindi';
         let fallbackUrl = '';
-        if (activeServer === 'vidsrc_io' && malId) {
+        if (activeServer === 'vidsrc_su' && !isDub && !isHindi) {
+          fallbackUrl = animeDetail?.tmdbId
+            ? `https://vidsrc.su/embed/tv/${animeDetail.tmdbId}/1/${epNum}`
+            : (malId ? `https://vidsrc.su/embed/anime?mal=${malId}&ep=${epNum}` : '');
+        } else if (activeServer === 'aniwave' || (isDub && ANIWAVE_SLUG_MAP[slug || ''])) {
+          const mappedSlug = (slug && ANIWAVE_SLUG_MAP[slug]) || slug;
+          fallbackUrl = `https://aniwaves.ru/watch/${mappedSlug}/ep-${epNum}?lang=${activeTranslation}`;
+        } else if (activeServer === 'vidsrc_io' && malId) {
           fallbackUrl = `https://vidsrc.io/embed/anime?mal=${malId}&ep=${epNum}${isDub ? '&dub=1' : (isHindi ? '&lang=hi' : '')}`;
-        } else if (activeServer === 'aniwave') {
-          fallbackUrl = `https://aniwaves.ru/watch/${slug}/ep-${epNum}?lang=${activeTranslation}`;
         } else if (activeServer === 'autoembed' && animeDetail?.tmdbId) {
           fallbackUrl = `https://autoembed.co/tv/tmdb/${animeDetail.tmdbId}-1-${epNum}${isDub ? '?dub=1' : (isHindi ? '?lang=hi' : '')}`;
         } else if (malId) {
@@ -778,13 +815,13 @@ export const Watch: React.FC = () => {
                     setActiveTranslationFilter(val);
                     if (val === 'hindi') {
                       setActiveTranslation('hindi');
-                      setActiveServer('autoembed');
+                      setActiveServer('vidsrc_su');
                     } else if (val === 'dub') {
                       setActiveTranslation('dub');
-                      setActiveServer('autoembed');
+                      setActiveServer('vidsrc_su');
                     } else if (val === 'sub') {
                       setActiveTranslation('sub');
-                      setActiveServer('autoembed');
+                      setActiveServer('vidsrc_su');
                     }
                   }}
                   style={{ background: '#12121A', boxShadow: 'var(--nm-inset)', border: '1px solid rgba(255,255,255,0.06)', color: '#ffffff', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', outline: 'none', cursor: 'pointer', fontWeight: 700 }}
@@ -966,7 +1003,7 @@ export const Watch: React.FC = () => {
                 </button>
 
                 <span style={{ fontSize: '11px', color: '#cbd5e1', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AniVerse Ultra HD'}</strong>
+                  Active Mirror: <strong style={{ color: '#ffffff' }}>{availableServers.find(s => s.id === activeServer)?.name || 'AniVerse Global'}</strong>
                 </span>
                 <button
                   onClick={switchToNextServer}
@@ -1029,11 +1066,11 @@ export const Watch: React.FC = () => {
                       src={embedUrl}
                       scrolling="no"
                       style={
-                        (focusVideoOnly || embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave')
+                        focusVideoOnly
                           ? {
                               width: '100%',
-                              height: (embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave') ? 'calc(100% + 64px)' : '124%',
-                              marginTop: (embedUrl.includes('aniwaves.ru') || activeServer === 'aniwave') ? '-64px' : '-56px',
+                              height: '124%',
+                              marginTop: '-56px',
                               border: 'none',
                               display: 'block',
                               overflow: 'hidden'
@@ -1042,8 +1079,8 @@ export const Watch: React.FC = () => {
                       }
                       allowFullScreen
                       title={`${activeServer} Player`}
-                      referrerPolicy="no-referrer"
-                      sandbox={activeSandboxValue}
+                      referrerPolicy="origin"
+                      loading="eager"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                       onError={() => {
                         switchToNextServer();
@@ -1097,26 +1134,106 @@ export const Watch: React.FC = () => {
             </div>
           </div>
 
-          {/* Sub-player Control Settings Bar - Neumorphic Card */}
-          <div className="nm-card" style={{ padding: '14px 22px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', borderRadius: '16px' }}>
-
-            {/* Playback helpers */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '18px', fontSize: '13px', fontWeight: 700, color: '#cbd5e1' }}>
+          {/* Sub-player Control Settings Bar - Unified Single Line Neumorphic Bar */}
+          <div
+            className="nm-card"
+            style={{
+              padding: '10px 18px',
+              display: 'flex',
+              flexWrap: 'nowrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '12px',
+              borderRadius: '16px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            {/* Left Group: Navigation & View Modes */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <button
+                onClick={handlePrevEpisode}
+                disabled={!hasPrev}
+                className="nm-pill"
+                style={{
+                  color: hasPrev ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                  cursor: hasPrev ? 'pointer' : 'not-allowed',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '6px 12px',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Previous Episode"
+              >
+                ◀ Prev
+              </button>
+              <button
+                onClick={handleNextEpisode}
+                disabled={!hasNext}
+                className="nm-pill"
+                style={{
+                  color: hasNext ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                  cursor: hasNext ? 'pointer' : 'not-allowed',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '6px 12px',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Next Episode"
+              >
+                Next ▶
+              </button>
 
               <button
                 onClick={() => setIsExpanded(prev => !prev)}
                 className="nm-pill"
-                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
+                style={{
+                  border: 'none',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '6px 12px',
+                  whiteSpace: 'nowrap'
+                }}
+                title={isExpanded ? 'Shrink Player' : 'Expand Player'}
               >
-                <Tv size={14} style={{ color: 'var(--color-primary)' }} /> {isExpanded ? 'Shrink' : 'Expand'}
+                <Tv size={13} style={{ color: 'var(--color-primary)' }} /> {isExpanded ? 'Shrink' : 'Expand'}
               </button>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
+              <button
+                onClick={() => setLightsOff(prev => !prev)}
+                className="nm-pill"
+                style={{
+                  border: 'none',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '6px 12px',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Theater Light Dimmer"
+              >
+                <Lightbulb size={13} style={{ fill: lightsOff ? '#fff' : 'none' }} /> Light
+              </button>
+            </div>
+
+            {/* Center Group: Playback Automation Toggles */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '12px', fontWeight: 700, color: '#cbd5e1', flexShrink: 0 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
                 <input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
                 <span>Auto Play</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#cbd5e1' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
                 <input type="checkbox" checked={autoNext} onChange={(e) => setAutoNext(e.target.checked)} style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
                 <span>Auto Next</span>
               </label>
@@ -1129,49 +1246,21 @@ export const Watch: React.FC = () => {
                   cursor: 'pointer',
                   background: '#f59e0b',
                   color: '#000000',
-                  padding: '4px 12px',
+                  padding: '3px 10px',
                   borderRadius: '9999px',
                   fontWeight: 800,
-                  fontSize: '12px',
-                  boxShadow: '0 2px 10px rgba(245, 158, 11, 0.45)'
+                  fontSize: '11px',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 <input type="checkbox" checked={autoSkip} onChange={(e) => setAutoSkip(e.target.checked)} style={{ accentColor: '#000', cursor: 'pointer' }} />
                 <span>Auto Skip</span>
               </label>
-
-              <button
-                onClick={() => setLightsOff(prev => !prev)}
-                className="nm-pill"
-                style={{ border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
-              >
-                <Lightbulb size={14} style={{ fill: lightsOff ? '#fff' : 'none' }} /> Light
-              </button>
             </div>
 
-            {/* Skip arrows and report triggers */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '13px', color: '#cbd5e1', fontWeight: 700 }}>
-
-              {/* Prev / Next */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  onClick={handlePrevEpisode}
-                  disabled={!hasPrev}
-                  className="nm-pill"
-                  style={{ color: hasPrev ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasPrev ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
-                >
-                  ◀ Prev
-                </button>
-                <button
-                  onClick={handleNextEpisode}
-                  disabled={!hasNext}
-                  className="nm-pill"
-                  style={{ color: hasNext ? '#ffffff' : 'rgba(255,255,255,0.3)', cursor: hasNext ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, padding: '7px 16px' }}
-                >
-                  Next ▶
-                </button>
-              </div>
-
+            {/* Right Group: Action Triggers (Download, Report, Watchlist) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#cbd5e1', fontWeight: 700, flexShrink: 0 }}>
               <button
                 onClick={handleDownloadEpisode}
                 disabled={downloading}
@@ -1184,31 +1273,34 @@ export const Watch: React.FC = () => {
                   alignItems: 'center',
                   gap: '6px',
                   fontWeight: 700,
-                  padding: '7px 16px',
+                  padding: '6px 14px',
                   border: '1px solid rgba(56, 189, 248, 0.4)',
-                  background: 'rgba(56, 189, 248, 0.08)'
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  whiteSpace: 'nowrap'
                 }}
                 title={`Download Episode ${epNum} in ${activeTranslation === 'dub' ? 'English Dubbed' : activeTranslation === 'hindi' ? 'Hindi Dubbed' : 'Japanese (Sub)'} Audio`}
               >
-                <Download size={14} style={{ color: '#38bdf8' }} />
+                <Download size={13} style={{ color: '#38bdf8' }} />
                 {downloading ? 'Preparing...' : `Download (${activeTranslation.toUpperCase()})`}
               </button>
 
-              <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
+              <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 2px' }}>|</span>
 
               <button 
                 className="nm-pill"
-                style={{ color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 14px' }}
+                style={{ color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '6px 12px', whiteSpace: 'nowrap' }}
+                title="Report Video Problem"
               >
-                <AlertTriangle size={14} style={{ color: '#f59e0b' }} /> Report
+                <AlertTriangle size={13} style={{ color: '#f59e0b' }} /> Report
               </button>
 
               <button
                 onClick={toggleWatchlist}
                 className="nm-pill"
-                style={{ color: inWatchlist ? 'var(--color-primary)' : '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '7px 16px' }}
+                style={{ color: inWatchlist ? 'var(--color-primary)' : '#cbd5e1', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, padding: '6px 14px', whiteSpace: 'nowrap' }}
+                title={inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
               >
-                {inWatchlist ? <Check size={14} style={{ color: 'var(--color-primary)' }} /> : <Plus size={14} />} Add to list
+                {inWatchlist ? <Check size={13} style={{ color: 'var(--color-primary)' }} /> : <Plus size={13} />} Add to list
               </button>
             </div>
           </div>

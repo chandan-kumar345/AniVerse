@@ -64,25 +64,25 @@ export const HINDI_KEYWORD_REGEX = /\b(jujutsu|demon slayer|kimetsu|solo levelin
 export const ANIWAVE_SLUG_MAP: Record<string, string> = {
   'solo-leveling': 'ore-dake-level-up-na-ken-76040',
   'solo-leveling-season-2': 'ore-dake-level-up-na-ken-season-2-arise-from-the-shadow-82064',
-  'jujutsu-kaisen': 'jujutsu-kaisen-tv-534',
-  'jujutsu-kaisen-season-2': 'jujutsu-kaisen-2nd-season-80674',
-  'demon-slayer': 'kimetsu-no-yaiba-47',
-  'demon-slayer-kimetsu-no-yaiba': 'kimetsu-no-yaiba-47',
-  'attack-on-titan': 'shingeki-no-kyojin-4',
-  'shingeki-no-kyojin': 'shingeki-no-kyojin-4',
-  'one-piece': 'one-piece-100',
-  'naruto': 'naruto-677',
-  'naruto-shippuden': 'naruto-shippuuden-676',
-  'bleach': 'bleach-140',
+  'jujutsu-kaisen': 'jujutsu-kaisen-78052',
+  'jujutsu-kaisen-season-2': 'jujutsu-kaisen-2nd-season-78067',
+  'demon-slayer': 'kimetsu-no-yaiba-77721',
+  'demon-slayer-kimetsu-no-yaiba': 'kimetsu-no-yaiba-77721',
+  'attack-on-titan': 'shingeki-no-kyojin-74865',
+  'shingeki-no-kyojin': 'shingeki-no-kyojin-74865',
+  'one-piece': 'one-piece-81553',
+  'naruto': 'naruto-76396',
+  'naruto-shippuden': 'naruto-shippuuden-76416',
+  'bleach': 'bleach-80678',
   'bleach-thousand-year-blood-war': 'bleach-sennen-kessen-hen-80126',
-  'bleach-thousand-year-blood-war-the-separation': 'bleach-sennen-kessen-hen-ketsubetsu-tan-80860',
-  'bleach-thousand-year-blood-war-the-conflict': 'bleach-sennen-kessen-hen-soukoku-tan-81878',
+  'bleach-thousand-year-blood-war-the-separation': 'bleach-sennen-kessen-hen-ketsubetsu-tan-80682',
+  'bleach-thousand-year-blood-war-the-conflict': 'bleach-sennen-kessen-hen-soukoku-tan-81805',
   'bleach-thousand-year-blood-war-the-calamity': 'bleach-sennen-kessen-hen-kashin-tan-82555',
-  'chainsaw-man': 'chainsaw-man-80327',
+  'chainsaw-man': 'chainsaw-man-80414',
   'my-hero-academia': 'boku-no-hero-academia-38',
   'boku-no-hero-academia': 'boku-no-hero-academia-38',
-  'death-note': 'death-note-60',
-  'hunter-x-hunter': 'hunter-x-hunter-2011-82',
+  'death-note': 'death-note-79992',
+  'hunter-x-hunter': 'hunter-x-hunter-2011-82579',
   'frieren-beyond-journeys-end': 'sousou-no-frieren-81338',
   'sousou-no-frieren': 'sousou-no-frieren-81338',
   'blue-lock': 'blue-lock-80414',
@@ -90,6 +90,11 @@ export const ANIWAVE_SLUG_MAP: Record<string, string> = {
   'dandadan': 'dandadan-82411',
   'kaiju-no-8': 'kaijuu-8-gou-81822',
   'kaiju-8': 'kaijuu-8-gou-81822',
+  'dragon-ball-z': 'dragon-ball-z-79702',
+  'dragon-ball-super': 'dragon-ball-super-68',
+  'black-clover': 'black-clover-80711',
+  'fairy-tail': 'fairy-tail-79535',
+  'gintama': 'gintama-79083',
   'wind-breaker': 'wind-breaker-81781',
   'tower-of-god': 'kami-no-tou-1111',
   'dr-stone': 'dr-stone-103',
@@ -640,6 +645,7 @@ async function getAiredEpisodeCountFromAniList(malId: number): Promise<number | 
 const EPISODE_COUNT_CACHE = new Map<number | string, number>();
 
 const KNOWN_EPISODE_COUNTS: Record<number, number> = {
+  21: 1122,   // One Piece
   19: 74,     // Monster
   269: 366,   // Bleach
   41467: 13,  // Bleach: Thousand-Year Blood War
@@ -655,6 +661,13 @@ const KNOWN_EPISODE_COUNTS: Record<number, number> = {
   5114: 64,   // Fullmetal Alchemist: Brotherhood
   121: 51,    // Fullmetal Alchemist (2003)
   1535: 37,   // Death Note
+  813: 291,   // Dragon Ball Z
+  30694: 131, // Dragon Ball Super
+  12696: 153, // Dragon Ball
+  223: 64,    // Dragon Ball GT
+  34572: 170, // Black Clover
+  6702: 175,  // Fairy Tail
+  918: 201,   // Gintama
   16498: 25,  // Attack on Titan Season 1
   25777: 12,  // Attack on Titan Season 2
   35760: 22,  // Attack on Titan Season 3
@@ -723,13 +736,6 @@ const KNOWN_EPISODE_COUNTS: Record<number, number> = {
   57334: 12,  // Dandadan
   49596: 24,  // Blue Lock
   38671: 12,  // Dr. Stone
-  34572: 170, // Black Clover
-  12696: 153, // Dragon Ball
-  813: 291,   // Dragon Ball Z
-  30694: 131, // Dragon Ball Super
-  223: 64,    // Dragon Ball GT
-  6702: 175,  // Fairy Tail
-  918: 201,   // Gintama
   14719: 26,  // JoJo Season 1
   20899: 48,  // JoJo Stardust Crusaders
   31478: 39,  // JoJo Diamond is Unbreakable
@@ -814,15 +820,7 @@ async function getDynamicEpisodeCount(
 
   // 4. Mathematical fallbacks for ongoing franchises
   if (titleLower.includes('one piece') || malId === 21) {
-    const startDate = new Date('2024-07-14');
-    const startEp = 1112;
-    const now = new Date();
-    const msDiff = now.getTime() - startDate.getTime();
-    if (msDiff > 0) {
-      const weeksPassed = Math.floor(msDiff / (7 * 24 * 60 * 60 * 1000));
-      return startEp + weeksPassed;
-    }
-    return startEp;
+    return Math.max(dbCount, 1122);
   }
 
   // 5. Popular title name matches
@@ -1086,7 +1084,7 @@ export async function getHomeData(_req: Request, res: Response) {
   try {
     const cached = getCached<any>('anime:home');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
       return res.status(200).json(cached);
     }
 
@@ -1096,7 +1094,6 @@ export async function getHomeData(_req: Request, res: Response) {
       topTen,
       latestUpdates,
       movies,
-      genresRows,
       newRelease,
       newAdded,
       justCompleted,
@@ -1131,9 +1128,6 @@ export async function getHomeData(_req: Request, res: Response) {
         orderBy: { score: 'desc' },
       }),
       prisma.anime.findMany({
-        select: { genres: true },
-      }),
-      prisma.anime.findMany({
         where: { status: 'Currently Airing' },
         take: 5,
         orderBy: { score: 'desc' },
@@ -1149,17 +1143,15 @@ export async function getHomeData(_req: Request, res: Response) {
       }),
     ]);
 
-    const genresSet = new Set<string>();
-    genresRows.forEach((a) => {
-      if (a.genres) {
-        a.genres.split(',').forEach((g) => {
-          const trimmed = g.trim();
-          if (trimmed) genresSet.add(trimmed);
-        });
-      }
-    });
-    genresSet.add('18+');
-    const genres = Array.from(genresSet).sort();
+    // Use fast cached genres or curated standard set to avoid heavy full table scan on SQLite
+    const cachedGenres = getCached<{ genres: string[] }>('anime:genres');
+    const genres = cachedGenres ? cachedGenres.genres : [
+      '18+', 'Action', 'Adventure', 'Avant Garde', 'Award Winning', 'Boys Love',
+      'Comedy', 'Dark Fantasy', 'Drama', 'Ecchi', 'Fantasy', 'Girls Love',
+      'Gourmet', 'Horror', 'Isekai', 'Mature', 'Mecha', 'Music', 'Mystery',
+      'Psychological', 'Romance', 'Sci-Fi', 'Shonen', 'Shounen', 'Slice of Life',
+      'Sports', 'Supernatural', 'Suspense', 'Thriller'
+    ];
 
     const homeData = {
       trending,
@@ -1173,13 +1165,12 @@ export async function getHomeData(_req: Request, res: Response) {
       justCompleted,
     };
 
-    setCached('anime:home', homeData, 60_000);
-    setCached('anime:trending', { trending }, 60_000);
-    setCached('anime:popular', { popular }, 60_000);
-    setCached('anime:topTen', { topTen }, 60_000);
-    setCached('anime:genres', { genres }, 300_000);
+    setCached('anime:home', homeData, 300_000); // 5 min in-memory cache
+    setCached('anime:trending', { trending }, 300_000);
+    setCached('anime:popular', { popular }, 300_000);
+    setCached('anime:topTen', { topTen }, 300_000);
 
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json(homeData);
   } catch (error: any) {
     console.error('Error fetching home data:', error);
@@ -1191,7 +1182,7 @@ export async function getTrendingAnime(_req: Request, res: Response) {
   try {
     const cached = getCached<{ trending: any[] }>('anime:trending');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
       return res.status(200).json(cached);
     }
 
@@ -1200,8 +1191,8 @@ export async function getTrendingAnime(_req: Request, res: Response) {
       take: 10,
       orderBy: { score: 'desc' },
     });
-    setCached('anime:trending', { trending }, 60_000);
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    setCached('anime:trending', { trending }, 300_000);
+    res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({ trending });
   } catch (error: any) {
     console.error('Error fetching trending anime:', error);
@@ -1213,7 +1204,7 @@ export async function getPopularAnime(_req: Request, res: Response) {
   try {
     const cached = getCached<{ popular: any[] }>('anime:popular');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
       return res.status(200).json(cached);
     }
 
@@ -1222,8 +1213,8 @@ export async function getPopularAnime(_req: Request, res: Response) {
       take: 10,
       orderBy: { score: 'desc' },
     });
-    setCached('anime:popular', { popular }, 60_000);
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    setCached('anime:popular', { popular }, 300_000);
+    res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({ popular });
   } catch (error: any) {
     console.error('Error fetching popular anime:', error);
@@ -1235,7 +1226,7 @@ export async function getTopTenAnime(_req: Request, res: Response) {
   try {
     const cached = getCached<{ topTen: any[] }>('anime:topTen');
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+      res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
       return res.status(200).json(cached);
     }
 
@@ -1243,8 +1234,8 @@ export async function getTopTenAnime(_req: Request, res: Response) {
       take: 30,
       orderBy: { score: 'desc' },
     });
-    setCached('anime:topTen', { topTen }, 60_000);
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300');
+    setCached('anime:topTen', { topTen }, 300_000);
+    res.set('Cache-Control', 'public, max-age=180, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json({ topTen });
   } catch (error: any) {
     console.error('Error fetching top ten anime:', error);
@@ -1255,6 +1246,13 @@ export async function getTopTenAnime(_req: Request, res: Response) {
 export async function getAnimeDetail(req: Request, res: Response) {
   try {
     const { id } = req.params;
+
+    // Disambiguate reserved routes so reverse proxies never confuse /home, /trending, /popular with anime slugs
+    if (id === 'home') return getHomeData(req, res);
+    if (id === 'trending') return getTrendingAnime(req, res);
+    if (id === 'popular') return getPopularAnime(req, res);
+    if (id === 'top-ten') return getTopTenAnime(req, res);
+    if (id === 'genres') return getAllGenres(req, res);
 
     const anime = await findOrCreateAnimeBySlugOrId(id);
 
@@ -1789,10 +1787,18 @@ export async function getEpisodeSources(req: Request, res: Response) {
       } catch (_) {}
     }
 
+    const isGenericVidsrcSeed = customEmbedUrl.includes('vidsrc.pm/embed/anime') ||
+                                customEmbedUrl.includes('vidsrc.net/embed/anime') ||
+                                customEmbedUrl.includes('vidsrc.io/embed/anime') ||
+                                customEmbedUrl.includes('vidsrc.to/embed/anime');
+    const isSampleVideo = customEmbedUrl.includes('sample/BigBuckBunny') ||
+                          customEmbedUrl.includes('commondatastorage.googleapis.com');
+
     const hasCustomVideoUrl = Boolean(
       customEmbedUrl &&
       customEmbedUrl.trim().length > 0 &&
-      !customEmbedUrl.includes('sample/BigBuckBunny')
+      !isSampleVideo &&
+      !isGenericVidsrcSeed
     );
 
     // Auto-heal MAL ID if not present
@@ -1801,17 +1807,62 @@ export async function getEpisodeSources(req: Request, res: Response) {
       animeMalId = await autoHealMalId(anime.id, anime.title);
     }
 
-    // Prioritize high-performance, verified working servers:
-    // If a custom stream or embed URL exists, default to that!
-    // For DUB & HINDI, default to VidSrc Anime which has dedicated multi-audio stream support!
+    // Resolve Aniwave slug for high-speed dubbed/subbed streaming
+    let aniwaveSlug = ANIWAVE_SLUG_MAP[slug];
+    if (!aniwaveSlug && anime.slug && ANIWAVE_SLUG_MAP[anime.slug]) {
+      aniwaveSlug = ANIWAVE_SLUG_MAP[anime.slug];
+    }
+    if (!aniwaveSlug) {
+      let cleanSlug = slug
+        .replace(/-(season-\d+|the-final-season|final-season|\d+(st|nd|rd|th)-season|part-\d+|ii|iii|iv|v|vi)$/i, '')
+        .replace(/-(tv|entertainment-district-arc|swordsmith-village-arc|hashira-training-arc|mugen-train-arc)$/i, '')
+        .trim();
+      if (ANIWAVE_SLUG_MAP[cleanSlug]) {
+        aniwaveSlug = ANIWAVE_SLUG_MAP[cleanSlug];
+      } else {
+        const sortedKeys = Object.keys(ANIWAVE_SLUG_MAP).sort((a, b) => b.length - a.length);
+        for (const key of sortedKeys) {
+          if (slug.includes(key) || cleanSlug.includes(key)) {
+            aniwaveSlug = ANIWAVE_SLUG_MAP[key];
+            break;
+          }
+        }
+      }
+    }
+
+    // Determine the primary high-performance working server based on audio translation:
+    // DUB: aniwave (if mapped) or vidsrc (vidsrc.pm with &dub=1) - both have verified English audio!
+    // HINDI: vidsrc (vidsrc.pm with &lang=hi) - has verified Hindi audio track!
+    // SUB: vidsrc_su (or aniwave) - has Japanese audio with subtitles
     const defaultWorkingServer = hasCustomVideoUrl
       ? 'custom_source'
-      : ((activeTranslation === 'dub' || activeTranslation === 'hindi') ? 'vidsrc' : (animeMalId ? 'vidsrc' : 'autoembed'));
+      : (activeTranslation === 'dub'
+          ? (aniwaveSlug ? 'aniwave' : 'vidsrc')
+          : (activeTranslation === 'hindi'
+              ? 'vidsrc'
+              : 'vidsrc_su'));
 
     let activeServer = requestedServer;
-    // Auto-heal dead servers or deprecated defaults to the primary working server
-    const deadOrDeprecated = ['vidplay', 'dghg', 'raretoon', 'byfms', 'datsav', 'twoembed'];
-    if (!activeServer || deadOrDeprecated.includes(activeServer)) {
+    if (activeServer === 'vidsrc_pm') activeServer = 'vidsrc';
+
+    // Truly dead domains that must be healed
+    const deadOrDeprecated = [
+      'vidsrc_net',
+      'vidsrc_to',
+      'twoembed',
+      'vidplay',
+      'dghg',
+      'raretoon',
+      'byfms',
+      'datsav',
+      'vidsrc_cc',
+      'player_autoembed',
+      'player_autoembed_cc'
+    ];
+
+    // If activeServer is dead, or if user is on DUB/HINDI but activeServer is vidsrc_su (which only plays Japanese),
+    // heal to defaultWorkingServer!
+    if (!activeServer || deadOrDeprecated.includes(activeServer) || ((activeTranslation === 'dub' || activeTranslation === 'hindi') && activeServer === 'vidsrc_su')) {
       activeServer = defaultWorkingServer;
     }
 
@@ -1959,44 +2010,45 @@ export async function getEpisodeSources(req: Request, res: Response) {
     const isMovie = Boolean(isExplicitMovieType || isMovieByMal || isMovieBySlug || isMovieByTitle);
 
     if (isMovie) {
-      let movieTmdbId: number | null = anime.tmdbId || null;
-      if (!movieTmdbId && animeMalId && MAL_TO_MOVIE_TMDB[animeMalId]) {
+      let movieTmdbId: number | null = null;
+      if (animeMalId && MAL_TO_MOVIE_TMDB[animeMalId]) {
         movieTmdbId = MAL_TO_MOVIE_TMDB[animeMalId];
-      } else if (!movieTmdbId && MOVIE_SLUG_TMDB_MAP[slug]) {
+      } else if (MOVIE_SLUG_TMDB_MAP[slug]) {
         movieTmdbId = MOVIE_SLUG_TMDB_MAP[slug];
-      } else if (!movieTmdbId) {
+      } else if (anime.tmdbId && anime.type?.toUpperCase() === 'MOVIE') {
+        movieTmdbId = anime.tmdbId;
+      } else {
         const found = Object.entries(MOVIE_SLUG_TMDB_MAP).find(([k]) => slug.includes(k));
         if (found) {
           movieTmdbId = found[1];
+        } else if (anime.tmdbId) {
+          movieTmdbId = anime.tmdbId;
         }
       }
 
-      const movieAniwaveSlug = ANIWAVE_SLUG_MAP[slug] || '';
 
       const subServers = [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
-        { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra (Sub)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_su', name: 'HD-1: AniVerse Global (Sub)', embedUrl: movieTmdbId ? `https://vidsrc.su/embed/movie/${movieTmdbId}` : (animeMalId ? `https://vidsrc.su/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
+        ...(aniwaveSlug ? [{ id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: `https://aniwaves.ru/watch/${aniwaveSlug}/ep-1?lang=sub` }] : []),
+        { id: 'vidsrc', name: 'HD-3: AniVerse Multi (Sub)', embedUrl: movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
         { id: 'autoembed', name: 'HD-4: AniVerse Cinema (Sub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) },
-        { id: 'aniwave', name: 'HD-5: AniVerse Prime (Sub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=sub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) }
+        { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1` : (customEmbedUrl || '')) }
       ];
 
       const dubServers = hasDub ? [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
-        { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=en` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_to', name: 'HD-3: AniVerse Global (English Dub)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-4: AniVerse Auto (English Dub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
-        { id: 'aniwave', name: 'HD-5: AniVerse Multi (English Dub)', embedUrl: movieAniwaveSlug ? `https://aniwaves.ru/watch/${movieAniwaveSlug}/ep-1?lang=dub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) }
+        ...(aniwaveSlug ? [{ id: 'aniwave', name: 'HD-1: AniVerse Prime (English Dub)', embedUrl: `https://aniwaves.ru/watch/${aniwaveSlug}/ep-1?lang=dub` }] : []),
+        { id: 'vidsrc', name: 'HD-2: AniVerse Multi (English Dub)', embedUrl: movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_io', name: 'HD-3: AniVerse Cloud (English Dub)', embedUrl: movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-4: AniVerse Cinema (English Dub)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&dub=1` : (customEmbedUrl || '')) }
       ] : [];
 
       const hindiServers = hasHindi ? [
         ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
-        { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_io', name: 'HD-2: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (customEmbedUrl || '')) },
-        { id: 'vidsrc_to', name: 'HD-3: AniVerse Hindi (Global)', embedUrl: movieTmdbId ? `https://vidsrc.to/embed/movie/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
-        { id: 'autoembed', name: 'HD-4: AniVerse Hindi (Auto)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) }
+        { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Hindi)', embedUrl: movieTmdbId ? `https://vidsrc.pm/embed/movie/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
+        { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Hindi)', embedUrl: movieTmdbId ? `https://vidsrc.io/embed/movie/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) },
+        { id: 'autoembed', name: 'HD-3: AniVerse Cinema (Hindi)', embedUrl: movieTmdbId ? `https://autoembed.co/movie/tmdb/${movieTmdbId}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=1&lang=hi` : (customEmbedUrl || '')) }
       ] : [];
 
       const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -2166,11 +2218,6 @@ export async function getEpisodeSources(req: Request, res: Response) {
       'konosuba': 65947
     };
 
-    let aniwaveSlug = ANIWAVE_SLUG_MAP[slug] || '';
-    if (!aniwaveSlug) {
-      const matchedKey = Object.keys(ANIWAVE_SLUG_MAP).find(k => slug.includes(k) || k.includes(slug));
-      if (matchedKey) aniwaveSlug = ANIWAVE_SLUG_MAP[matchedKey];
-    }
 
     // ==========================================
     // LONG CONTINUOUS ANIME SERIES SEASONS MAPPING
@@ -2720,28 +2767,26 @@ export async function getEpisodeSources(req: Request, res: Response) {
 
     const subServers = [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Sub)', embedUrl: customEmbedUrl }] : []),
-      { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_to', name: 'HD-3: AniVerse Ultra (Sub)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_su', name: 'HD-1: AniVerse Global (Sub)', embedUrl: animeMalId ? `https://vidsrc.su/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.su/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
+      ...(aniwaveSlug ? [{ id: 'aniwave', name: 'HD-2: AniVerse Prime (Sub)', embedUrl: `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` }] : []),
+      { id: 'vidsrc', name: 'HD-3: AniVerse Multi (Sub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) },
       { id: 'autoembed', name: 'HD-4: AniVerse Cinema (Sub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) },
-      { id: 'aniwave', name: 'HD-5: AniVerse Prime (Sub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (customEmbedUrl || '')) }
+      { id: 'vidsrc_io', name: 'HD-5: AniVerse Cloud (Sub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}` : (customEmbedUrl || '')) }
     ];
 
     const dubServers = hasDub ? [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (English Dub)', embedUrl: customEmbedUrl }] : []),
-      { id: 'vidsrc', name: 'HD-1: AniVerse Ultra (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_to', name: 'HD-3: AniVerse Global (English Dub)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-4: AniVerse Auto (English Dub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) },
-      { id: 'aniwave', name: 'HD-5: AniVerse Multi (English Dub)', embedUrl: aniwaveSlug ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) }
+      ...(aniwaveSlug ? [{ id: 'aniwave', name: 'HD-1: AniVerse Prime (English Dub)', embedUrl: `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub` }] : []),
+      { id: 'vidsrc', name: 'HD-2: AniVerse Multi (English Dub)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_io', name: 'HD-3: AniVerse Cloud (English Dub)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?dub=1` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-4: AniVerse Cinema (English Dub)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?dub=1` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&dub=1` : (customEmbedUrl || '')) }
     ] : [];
 
     const hindiServers = hasHindi ? [
       ...(hasCustomVideoUrl ? [{ id: 'custom_source', name: 'HD-0: AniVerse Direct (Hindi)', embedUrl: customEmbedUrl }] : []),
-      { id: 'vidsrc', name: 'HD-1: AniVerse Hindi (Ultra HD)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_io', name: 'HD-2: AniVerse Hindi (Cloud)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
-      { id: 'vidsrc_to', name: 'HD-3: AniVerse Hindi (Global)', embedUrl: tmdbId ? `https://vidsrc.to/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) },
-      { id: 'autoembed', name: 'HD-4: AniVerse Hindi (Auto)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}&lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) }
+      { id: 'vidsrc', name: 'HD-1: AniVerse Multi (Hindi)', embedUrl: animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+      { id: 'vidsrc_io', name: 'HD-2: AniVerse Cloud (Hindi)', embedUrl: animeMalId ? `https://vidsrc.io/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (tmdbId ? `https://vidsrc.io/embed/tv/${tmdbId}/${seasonNumber}/${epNumToUse}?lang=hi` : (customEmbedUrl || '')) },
+      { id: 'autoembed', name: 'HD-3: AniVerse Cinema (Hindi)', embedUrl: tmdbId ? `https://autoembed.co/tv/tmdb/${tmdbId}-${seasonNumber}-${epNumToUse}?lang=hi` : (animeMalId ? `https://vidsrc.pm/embed/anime?mal=${animeMalId}&ep=${episodeNumber}&lang=hi` : (customEmbedUrl || '')) }
     ] : [];
 
     const serversByAudio: Record<string, { id: string; name: string; embedUrl: string }[]> = {
@@ -2852,26 +2897,20 @@ export async function downloadEpisode(req: Request, res: Response) {
       });
     }
 
-    // 2. Build download source based on requested audio track & Aniwave mirror
-    let aniwaveSlug = ANIWAVE_SLUG_MAP[anime.slug] || '';
-    if (!aniwaveSlug) {
-      const matchKey = Object.keys(ANIWAVE_SLUG_MAP).find(k => anime.slug.includes(k) || k.includes(anime.slug));
-      if (matchKey) aniwaveSlug = ANIWAVE_SLUG_MAP[matchKey];
-    }
-
+    // 2. Build download source based on requested audio track & active clean mirrors
     let resolvedDownloadUrl = '';
     if (audioTrack === 'DUB') {
-      resolvedDownloadUrl = aniwaveSlug
-        ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=dub`
-        : (anime.malId ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&dub=1` : directUrl);
+      resolvedDownloadUrl = anime.malId
+        ? `https://vidsrc.su/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&dub=1`
+        : (anime.tmdbId ? `https://autoembed.co/tv/tmdb/${anime.tmdbId}-1-${episodeNumber}?dub=1` : directUrl);
     } else if (audioTrack === 'HINDI') {
       resolvedDownloadUrl = anime.malId
-        ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&lang=hi`
-        : directUrl;
+        ? `https://vidsrc.su/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&lang=hi`
+        : (anime.tmdbId ? `https://autoembed.co/tv/tmdb/${anime.tmdbId}-1-${episodeNumber}?lang=hi` : directUrl);
     } else {
-      resolvedDownloadUrl = aniwaveSlug
-        ? `https://aniwaves.ru/watch/${aniwaveSlug}/ep-${episodeNumber}?lang=sub`
-        : (anime.malId ? `https://vidsrc.pm/embed/anime?mal=${anime.malId}&ep=${episodeNumber}&sub=1` : directUrl);
+      resolvedDownloadUrl = anime.malId
+        ? `https://vidsrc.su/embed/anime?mal=${anime.malId}&ep=${episodeNumber}`
+        : (anime.tmdbId ? `https://autoembed.co/tv/tmdb/${anime.tmdbId}-1-${episodeNumber}` : directUrl);
     }
 
     if (!resolvedDownloadUrl) {
